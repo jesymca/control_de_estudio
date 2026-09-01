@@ -3,7 +3,7 @@ require_once('../funciones/functions.php');
 
 // CARGAR PERMISOS
 cargarPermisosUsuario();
-verificarPermiso('admin');
+verificarPermiso('mensajeria');
 
 // LLAMAR A LA FUNCIÓN DE VISITA
 visita();

@@ -13409,7 +13409,9 @@ function verificarPermiso($pagina) {
         'consultar_notas_pasadas', 'tipos_pago', 'tipos_horario', 
         'horario_personal', 'respaldo_bd',
         'gestionar_carrera', 'gestion_periodo_academico', 'gestion_asig_cursos', 
-        'gestion_horario', 'titulos_re_materia', 'grado', 'gestion_grado', 'visita'
+        'gestion_horario', 'titulos_re_materia', 'grado', 'gestion_grado', 'visita',
+        'constancias', 'preinscripciones', 'inscripcion_materias', 'aprobar_secciones',
+        'aulas', 'actas_calificacion', 'secretaria', 'ver_estudiantes', 'ver_docentes', 'mensajeria'
     ];
     
     // Verificar que el permiso solicitado sea válido
@@ -13525,7 +13527,9 @@ function cargarPermisosUsuario() {
         consultar_notas_pasadas, tipos_pago, tipos_horario, 
         horario_personal, respaldo_bd,
         gestionar_carrera, gestion_periodo_academico, gestion_asig_cursos, 
-        gestion_horario, titulos_re_materia, grado, gestion_grado, visita
+        gestion_horario, titulos_re_materia, grado, gestion_grado, visita,
+        constancias, preinscripciones, inscripcion_materias, aprobar_secciones,
+        aulas, actas_calificacion, secretaria, ver_estudiantes, ver_docentes, mensajeria
         FROM users WHERE id = ?";
     
     $stmt = $db->prepare($query);
@@ -13569,7 +13573,9 @@ function actualizarPermisosUsuario($user_id, $permisos) {
                         asig_cursos, horarios, gestion_director_carrera, notas_cargadas, consultar_notas, 
                         consultar_notas_pasadas, tipos_pago, tipos_horario, horario_personal, respaldo_bd,
                         gestionar_carrera, gestion_periodo_academico, gestion_asig_cursos, gestion_horario, titulos_re_materia,
-                        grado, gestion_grado, visita
+                        grado, gestion_grado, visita,
+                        constancias, preinscripciones, inscripcion_materias, aprobar_secciones,
+                        aulas, actas_calificacion, secretaria, ver_estudiantes, ver_docentes, mensajeria
                         FROM users WHERE id = ?";
         
         $stmt_actual = $db->prepare($query_actual);
@@ -13626,6 +13632,16 @@ function actualizarPermisosUsuario($user_id, $permisos) {
             'grado' => isset($permisos['grado']) ? 1 : 0,
             'gestion_grado' => isset($permisos['gestion_grado']) ? 1 : 0,
             'visita' => isset($permisos['visita']) ? 1 : 0,
+            'constancias' => isset($permisos['constancias']) ? 1 : 0,
+            'preinscripciones' => isset($permisos['preinscripciones']) ? 1 : 0,
+            'inscripcion_materias' => isset($permisos['inscripcion_materias']) ? 1 : 0,
+            'aprobar_secciones' => isset($permisos['aprobar_secciones']) ? 1 : 0,
+            'aulas' => isset($permisos['aulas']) ? 1 : 0,
+            'actas_calificacion' => isset($permisos['actas_calificacion']) ? 1 : 0,
+            'secretaria' => isset($permisos['secretaria']) ? 1 : 0,
+            'ver_estudiantes' => isset($permisos['ver_estudiantes']) ? 1 : 0,
+            'ver_docentes' => isset($permisos['ver_docentes']) ? 1 : 0,
+            'mensajeria' => isset($permisos['mensajeria']) ? 1 : 0,
         ];
         
         // VERIFICAR SI HAY CAMBIOS REALES
@@ -13692,7 +13708,17 @@ function actualizarPermisosUsuario($user_id, $permisos) {
                  titulos_re_materia = ?,
                  grado = ?,
                  gestion_grado = ?,
-                 visita = ?
+                 visita = ?,
+                 constancias = ?,
+                 preinscripciones = ?,
+                 inscripcion_materias = ?,
+                 aprobar_secciones = ?,
+                 aulas = ?,
+                 actas_calificacion = ?,
+                 secretaria = ?,
+                 ver_estudiantes = ?,
+                 ver_docentes = ?,
+                 mensajeria = ?
                  WHERE id = ?";
         
         $stmt = $db->prepare($query);
@@ -13700,7 +13726,7 @@ function actualizarPermisosUsuario($user_id, $permisos) {
             throw new Exception("Error al preparar query: " . $db->error);
         }
         
-        $stmt->bind_param("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", 
+        $stmt->bind_param("iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii", 
             $permisos_nuevos['usuario'], $permisos_nuevos['estudiante'], $permisos_nuevos['docente'], 
             $permisos_nuevos['admin'], $permisos_nuevos['super_user'], $permisos_nuevos['editar_user'], 
             $permisos_nuevos['editar_nota'], $permisos_nuevos['editar_acceso'], $permisos_nuevos['editar_valores'],
@@ -13715,6 +13741,10 @@ function actualizarPermisosUsuario($user_id, $permisos) {
             $permisos_nuevos['gestion_periodo_academico'], $permisos_nuevos['gestion_asig_cursos'], $permisos_nuevos['gestion_horario'],
             $permisos_nuevos['titulos_re_materia'], $permisos_nuevos['grado'], $permisos_nuevos['gestion_grado'],
             $permisos_nuevos['visita'],
+            $permisos_nuevos['constancias'], $permisos_nuevos['preinscripciones'], $permisos_nuevos['inscripcion_materias'],
+            $permisos_nuevos['aprobar_secciones'], $permisos_nuevos['aulas'], $permisos_nuevos['actas_calificacion'],
+            $permisos_nuevos['secretaria'], $permisos_nuevos['ver_estudiantes'], $permisos_nuevos['ver_docentes'],
+            $permisos_nuevos['mensajeria'],
             $user_id
         );
         
@@ -13811,7 +13841,9 @@ function obtenerUsuariosConPermisos() {
              asig_cursos, horarios, gestion_director_carrera, notas_cargadas, consultar_notas, 
              consultar_notas_pasadas, tipos_pago, tipos_horario, horario_personal, respaldo_bd,
              gestionar_carrera, gestion_periodo_academico, gestion_asig_cursos, gestion_horario, titulos_re_materia,
-             grado, gestion_grado, visita
+             grado, gestion_grado, visita,
+             constancias, preinscripciones, inscripcion_materias, aprobar_secciones,
+             aulas, actas_calificacion, secretaria, ver_estudiantes, ver_docentes, mensajeria
              FROM users ORDER BY username";
     
     return $db->query($query);
@@ -23175,6 +23207,15 @@ function isEstudiante()
 function isUser()
 {
     return isset($_SESSION['user']) && $_SESSION['user']['usuario'] == 1;
+}
+
+function isDirectorCarrera()
+{
+    return isset($_SESSION['user']) && (
+        (isset($_SESSION['user']['usuario']) && $_SESSION['user']['usuario'] == 1) ||
+        (isset($_SESSION['user']['carrera_di']) && intval($_SESSION['user']['carrera_di']) > 0) ||
+        (isset($_SESSION['user']['director']) && $_SESSION['user']['director'] == 1)
+    );
 }
 
 

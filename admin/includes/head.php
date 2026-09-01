@@ -235,13 +235,13 @@ $admin_url = $base_url . '/admin';
                             </a>
                         <?php endif; ?>
 
-                        <?php if (tienePermiso('admin')): ?>
+                        <?php if (tienePermiso('preinscripciones')): ?>
                             <a title="Preinscripciones" class="dropdown-item" href="<?= $admin_url ?>/preinscripciones.php">
                                 <i class="fas fa-file-signature fa-fw"></i> Preinscripciones
                             </a>
                         <?php endif; ?>
 
-                         <?php if (tienePermiso('admin')): ?>
+                         <?php if (tienePermiso('inscripcion_materias')): ?>
                         <a title="Inscribir Materias a Estudiantes" class="dropdown-item" href="<?= $admin_url ?>/inscripcion_materias.php">
                             <i class="fas fa-clipboard-list fa-fw"></i> Inscribir Materias
                         </a>
@@ -259,7 +259,7 @@ $admin_url = $base_url . '/admin';
                             </a>
                         <?php endif; ?>
 
-                            <?php if (tienePermiso('admin')): ?>
+                            <?php if (tienePermiso('constancias')): ?>
                         <a title="Generar Constancias" class="dropdown-item" href="<?= $admin_url ?>/constancias.php">
                             <i class="fas fa-file-alt fa-fw"></i> Admisión y Control
                         </a>
@@ -493,6 +493,11 @@ $admin_url = $base_url . '/admin';
     <div class="row">
         <div class="col-sm-6">
             <b class="mt-5"><?php echo 'Bienvenido ' .$_SESSION['user']['nombre']; ?></b>
+            <div class="mt-1 mb-2">
+                <span class="badge badge-pill shadow-sm px-3 py-1 text-uppercase font-weight-bold text-white" style="background-color: #0d6efd; font-size: 0.8rem; letter-spacing: 0.5px;">
+                    <i class="fas fa-user-shield mr-1"></i> Panel de Administración
+                </span>
+            </div>
         </div>
         <div class="col-sm-6">
             <?php

@@ -107,7 +107,7 @@ include("includes/head.php");
                                             <button class="btn btn-sm btn-success btn-descargar-pdf" 
                                                     data-seccion="<?= $seccion['id_seccion'] ?>"
                                                     data-materia="<?= $seccion['id_materia'] ?>">
-                                                <i class="fas fa-download"></i> PDF
+                                                <i class="fas fa-file-pdf mr-1"></i> PDF
                                             </button>
                                             <button class="btn btn-sm btn-outline-secondary btn-descargar-csv"
                                                     data-seccion="<?= $seccion['id_seccion'] ?>"
@@ -116,7 +116,7 @@ include("includes/head.php");
                                             </button>
                                             <label class="btn btn-sm btn-outline-primary mb-0" style="cursor:pointer;">
                                                 <i class="fas fa-file-upload"></i> Importar
-                                                <input type="file" accept=".csv,text/csv,application/vnd.ms-excel" class="d-none input-import-csv" data-seccion="<?= $seccion['id_seccion'] ?>" data-materia="<?= $seccion['id_materia'] ?>">
+                                                <input type="file" accept=".csv,text/csv,application/vnd.ms-excel,.pdf,application/pdf" class="d-none input-import-csv" data-seccion="<?= $seccion['id_seccion'] ?>" data-materia="<?= $seccion['id_materia'] ?>">
                                             </label>
                                         </div>
                                     </div>
@@ -161,12 +161,39 @@ include("includes/head.php");
     </div>
 </div>
 
+<!-- Modal preview PDF en la misma página -->
+<div class="modal fade" id="modalPreviewPDF" tabindex="-1" role="dialog" aria-labelledby="modalPreviewPDFTitle" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 92vw; height: 90vh;" role="document">
+        <div class="modal-content shadow-lg border-0 h-100" style="border-radius: 10px; overflow: hidden;">
+            <div class="modal-header bg-dark text-white py-2 px-3 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title font-weight-bold mb-0" id="modalPreviewPDFTitle" style="font-size: 0.95rem;">
+                    <i class="fas fa-file-pdf text-danger mr-2"></i> Vista Previa de Planilla de Notas (PDF)
+                </h5>
+                <div>
+                    <a id="btnAbrirNuevaPestanaPDF" href="#" target="_blank" class="btn btn-sm btn-outline-light mr-2 font-weight-bold">
+                        <i class="fas fa-external-link-alt mr-1"></i> Abrir en ventana
+                    </a>
+                    <a id="btnDescargarDirectoPDF" href="#" download class="btn btn-sm btn-success mr-2 font-weight-bold">
+                        <i class="fas fa-download mr-1"></i> Descargar
+                    </a>
+                    <button type="button" class="btn btn-sm btn-danger font-weight-bold px-3" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i> Cerrar
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body p-0 bg-secondary" style="height: calc(90vh - 55px);">
+                <iframe id="iframePreviewPDF" src="" class="w-100 h-100 border-0" style="background-color: #525659;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal preview import CSV -->
 <div class="modal fade" id="modalPreviewCSV" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">Preview de CSV</h5>
+                <h5 class="modal-title"><i class="fas fa-search mr-1"></i> Vista Previa de Importación de Notas (CSV / PDF)</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -247,6 +274,93 @@ $(document).ready(function() {
         });
     });
     
+        // Soporte Grupo - Vista previa interactiva de PDF o Imagen antes de subirlo
+    $(document).on('change', '#soporte_grupo', function() {
+        const file = this.files[0];
+        const previewBox = document.getElementById('preview-grupo');
+        const labelSoporte = document.getElementById('label-soporte-grupo');
+        const infoSoporte = document.getElementById('info-archivo-soporte');
+
+        if (!previewBox) return;
+
+        if (!file) {
+            if (labelSoporte) labelSoporte.textContent = 'Elegir archivo PDF o Imagen...';
+            if (infoSoporte) infoSoporte.textContent = '';
+            previewBox.innerHTML = `
+                <div class="py-3 text-muted text-center">
+                    <i class="fas fa-cloud-upload-alt fa-2x mb-1 text-secondary"></i>
+                    <p class="mb-0 small">No se ha seleccionado ningún archivo de soporte aún.</p>
+                </div>`;
+            return;
+        }
+
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const fileName = file.name;
+        if (labelSoporte) labelSoporte.textContent = fileName;
+        if (infoSoporte) infoSoporte.innerHTML = `<span class="badge badge-info">${file.type || 'Archivo'}</span> <span class="badge badge-secondary">${fileSizeMB} MB</span>`;
+
+        const fileUrl = URL.createObjectURL(file);
+
+        if (file.type === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
+            previewBox.innerHTML = `
+                <div class="text-left mb-2 d-flex justify-content-between align-items-center bg-white p-2 border rounded shadow-sm">
+                    <div>
+                        <i class="fas fa-file-pdf text-danger fa-lg mr-2"></i>
+                        <strong class="text-dark">${fileName}</strong>
+                        <span class="text-muted small ml-2">(${fileSizeMB} MB)</span>
+                    </div>
+                    <div>
+                        <a href="${fileUrl}" target="_blank" class="btn btn-xs btn-outline-danger btn-sm font-weight-bold mr-1 py-1 px-2">
+                            <i class="fas fa-external-link-alt mr-1"></i> Pantalla Completa
+                        </a>
+                        <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-1 px-2 btn-quitar-soporte-file">
+                            <i class="fas fa-times mr-1"></i> Quitar
+                        </button>
+                    </div>
+                </div>
+                <div style="height: 420px; width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid #dee2e6;">
+                    <iframe src="${fileUrl}" style="width: 100%; height: 100%; border: none; background-color: #525659;"></iframe>
+                </div>
+            `;
+        } else if (file.type.startsWith('image/')) {
+            previewBox.innerHTML = `
+                <div class="text-left mb-2 d-flex justify-content-between align-items-center bg-white p-2 border rounded shadow-sm">
+                    <div>
+                        <i class="fas fa-image text-success fa-lg mr-2"></i>
+                        <strong class="text-dark">${fileName}</strong>
+                        <span class="text-muted small ml-2">(${fileSizeMB} MB)</span>
+                    </div>
+                    <div>
+                        <a href="${fileUrl}" target="_blank" class="btn btn-xs btn-outline-success btn-sm font-weight-bold mr-1 py-1 px-2">
+                            <i class="fas fa-search-plus mr-1"></i> Ver en Grande
+                        </a>
+                        <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-1 px-2 btn-quitar-soporte-file">
+                            <i class="fas fa-times mr-1"></i> Quitar
+                        </button>
+                    </div>
+                </div>
+                <div class="p-2 bg-white rounded border text-center">
+                    <img src="${fileUrl}" class="img-fluid rounded shadow-sm" style="max-height: 350px; object-fit: contain;">
+                </div>
+            `;
+        } else {
+            previewBox.innerHTML = `
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-file mr-1"></i> Archivo seleccionado: <strong>${fileName}</strong> (${fileSizeMB} MB)
+                </div>
+            `;
+        }
+    });
+
+    $(document).on('click', '.btn-quitar-soporte-file', function(e) {
+        e.preventDefault();
+        const input = document.getElementById('soporte_grupo');
+        if (input) {
+            input.value = '';
+            $(input).trigger('change');
+        }
+    });
+
     // Volver a secciones
     $(document).on('click', '#btn-volver', function() {
         $('#resultados').html(`
@@ -259,11 +373,28 @@ $(document).ready(function() {
         $('html, body').animate({ scrollTop: $('.card').first().offset().top - 20 }, 400);
     });
     
-    // Descargar PDF
-    $(document).on('click', '.btn-descargar-pdf', function() {
+    // Vista previa de PDF en Modal (Misma Página)
+    $(document).on('click', '.btn-descargar-pdf', function(e) {
+        e.preventDefault();
         const seccionId = $(this).data('seccion');
         const materiaId = $(this).data('materia');
-        window.location.href = `descargar_planilla.php?seccion_id=${seccionId}&materia_id=${materiaId}`;
+        const url = `descargar_planilla.php?seccion_id=${seccionId}&materia_id=${materiaId}`;
+        
+        const iframe = document.getElementById('iframePreviewPDF');
+        const btnExt = document.getElementById('btnAbrirNuevaPestanaPDF');
+        const btnDesc = document.getElementById('btnDescargarDirectoPDF');
+        
+        if (iframe) iframe.src = url;
+        if (btnExt) btnExt.href = url;
+        if (btnDesc) btnDesc.href = url;
+        
+        $('#modalPreviewPDF').modal('show');
+    });
+
+    // Limpiar iframe al cerrar el modal de PDF
+    $('#modalPreviewPDF').on('hidden.bs.modal', function () {
+        const iframe = document.getElementById('iframePreviewPDF');
+        if (iframe) iframe.src = '';
     });
 
     // Descargar CSV

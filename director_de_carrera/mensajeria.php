@@ -129,6 +129,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensaje'])) {
     }
 }
 
+// ==========================================
+// PRECARGAR DESTINATARIO VÍA POST / GET
+// ==========================================
+$destinatario_precargado_id = (int)($_POST['destinatario'] ?? ($_POST['destinatario_id'] ?? ($_GET['destinatario'] ?? 0)));
+$asunto_precargado = trim($_POST['asunto'] ?? ($_GET['asunto'] ?? ''));
+$mensaje_precargado = trim($_POST['mensaje_cuerpo'] ?? '');
+
+$destinatario_info = null;
+if ($destinatario_precargado_id > 0) {
+    $stmt_dest = $db->prepare("SELECT id, nombre, idusuario, email, docente, admin, super_user, estudiante, usuario, carrera_di FROM users WHERE id = ?");
+    $stmt_dest->bind_param("i", $destinatario_precargado_id);
+    $stmt_dest->execute();
+    $res_dest = $stmt_dest->get_result();
+    if ($res_dest && $res_dest->num_rows > 0) {
+        $u_dest = $res_dest->fetch_assoc();
+        $destinatario_info = [
+            'id' => (int)$u_dest['id'],
+            'nombre' => $u_dest['nombre'],
+            'cedula' => $u_dest['idusuario'],
+            'email' => $u_dest['email'] ?? '',
+            'tipo' => obtenerTipoUsuario($u_dest)
+        ];
+    }
+    $stmt_dest->close();
+}
+
 $titulopag = "Sistema de Mensajería";
 include("includes/head.php");
 
@@ -170,17 +196,17 @@ $total_no_leidos = contarMensajesNoLeidos($current_user_id);
                 <div class="card-body">
                     <form method="POST" action="" id="formNuevoMensaje">
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                        <input type="hidden" name="destinatario_id" id="destinatario_id" value="" required>
+                        <input type="hidden" name="destinatario_id" id="destinatario_id" value="<?= $destinatario_info ? $destinatario_info['id'] : '' ?>" required>
                         
                         <!-- Filtro y buscador en tiempo real de destinatarios -->
                         <div class="form-group position-relative">
                             <label class="font-weight-bold">Destinatario:</label>
                             
-                            <div class="input-group mb-2">
+                            <div class="input-group mb-2" id="grupo_buscador_destinatario" style="<?= $destinatario_info ? 'display: none;' : '' ?>">
                                 <select class="custom-select" id="filtro_rol_destinatario" style="max-width: 130px;">
                                     <option value="">Todos</option>
                                     <option value="estudiante">Estudiantes</option>
-                                    <option value="docente">Docentes</option>
+                                    <option value="docente" <?= ($destinatario_info && strpos(strtolower($destinatario_info['tipo']), 'docente') !== false) ? 'selected' : '' ?>>Docentes</option>
                                     <option value="admin">Admin</option>
                                     <option value="director_carrera">Directores</option>
                                 </select>
@@ -197,12 +223,14 @@ $total_no_leidos = contarMensajesNoLeidos($current_user_id);
                             </div>
                             
                             <!-- Card del destinatario seleccionado -->
-                            <div id="destinatario_seleccionado_card" class="p-2 border rounded bg-light mt-2" style="display: none;">
+                            <div id="destinatario_seleccionado_card" class="p-2 border rounded bg-light mt-2" style="<?= $destinatario_info ? 'display: block;' : 'display: none;' ?>">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
                                         <i class="fas fa-user-check text-success mr-1"></i>
-                                        <strong id="dest_nombre_badge"></strong>
-                                        <div class="small text-muted" id="dest_detalles_badge"></div>
+                                        <strong id="dest_nombre_badge"><?= $destinatario_info ? htmlspecialchars($destinatario_info['nombre']) : '' ?></strong>
+                                        <div class="small text-muted" id="dest_detalles_badge">
+                                            <?= $destinatario_info ? 'C.I: ' . htmlspecialchars($destinatario_info['cedula']) . ' - ' . htmlspecialchars($destinatario_info['tipo']) : '' ?>
+                                        </div>
                                     </div>
                                     <button type="button" class="btn btn-sm btn-outline-danger" id="btn_cambiar_destinatario" title="Cambiar destinatario">
                                         <i class="fas fa-times"></i>
@@ -213,12 +241,12 @@ $total_no_leidos = contarMensajesNoLeidos($current_user_id);
                         
                         <div class="form-group">
                             <label for="titulo" class="font-weight-bold">Asunto:</label>
-                            <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Asunto del mensaje..." required>
+                            <input type="text" class="form-control" id="titulo" name="titulo" placeholder="Asunto del mensaje..." value="<?= htmlspecialchars($asunto_precargado) ?>" required>
                         </div>
                         
                         <div class="form-group">
                             <label for="mensaje" class="font-weight-bold">Mensaje:</label>
-                            <textarea class="form-control" id="mensaje" name="mensaje" rows="5" placeholder="Escriba su mensaje aquí..." required></textarea>
+                            <textarea class="form-control" id="mensaje" name="mensaje" rows="5" placeholder="Escriba su mensaje aquí..." required><?= htmlspecialchars($mensaje_precargado) ?></textarea>
                         </div>
                         
                         <button type="submit" name="enviar_mensaje" id="btn_enviar_mensaje" class="btn btn-success btn-block shadow-sm">

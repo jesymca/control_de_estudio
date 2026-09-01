@@ -986,11 +986,18 @@ include("includes/head.php");
                     </div>
                 </div>
 
-                <!-- ========================================================================= -->
-                <!-- MODALES INTERACTIVOS DE SOLICITUD -->
-                <!-- ========================================================================= -->
 
-                <!-- 1. MODAL ADICIÓN Y RETIRO DE MATERIAS -->
+
+<!-- ========================================================================= -->
+<!-- MODALES INTERACTIVOS DE SOLICITUD (UBICADOS EN NIVEL RAÍZ DEL BODY) -->
+<!-- ========================================================================= -->
+
+                            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- 1. MODAL ADICIÓN Y RETIRO DE MATERIAS -->
                 <div class="modal fade" id="modalSolicitudAdicionRetiro" tabindex="-1" role="dialog" aria-labelledby="modalSolicitudAdicionRetiroLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
                         <div class="modal-content shadow border-info">
@@ -1700,11 +1707,11 @@ include("includes/head.php");
             <div class="modal fade" id="modalNoAptoIntensivo" tabindex="-1" role="dialog" aria-labelledby="modalNoAptoIntensivoLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content border-danger shadow">
-                        <div class="modal-header bg-danger text-white">
-                            <h5 class="modal-title font-weight-bold text-uppercase" id="modalNoAptoIntensivoLabel">
+                        <div class="modal-header bg-danger text-white justify-content-center position-relative">
+                            <h5 class="modal-title font-weight-bold text-uppercase text-center" id="modalNoAptoIntensivoLabel">
                                 <i class="fas fa-exclamation-circle mr-2"></i> TRÁMITE NO PERMITIDO
                             </h5>
-                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                            <button type="button" class="close text-white position-absolute" style="right: 15px; top: 15px;" data-dismiss="modal" aria-label="Cerrar">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
@@ -1712,17 +1719,17 @@ include("includes/head.php");
                             <div class="mb-3">
                                 <i class="fas fa-user-slash text-danger" style="font-size: 3.5rem;"></i>
                             </div>
-                            <h5 class="font-weight-bold text-danger text-uppercase mb-3">NO TE ENCUENTRAS APTO PARA INTENSIVO</h5>
-                            <div class="alert alert-warning text-uppercase small font-weight-bold text-left mb-3">
+                            <h5 class="font-weight-bold text-danger text-uppercase mb-3 text-center">NO TE ENCUENTRAS APTO PARA INTENSIVO</h5>
+                            <div class="alert alert-warning text-uppercase small font-weight-bold text-center mb-3">
                                 <i class="fas fa-info-circle mr-1"></i>
                                 ESTIMADO(A) <strong><?php echo htmlspecialchars(mb_strtoupper($estudiante['nombre'], 'UTF-8')); ?></strong> (CÉDULA: <?php echo htmlspecialchars($estudiante['idusuario']); ?>), USTED NO CUMPLE CON LOS REQUISITOS ACADÉMICOS NECESARIOS O SU ESTATUS ACTUAL NO PERMITE PROCESAR UNA CONSTANCIA DE CURSO INTENSIVO EN ESTE PERÍODO.
                             </div>
-                            <p class="text-muted text-uppercase small mb-0 font-weight-bold">
+                            <p class="text-muted text-uppercase small mb-0 font-weight-bold text-center">
                                 SI CONSIDERAS QUE ESTO ES UN ERROR O NECESITAS ORIENTACIÓN SOBRE TU EXPEDIENTE ACADÉMICO, POR FAVOR ACUDE A LA OFICINA DE <strong>CONTROL DE ESTUDIOS</strong>.
                             </p>
                         </div>
-                        <div class="modal-footer bg-light">
-                            <button type="button" class="btn btn-secondary font-weight-bold text-uppercase px-4" data-dismiss="modal">
+                        <div class="modal-footer bg-light justify-content-center">
+                            <button type="button" class="btn btn-secondary font-weight-bold text-uppercase px-4 shadow-sm" data-dismiss="modal">
                                 <i class="fas fa-times mr-1"></i> ENTENDIDO
                             </button>
                         </div>
@@ -1734,11 +1741,11 @@ include("includes/head.php");
             <div class="modal fade" id="modalNoAptoExtraordinario" tabindex="-1" role="dialog" aria-labelledby="modalNoAptoExtraordinarioLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content border-danger shadow">
-                        <div class="modal-header bg-danger text-white">
-                            <h5 class="modal-title font-weight-bold text-uppercase" id="modalNoAptoExtraordinarioLabel">
+                        <div class="modal-header bg-danger text-white justify-content-center position-relative">
+                            <h5 class="modal-title font-weight-bold text-uppercase text-center" id="modalNoAptoExtraordinarioLabel">
                                 <i class="fas fa-exclamation-triangle mr-2"></i> TRÁMITE NO PERMITIDO
                             </h5>
-                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                            <button type="button" class="close text-white position-absolute" style="right: 15px; top: 15px;" data-dismiss="modal" aria-label="Cerrar">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
@@ -1746,17 +1753,17 @@ include("includes/head.php");
                             <div class="mb-3">
                                 <i class="fas fa-file-excel text-danger" style="font-size: 3.5rem;"></i>
                             </div>
-                            <h5 class="font-weight-bold text-danger text-uppercase mb-3">NO APTO PARA EVALUACIÓN EXTRAORDINARIA</h5>
-                            <div class="alert alert-danger text-uppercase small font-weight-bold text-left mb-3">
+                            <h5 class="font-weight-bold text-danger text-uppercase mb-3 text-center">NO APTO PARA EVALUACIÓN EXTRAORDINARIA</h5>
+                            <div class="alert alert-danger text-uppercase small font-weight-bold text-center mb-3">
                                 <i class="fas fa-info-circle mr-1"></i>
                                 ESTIMADO(A) <strong><?php echo htmlspecialchars(mb_strtoupper($estudiante['nombre'], 'UTF-8')); ?></strong> (CÉDULA: <?php echo htmlspecialchars($estudiante['idusuario']); ?>), USTED NO CUENTA CON MATERIAS REPROBADAS NI REGISTRO DE ASIGNATURAS APLAZADAS EN SU EXPEDIENTE QUE REQUIERAN O CALIFIQUEN PARA PRESENTAR UNA EVALUACIÓN EXTRAORDINARIA.
                             </div>
-                            <p class="text-muted text-uppercase small mb-0 font-weight-bold">
+                            <p class="text-muted text-uppercase small mb-0 font-weight-bold text-center">
                                 SI CONSIDERAS QUE EXISTE ALGUNA INCONSISTENCIA EN TUS NOTAS, POR FAVOR ACUDE A LA OFICINA DE <strong>CONTROL DE ESTUDIOS</strong> PARA REVISAR TU HISTORIAL ACADÉMICO.
                             </p>
                         </div>
-                        <div class="modal-footer bg-light">
-                            <button type="button" class="btn btn-secondary font-weight-bold text-uppercase px-4" data-dismiss="modal">
+                        <div class="modal-footer bg-light justify-content-center">
+                            <button type="button" class="btn btn-secondary font-weight-bold text-uppercase px-4 shadow-sm" data-dismiss="modal">
                                 <i class="fas fa-times mr-1"></i> ENTENDIDO
                             </button>
                         </div>
@@ -1768,11 +1775,11 @@ include("includes/head.php");
             <div class="modal fade" id="modalNoAptoPasantias" tabindex="-1" role="dialog" aria-labelledby="modalNoAptoPasantiasLabel" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content border-warning shadow">
-                        <div class="modal-header bg-warning text-dark">
-                            <h5 class="modal-title font-weight-bold text-uppercase" id="modalNoAptoPasantiasLabel">
+                        <div class="modal-header bg-warning text-dark justify-content-center position-relative">
+                            <h5 class="modal-title font-weight-bold text-uppercase text-center" id="modalNoAptoPasantiasLabel">
                                 <i class="fas fa-exclamation-circle mr-2"></i> TRÁMITE NO DISPONIBLE
                             </h5>
-                            <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Cerrar">
+                            <button type="button" class="close text-dark position-absolute" style="right: 15px; top: 15px;" data-dismiss="modal" aria-label="Cerrar">
                                 <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
@@ -1780,17 +1787,17 @@ include("includes/head.php");
                             <div class="mb-3">
                                 <i class="fas fa-briefcase text-warning" style="font-size: 3.5rem;"></i>
                             </div>
-                            <h5 class="font-weight-bold text-dark text-uppercase mb-3">RESERVADO PARA TRAYECTO I O SUPERIOR</h5>
-                            <div class="alert alert-warning text-uppercase small font-weight-bold text-left mb-3">
+                            <h5 class="font-weight-bold text-dark text-uppercase mb-3 text-center">RESERVADO PARA TRAYECTO I O SUPERIOR</h5>
+                            <div class="alert alert-warning text-uppercase small font-weight-bold text-center mb-3">
                                 <i class="fas fa-info-circle mr-1"></i>
                                 ESTIMADO(A) <strong><?php echo htmlspecialchars(mb_strtoupper($estudiante['nombre'], 'UTF-8')); ?></strong> (CÉDULA: <?php echo htmlspecialchars($estudiante['idusuario']); ?>), LA INSCRIPCIÓN EN PASANTÍAS Y PROYECTO SOCIOINTEGRADOR ESTÁ DESTINADA A ESTUDIANTES QUE SE ENCUENTRAN CURSANDO TRAYECTO I O SUPERIOR DEL PNF. SU UBICACIÓN ACTUAL ES <strong><?php echo htmlspecialchars(mb_strtoupper($estudiante['trayecto_nombre'], 'UTF-8')); ?></strong>.
                             </div>
-                            <p class="text-muted text-uppercase small mb-0 font-weight-bold">
+                            <p class="text-muted text-uppercase small mb-0 font-weight-bold text-center">
                                 UNA VEZ CULMINADO Y APROBADO EL TRAYECTO INICIAL (TRAYECTO 0), PODRÁS SOLICITAR TU CONSTANCIA DE INSCRIPCIÓN EN PASANTÍAS / PROYECTO.
                             </p>
                         </div>
-                        <div class="modal-footer bg-light">
-                            <button type="button" class="btn btn-secondary font-weight-bold text-uppercase px-4" data-dismiss="modal">
+                        <div class="modal-footer bg-light justify-content-center">
+                            <button type="button" class="btn btn-secondary font-weight-bold text-uppercase px-4 shadow-sm" data-dismiss="modal">
                                 <i class="fas fa-times mr-1"></i> ENTENDIDO
                             </button>
                         </div>
@@ -1798,10 +1805,7 @@ include("includes/head.php");
                 </div>
             </div>
 
-            <?php endif; ?>
-        </div>
-    </div>
-</div>
+
 
 <style>
     .dashboard-header {
@@ -1810,11 +1814,11 @@ include("includes/head.php");
         border-radius: 10px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     }
-    .card {
+    .container-fluid .card {
         border-radius: 10px;
         transition: transform 0.2s;
     }
-    .card:hover {
+    .container-fluid .card:hover {
         transform: translateY(-3px);
         box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1) !important;
     }
@@ -1829,9 +1833,46 @@ include("includes/head.php");
     .bg-secondary-light { background-color: #f2f2f2; }
     .bg-dark-light { background-color: #e9ecef; }
     
+    /* MODALES: TOTALMENTE AISLADOS Y POR ENCIMA DE HEAD Y FOOTER */
+    .modal-backdrop {
+        z-index: 1070 !important;
+    }
+    .modal {
+        z-index: 1080 !important;
+        padding-top: 25px !important;
+        padding-bottom: 75px !important; /* Margen para no chocar con footer fixed */
+        overflow-y: auto !important;
+    }
+    .modal-dialog {
+        margin: 1.25rem auto !important;
+        max-width: 95%;
+    }
+    @media (min-width: 576px) {
+        .modal-dialog { max-width: 580px; }
+        .modal-dialog.modal-lg { max-width: 850px; }
+        .modal-dialog.modal-xl { max-width: 92vw; }
+    }
+    .modal-content {
+        border-radius: 12px !important;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.35) !important;
+        max-height: calc(100vh - 120px) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+    }
+    .modal-body {
+        max-height: calc(100vh - 230px) !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+    
     @media (max-width: 768px) {
         .col-md-4, .col-md-8 {
             padding: 0 15px;
+        }
+        .modal {
+            padding-top: 15px !important;
+            padding-bottom: 70px !important;
         }
     }
 </style>

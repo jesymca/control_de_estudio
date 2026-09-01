@@ -1,5 +1,9 @@
 <?php
 require_once('../funciones/functions.php');
+
+cargarPermisosUsuario();
+verificarPermiso('actas_calificacion');
+visita();
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 

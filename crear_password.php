@@ -1,7 +1,7 @@
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
-$titulo ="Crear Password";
+$titulo = "Crear Contraseña - " . ($siglas_institucion ?? "UPTPC");
 include('funciones/functions.php');
 
 $idUser =   $_REQUEST['id'] = isset($_REQUEST['id']) ? $_REQUEST['id'] : "";
@@ -78,7 +78,7 @@ if ($control !== $rowControl){
 
 <div class="container text-center">
 
-        <?php echo $logopertenenciag; ?>
+        <div class="d-flex align-items-center justify-content-between px-3"><?php echo $logopertenencia; ?><?php echo $logo_mppeu; ?></div>
        
 </div>
 <hr>

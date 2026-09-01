@@ -132,6 +132,11 @@ visita();
         <div class="dashboard-header p-4 mb-5 text-center">
             <h1 class="display-4 font-weight-bold"><i class="fas fa-chalkboard-teacher mr-3"></i>Panel de Director de Carrera</h1>
             <p class="lead mb-0">Bienvenido, <?php echo $_SESSION['user']['nombre'] ?? 'Director'; ?></p>
+            <div class="mt-2">
+                <span class="badge badge-pill shadow-sm px-3 py-2 text-uppercase font-weight-bold text-white" style="background-color: rgba(255,255,255,0.25); font-size: 0.88rem; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.4);">
+                    <i class="fas fa-user-tie mr-1"></i> Panel de Director de Carrera
+                </span>
+            </div>
         </div>
 
         <!-- Tarjetas de acceso -->
@@ -178,6 +183,22 @@ visita();
                 </div>
             </div>
 
+                        <!-- Tarjeta de Control y Seguimiento de Notas -->
+            <div class="col-md-5 mb-4">
+                <div class="card feature-card h-100 shadow-sm border-0" style="border-radius: 12px; transition: transform 0.2s;">
+                    <div class="card-body text-center p-4">
+                        <div class="card-icon" style="color: #fd7e14; font-size: 2.5rem; margin-bottom: 1rem;">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <h3 class="card-title h4 font-weight-bold">Notas de Profesores</h3>
+                        <p class="card-text text-muted">Supervise si los docentes de su carrera han subido las calificaciones de sus secciones</p>
+                        <a href="seguimiento_notas.php" class="btn btn-warning font-weight-bold text-white mt-3 px-4 shadow-sm" style="background-color: #fd7e14; border-color: #fd7e14; border-radius: 8px;">
+                            <i class="fas fa-chart-line mr-1"></i> Supervisar Notas
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- Tarjeta de Gestionar Horarios de Secciones -->
             <div class="col-md-5 mb-4">
                 <div class="card feature-card horario-card h-100">
@@ -201,11 +222,3 @@ visita();
     </div>
 
     <?php include("includes/footer.php"); ?>
-
-    <!-- Popper and Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.min.js"></script>
-
-    
-</body>
-</html>

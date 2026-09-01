@@ -5,7 +5,7 @@ ini_set('display_errors', '1');
 require_once('../funciones/functions.php');
 
 cargarPermisosUsuario();
-verificarPermiso('admin');
+verificarPermiso('preinscripciones');
 visita();
 
 $success_message = '';

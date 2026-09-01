@@ -6,6 +6,10 @@
 if (isset($_POST['ajax_buscar_estudiantes'])) {
     ob_start();
     require_once(__DIR__ . '/../funciones/functions.php');
+
+cargarPermisosUsuario();
+verificarPermiso('constancias');
+visita();
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -20,6 +24,10 @@ if (isset($_POST['ajax_buscar_estudiantes'])) {
 }
 
 require_once(__DIR__ . '/../funciones/functions.php');
+
+cargarPermisosUsuario();
+verificarPermiso('constancias');
+visita();
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

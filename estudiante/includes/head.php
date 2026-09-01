@@ -84,8 +84,16 @@ if (isset($_SESSION['user']['id'])) {
 
     /* NAVBAR FIJO */
     .navbar {
-        z-index: 1060;
+        z-index: 1030;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+
+    /* MODALES Y BACKDROP - POR ENCIMA DE NAVBAR Y FOOTER */
+    .modal-backdrop {
+        z-index: 1070 !important;
+    }
+    .modal {
+        z-index: 1080 !important;
     }
 
     /* DROPDOWNS MEJORADOS */
@@ -271,6 +279,11 @@ if (isset($_SESSION['user']['id'])) {
     <div class="row">
         <div class="col-sm-6">
             <b class="mt-5"><?php echo 'Bienvenido ' .$_SESSION['user']['nombre']; ?></b>
+            <div class="mt-1 mb-2">
+                <span class="badge badge-pill shadow-sm px-3 py-1 text-uppercase font-weight-bold text-white" style="background-color: #17a2b8; font-size: 0.8rem; letter-spacing: 0.5px;">
+                    <i class="fas fa-user-graduate mr-1"></i> Panel del Estudiante
+                </span>
+            </div>
         </div>
 
         <div class="col-sm-6">

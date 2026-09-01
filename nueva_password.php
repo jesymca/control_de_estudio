@@ -3,7 +3,7 @@
 session_start();
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
-$titulo = "Nueva Contraseña - UPT-PC";
+$titulo = "Nueva Contraseña - " . ($siglas_institucion ?? "UPTPC");
 include('funciones/functions.php');
 
 $token = $_GET['token'] ?? '';
@@ -92,28 +92,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             mysqli_stmt_bind_param($stmt_marcar, "s", $token);
             mysqli_stmt_execute($stmt_marcar);
             
-            // Enviar correo de confirmación
-            $asunto = "✅ Tu contraseña ha sido cambiada - UPT-PC";
+            // Enviar correo de confirmación conectado a variables centralizadas
+            $asunto = "✅ Tu contraseña ha sido cambiada - " . ($siglas_institucion ?? "UPTPC");
             $cuerpo = "
             <!DOCTYPE html>
             <html>
             <head>
                 <meta charset='UTF-8'>
-                <title>Contraseña Actualizada - UPT-PC</title>
+                <title>Contraseña Actualizada - " . htmlspecialchars($siglas_institucion ?? "UPTPC") . "</title>
             </head>
             <body style='font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;'>
                 <div style='max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden;'>
                     <div style='background: #00509e; padding: 20px; text-align: center;'>
-                        <h2 style='color: white; margin: 0;'>🏛️ UPT-PC</h2>
-                        <p style='color: #cce5ff; margin: 0;'>Universidad Politécnica Territorial de Puerto Cabello</p>
+                        <h2 style='color: white; margin: 0;'>🏛️ " . htmlspecialchars($siglas_institucion ?? "UPTPC") . "</h2>
+                        <p style='color: #cce5ff; margin: 0;'>" . htmlspecialchars($nombre_empresa ?? "Universidad Politécnica Territorial de Puerto Cabello") . "</p>
+                        <p style='color: #cce5ff; margin: 3px 0 0; font-size: 12px;'>" . htmlspecialchars($nombre_sistema ?? "Sistema de Control de Estudios") . "</p>
                     </div>
                     <div style='padding: 25px;'>
-                        <h2 style='color: #003366;'>Estimado(a), $user_nombre</h2>
-                        <p>Te confirmamos que tu contraseña ha sido <strong style='color: green;'>cambiada exitosamente</strong> en el Sistema de Control de Estudios de la UPTPC.</p>
+                        <h2 style='color: #003366;'>Estimado(a), " . htmlspecialchars($user_nombre) . "</h2>
+                        <p>Te confirmamos que tu contraseña ha sido <strong style='color: green;'>cambiada exitosamente</strong> en el " . htmlspecialchars($nombre_sistema ?? "Sistema de Control de Estudios") . " de la " . htmlspecialchars($nombre_empresa ?? "UPTPC") . " (" . htmlspecialchars($siglas_institucion ?? "UPTPC") . ").</p>
                         <p>Si no realizaste este cambio, contacta al administrador del sistema inmediatamente.</p>
                         <hr>
                         <p style='color: #999; font-size: 12px;'>Este es un mensaje automático, por favor no responder.</p>
-                        <p style='color: #999; font-size: 12px;'>© " . date('Y') . " - Universidad Politécnica Territorial de Puerto Cabello</p>
+                        <p style='color: #999; font-size: 12px;'>© " . date('Y') . " - " . htmlspecialchars($nombre_empresa ?? "UPTPC") . "</p>
                     </div>
                 </div>
             </body>
@@ -136,7 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <html>
 <head>
     <?php echo $bootstrap_head; ?>
-    <title>Nueva Contraseña - UPT-PC</title>
+    <title><?php echo $titulo; ?></title>
 </head>
 <body>
 <div class="container text-center">

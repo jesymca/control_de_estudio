@@ -5,6 +5,9 @@ ini_set('display_errors', '1');
 $titulopag = "Lista de estudiantes";
 include('../funciones/functions.php');
 
+cargarPermisosUsuario();
+verificarPermiso('ver_estudiantes');
+
 // Verificar permiso de edición de estudiantes
 $puedeEditar = isset($_SESSION['user']['editar_estudiante']) && $_SESSION['user']['editar_estudiante'] == 1;
 

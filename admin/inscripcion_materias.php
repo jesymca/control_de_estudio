@@ -7,7 +7,7 @@ include('../funciones/functions.php');
 
 // CARGAR PERMISOS
 cargarPermisosUsuario();
-verificarPermiso('admin');
+verificarPermiso('inscripcion_materias');
 
 // LLAMAR A LA FUNCIÓN DE VISITA
 visita();

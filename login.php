@@ -123,19 +123,6 @@ unset($_SESSION['msg']);
 </div>
 </div>
 
-<footer class="bg-dark text-white py-4 mt-5">
-    <div class="container-fluid text-center">
-        <p class="mb-2">
-            Potenciado por la <a href="https://www.uptpc.edu.ve/ciencia-y-tecnolog%C3%ADa" target="_blank" rel="noopener noreferrer" class="text-info font-weight-bold">Unidad de Ciencia y Tecnología de la UPTPC</a>
-        </p>
-        <p class="mb-1 small text-light">
-            &copy; <?php echo date('Y'); ?> Universidad Politécnica Territorial de Puerto Cabello. Reservados Todos los Derechos.
-        </p>
-        <p class="mb-0 small text-muted">
-            Licencia de uso: <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" rel="noopener noreferrer" class="text-light text-decoration-underline">CC BY-NC-ND 4.0</a> | 
-            <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer" class="text-light text-decoration-underline">Licencia Pública General Apache 3.0</a>
-        </p>
-    </div>
-</footer>
+<?php echo $footer_institucional; ?>
 </body>
 </html>

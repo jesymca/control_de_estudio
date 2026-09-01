@@ -106,17 +106,32 @@ $disponibilidad_json = json_encode($disponibilidad_trimestres);
                     <h6><i class="fas fa-paperclip"></i> Soporte del Grupo <span class="text-danger">*</span></h6>
                 </div>
                 <div class="card-body">
-                    <div class="form-group">
-                        <label for="soporte_grupo"><strong>Imagen/PDF de Soporte (OBLIGATORIO):</strong></label>
-                        <input type="file" name="soporte_grupo" id="soporte_grupo"
-                               class="form-control-file soporte-grupo" 
-                               accept=".jpg,.jpeg,.png,.gif,.webp,.pdf" required>
-                        <small class="form-text text-muted">Formatos permitidos: JPG, PNG, GIF, WEBP, PDF. Máx: 5MB. <strong class="text-danger">Obligatorio</strong></small>
+                    <div class="form-group mb-3">
+                        <label for="soporte_grupo" class="font-weight-bold">
+                            <i class="fas fa-file-upload mr-1"></i> Seleccionar Imagen o PDF de Soporte (OBLIGATORIO):
+                        </label>
+                        <div class="custom-file">
+                            <input type="file" name="soporte_grupo" id="soporte_grupo"
+                                   class="custom-file-input soporte-grupo" 
+                                   accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,application/pdf,image/*" required>
+                            <label class="custom-file-label" id="label-soporte-grupo" for="soporte_grupo">Elegir archivo PDF o Imagen...</label>
+                        </div>
+                        <small class="form-text text-muted mt-1">
+                            <i class="fas fa-info-circle mr-1"></i> Formatos permitidos: <strong>PDF, JPG, PNG, WEBP</strong>. Máximo 5MB. <strong class="text-danger">* Obligatorio para guardar</strong>
+                        </small>
                     </div>
-                    <div class="form-group">
-                        <label><strong>Vista Previa:</strong></label>
-                        <div id="preview-grupo" class="mt-2"><small class="text-muted">No se ha seleccionado ningún archivo</small></div>
-                        <small id="nombre-archivo-grupo">Ningún archivo seleccionado</small>
+                    
+                    <div class="form-group mb-0">
+                        <label class="font-weight-bold text-dark d-flex justify-content-between align-items-center">
+                            <span><i class="fas fa-eye mr-1"></i> Vista Previa del Documento:</span>
+                            <span id="info-archivo-soporte" class="small text-muted font-weight-normal"></span>
+                        </label>
+                        <div id="preview-grupo" class="p-2 border rounded bg-light text-center" style="min-height: 80px; transition: all 0.3s ease;">
+                            <div class="py-3 text-muted">
+                                <i class="fas fa-cloud-upload-alt fa-2x mb-1 text-secondary"></i>
+                                <p class="mb-0 small">No se ha seleccionado ningún archivo de soporte aún.</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -425,32 +440,89 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-document.addEventListener('DOMContentLoaded', function() {
-    const soporteGrupo = document.getElementById('soporte_grupo');
-    const previewGrupo = document.getElementById('preview-grupo');
-    const nombreArchivoGrupo = document.getElementById('nombre-archivo-grupo');
+function initSoportePreview() {
+    const inputSoporte = document.getElementById('soporte_grupo');
+    const previewBox = document.getElementById('preview-grupo');
+    const labelSoporte = document.getElementById('label-soporte-grupo');
+    const infoSoporte = document.getElementById('info-archivo-soporte');
     
-    if (soporteGrupo) {
-        soporteGrupo.addEventListener('change', function() {
-            const file = this.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    if (file.type.startsWith('image/')) {
-                        previewGrupo.innerHTML = `<img src="${e.target.result}" class="img-thumbnail" style="max-height:150px;">`;
-                    } else {
-                        previewGrupo.innerHTML = `<div class="alert alert-info text-center"><i class="fas fa-file-pdf fa-3x"></i><br><strong>Archivo PDF</strong></div>`;
-                    }
-                    nombreArchivoGrupo.textContent = file.name;
-                }
-                reader.readAsDataURL(file);
-            } else {
-                previewGrupo.innerHTML = '<small class="text-muted">No se ha seleccionado ningún archivo</small>';
-                nombreArchivoGrupo.textContent = 'Ningún archivo seleccionado';
-            }
-        });
-    }
-});
+    if (!inputSoporte || !previewBox) return;
+
+    inputSoporte.onchange = function() {
+        const file = this.files[0];
+        if (!file) {
+            if (labelSoporte) labelSoporte.textContent = 'Elegir archivo PDF o Imagen...';
+            if (infoSoporte) infoSoporte.textContent = '';
+            previewBox.innerHTML = `
+                <div class="py-3 text-muted">
+                    <i class="fas fa-cloud-upload-alt fa-2x mb-1 text-secondary"></i>
+                    <p class="mb-0 small">No se ha seleccionado ningún archivo de soporte aún.</p>
+                </div>`;
+            return;
+        }
+
+        const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        const fileName = file.name;
+        if (labelSoporte) labelSoporte.textContent = fileName;
+        if (infoSoporte) infoSoporte.innerHTML = `<span class="badge badge-info">${file.type || 'Archivo'}</span> <span class="badge badge-secondary">${fileSizeMB} MB</span>`;
+
+        const fileUrl = URL.createObjectURL(file);
+
+        if (file.type === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
+            previewBox.innerHTML = `
+                <div class="text-left mb-2 d-flex justify-content-between align-items-center bg-white p-2 border rounded shadow-sm">
+                    <div>
+                        <i class="fas fa-file-pdf text-danger fa-lg mr-2"></i>
+                        <strong class="text-dark">${fileName}</strong>
+                        <span class="text-muted small ml-2">(${fileSizeMB} MB)</span>
+                    </div>
+                    <div>
+                        <a href="${fileUrl}" target="_blank" class="btn btn-xs btn-outline-danger btn-sm font-weight-bold mr-1 py-1 px-2">
+                            <i class="fas fa-external-link-alt mr-1"></i> Pantalla Completa
+                        </a>
+                        <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-1 px-2" onclick="document.getElementById('soporte_grupo').value=''; document.getElementById('soporte_grupo').onchange();">
+                            <i class="fas fa-times mr-1"></i> Quitar
+                        </button>
+                    </div>
+                </div>
+                <div style="height: 400px; width: 100%; border-radius: 6px; overflow: hidden; border: 1px solid #dee2e6;">
+                    <iframe src="${fileUrl}" style="width: 100%; height: 100%; border: none; background-color: #525659;"></iframe>
+                </div>
+            `;
+        } else if (file.type.startsWith('image/')) {
+            previewBox.innerHTML = `
+                <div class="text-left mb-2 d-flex justify-content-between align-items-center bg-white p-2 border rounded shadow-sm">
+                    <div>
+                        <i class="fas fa-image text-success fa-lg mr-2"></i>
+                        <strong class="text-dark">${fileName}</strong>
+                        <span class="text-muted small ml-2">(${fileSizeMB} MB)</span>
+                    </div>
+                    <div>
+                        <a href="${fileUrl}" target="_blank" class="btn btn-xs btn-outline-success btn-sm font-weight-bold mr-1 py-1 px-2">
+                            <i class="fas fa-search-plus mr-1"></i> Ver en Grande
+                        </a>
+                        <button type="button" class="btn btn-xs btn-outline-secondary btn-sm py-1 px-2" onclick="document.getElementById('soporte_grupo').value=''; document.getElementById('soporte_grupo').onchange();">
+                            <i class="fas fa-times mr-1"></i> Quitar
+                        </button>
+                    </div>
+                </div>
+                <div class="p-2 bg-white rounded border text-center">
+                    <img src="${fileUrl}" class="img-fluid rounded shadow-sm" style="max-height: 350px; object-fit: contain;">
+                </div>
+            `;
+        } else {
+            previewBox.innerHTML = `
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-file mr-1"></i> Archivo seleccionado: <strong>${fileName}</strong> (${fileSizeMB} MB)
+                </div>
+            `;
+        }
+    };
+}
+
+// Ejecutar inmediatamente
+initSoportePreview();
+
 </script>
 
 <style>

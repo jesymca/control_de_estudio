@@ -3,8 +3,8 @@
 $__saved_GET = $_GET;
 unset($_GET['materia_id'], $_GET['seccion_id'], $_GET['docente_id'], $_GET['periodo_id']);
 
-require_once('../funciones/functions.php');
-require_once('../fpdf/fpdf.php');
+require_once(__DIR__ . '/../funciones/functions.php');
+require_once(__DIR__ . '/../fpdf/fpdf.php');
 
 // Restaurar GET original
 $_GET = $__saved_GET;

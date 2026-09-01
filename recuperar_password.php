@@ -2,7 +2,7 @@
 // recuperar_password.php - CORREGIDO (bloqueo ANTES que todo)
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
-$titulo = "Recuperar Contraseña - UPTPC";
+$titulo = "Recuperar Contraseña - " . ($siglas_institucion ?? "UPTPC");
 include('funciones/functions.php');
 include('funciones/seguridad.php');
 
@@ -129,28 +129,28 @@ if (!empty($email)) {
 
 
     
-    // Enviar correo
-    $asunto = "🔐 Recupera tu contraseña - Sistema de Control de Estudios UPTPC";
+    // Enviar correo conectado a variables centralizadas
+    $asunto = "🔐 Recupera tu contraseña - " . ($nombre_sistema ?? "Sistema de Control de Estudios") . " " . ($siglas_institucion ?? "UPTPC");
     $cuerpo = "
     <!DOCTYPE html>
     <html>
     <head>
         <meta charset='UTF-8'>
-        <title>Recuperar Contraseña UPTPC</title>
+        <title>Recuperar Contraseña " . htmlspecialchars($siglas_institucion ?? "UPTPC") . "</title>
     </head>
     <body style='font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px;'>
         <div style='max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.1);'>
             
             <div style='background: linear-gradient(135deg, #003366 0%, #00509e 100%); padding: 30px 20px; text-align: center;'>
-                <h1 style='color: #ffffff; margin: 0; font-size: 28px;'>🏛️ UPTPC</h1>
-                <p style='color: #ffd700; margin: 5px 0 0; font-size: 14px;'>Universidad Politécnica Territorial de Puerto Cabello</p>
-                <p style='color: #cce5ff; margin: 5px 0 0; font-size: 12px;'>Sistema de Control de Estudios</p>
+                <h1 style='color: #ffffff; margin: 0; font-size: 28px;'>🏛️ " . htmlspecialchars($siglas_institucion ?? "UPTPC") . "</h1>
+                <p style='color: #ffd700; margin: 5px 0 0; font-size: 14px;'>" . htmlspecialchars($nombre_empresa ?? "Universidad Politécnica Territorial de Puerto Cabello") . "</p>
+                <p style='color: #cce5ff; margin: 5px 0 0; font-size: 12px;'>" . htmlspecialchars($nombre_sistema ?? "Sistema de Control de Estudios") . "</p>
             </div>
             
             <div style='padding: 30px 25px;'>
-                <h2 style='color: #003366; margin-top: 0;'>Estimado(a), $nombre_usuario</h2>
+                <h2 style='color: #003366; margin-top: 0;'>Estimado(a), " . htmlspecialchars($nombre_usuario) . "</h2>
                 
-                <p style='color: #333; font-size: 16px; line-height: 1.5;'>Recibimos una solicitud para restablecer la contraseña de tu cuenta en el <strong>Sistema de Control de Estudios de la Universidad Politécnica Territorial de Puerto Cabello (UPTPC)</strong>.</p>
+                <p style='color: #333; font-size: 16px; line-height: 1.5;'>Recibimos una solicitud para restablecer la contraseña de tu cuenta en el <strong>" . htmlspecialchars($nombre_sistema ?? "Sistema de Control de Estudios") . " de la " . htmlspecialchars($nombre_empresa ?? "Universidad Politécnica Territorial de Puerto Cabello") . " (" . htmlspecialchars($siglas_institucion ?? "UPTPC") . ")</strong>.</p>
                 
                 <p style='color: #333; font-size: 16px; line-height: 1.5;'>Para continuar y crear una nueva contraseña, haz clic en el siguiente botón:</p>
                 
@@ -175,7 +175,10 @@ if (!empty($email)) {
                 </div>
             </div>
             
-            
+            <div style='background-color: #f8f9fa; padding: 15px; text-align: center; border-top: 1px solid #e9ecef; font-size: 11px; color: #6c757d;'>
+                <p style='margin: 0;'>" . htmlspecialchars($nombre_empresa ?? "") . " - " . htmlspecialchars($siglas_institucion ?? "") . "</p>
+                <p style='margin: 3px 0 0;'>" . htmlspecialchars($direccion_empresa ?? "") . "</p>
+            </div>
         </div>
     </body>
     </html>";
@@ -195,7 +198,7 @@ if (!empty($email)) {
     <link rel="icon" href="images/favicon/favicon-32x32.png" sizes="32x32" type="image/png">
     <link rel="icon" href="images/favicon/favicon-16x16.png" sizes="16x16" type="image/png">
     <link rel="icon" href="images/favicon/favicon.ico">
-    <title>Recuperar Contraseña - UPTPC</title>
+    <title><?php echo $titulo; ?></title>
 </head>
 <body>
 
@@ -219,7 +222,7 @@ if (!empty($email)) {
         <div class="col-sm-12 col-md-6">
             <h3 class="text-center text-uppercase" style="color: #003366;">🏛️ Recuperar Contraseña</h3>
             <h5 class="text-center text-muted"><?php echo $nombre_empresa; ?></h5>
-            <h6 class="text-center text-muted mb-4">Sistema de Control de Estudios</h6>
+            <h6 class="text-center text-muted mb-4"><?php echo $nombre_sistema; ?></h6>
             
             <form class="was-validated" method="post" action="recuperar_password.php" autocomplete="off">
                 
@@ -255,27 +258,13 @@ if (!empty($email)) {
             <hr>
             <div class="text-center">
                 <small class="text-muted">
-                    <i class="fa fa-university"></i> UPTPC - Sistema de Control de Estudios<br>
-                    Universidad Politécnica Territorial de Puerto Cabello
+                    <i class="fa fa-university"></i> <?php echo $siglas_institucion; ?> - <?php echo $nombre_sistema; ?><br><?php echo $nombre_empresa; ?>
                 </small>
             </div>
         </div>
     </div>
 </div>
 
-<footer class="bg-dark text-white py-4 mt-5">
-    <div class="container-fluid text-center">
-        <p class="mb-2">
-            Potenciado por la <a href="https://www.uptpc.edu.ve/ciencia-y-tecnolog%C3%ADa" target="_blank" rel="noopener noreferrer" class="text-info font-weight-bold">Unidad de Ciencia y Tecnología de la UPTPC</a>
-        </p>
-        <p class="mb-1 small text-light">
-            &copy; <?php echo date('Y'); ?> Universidad Politécnica Territorial de Puerto Cabello. Reservados Todos los Derechos.
-        </p>
-        <p class="mb-0 small text-muted">
-            Licencia de uso: <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" rel="noopener noreferrer" class="text-light text-decoration-underline">CC BY-NC-ND 4.0</a> | 
-            <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer" class="text-light text-decoration-underline">Licencia Pública General Apache 3.0</a>
-        </p>
-    </div>
-</footer>
+<?php echo $footer_institucional; ?>
 </body>
 </html>

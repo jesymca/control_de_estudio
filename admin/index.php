@@ -245,6 +245,11 @@ visita();
                 <i class="fas fa-tachometer-alt mr-2 mr-md-3"></i>Panel de Administración
             </h1>
             <p class="lead mb-0 text-break">Bienvenido, <?php echo htmlspecialchars($_SESSION['user']['nombre'] ?? 'Administrador'); ?></p>
+            <div class="mt-2">
+                <span class="badge badge-pill shadow-sm px-3 py-2 text-uppercase font-weight-bold text-white" style="background-color: rgba(255,255,255,0.25); font-size: 0.88rem; letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.4);">
+                    <i class="fas fa-user-shield mr-1"></i> Panel de Administración
+                </span>
+            </div>
         </div>
 
         <!-- Tarjetas de acceso responsive -->

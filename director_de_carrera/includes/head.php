@@ -221,6 +221,13 @@ if (!isLoggedIn() || !isUser()) {
             </li>
 
             <!-- Menú de Ajustes -->
+                        <!-- Menú: Control de Notas de Profesores -->
+            <li class="nav-item">
+              <a class="nav-link" href="seguimiento_notas.php" title="Control y Seguimiento de Notas de Profesores">
+                <i class="fas fa-clipboard-check fa-fw"></i> Notas de Profesores
+              </a>
+            </li>
+
             <li id="dropdown-ajustes-director" class="nav-item dropdown">
                 <a title="Ir a Ajustes" class="nav-link dropdown-toggle" href="#" id="navbarDropdownAjustesDirector" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     <i class="fa fa-cogs fa-fw"></i> Ajustes
@@ -255,6 +262,11 @@ if (!isLoggedIn() || !isUser()) {
     <div class="row">
         <div class="col-sm-6">
             <b class="mt-5"><?php echo 'Bienvenido ' .$_SESSION['user']['nombre']; ?></b>
+            <div class="mt-1 mb-2">
+                <span class="badge badge-pill shadow-sm px-3 py-1 text-uppercase font-weight-bold text-white" style="background-color: #fd7e14; font-size: 0.8rem; letter-spacing: 0.5px;">
+                    <i class="fas fa-user-tie mr-1"></i> Panel de Director de Carrera
+                </span>
+            </div>
         </div>
         <div class="col-sm-6">
             <?php

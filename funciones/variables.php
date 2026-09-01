@@ -23,10 +23,22 @@
 
     $nombre_empresa      = 'UNIVERSIDAD POLITÉCNICA TERRITORIAL DE PUERTO CABELLO';
     $siglas_institucion  = 'UPTPC';
+    $nombre_sistema      = 'Sistema de Control de Estudios';
     $rif_empresa         = 'G-20005608-8';
     $rif_institucion     = 'RIF: G-20005608-8';
     $direccion_empresa   = 'Calle principal Edif. IUTPC Zona Industrial Santa Rosa, Circuito Comunal 8, Parroquia Juan José Flores, Puerto Cabello, Estado Carabobo, Venezuela.';
     $correo_institucion  = 'control_de_estudios@uptpc.edu.ve';
+    $sitio_web_institucion = 'https://www.uptpc.edu.ve';
+    $sitio_cyt           = 'https://www.uptpc.edu.ve/ciencia-y-tecnolog%C3%ADa';
+
+    // CONFIGURACIÓN CENTRALIZADA DE CORREO SMTP
+    $smtp_host           = 'smtp.gmail.com';
+    $smtp_port           = '587';
+    $smtp_secure         = 'tls';
+    $smtp_username       = 'hectorlamaquina14@gmail.com';
+    $smtp_password       = 'tjml yrrt gcum ulgf';
+    $smtp_from_name      = $siglas_institucion . ' - ' . $nombre_sistema;
+    $smtp_bcc            = 'herrejose@gmail.com';
 
     $image_responsive = '<img src="'.$carpeta.'/images/responsive.png" width="50%">';
 
@@ -137,12 +149,12 @@ $res ="";
 $protocolo = isset($_SERVER["HTTPS"]) && $_SERVER["HTTPS"] === "on" ? "https://" : "http://";
 
 // Obtener el dominio de la URL
-$dominio = $_SERVER["HTTP_HOST"];
+$dominio = $_SERVER["HTTP_HOST"] ?? "localhost";
 $domain = $dominio;
 $pag_web = $protocolo . $dominio . $carpeta;
 
 // Obtener el resto de la URL
-$resto_url = $_SERVER["REQUEST_URI"];
+$resto_url = $_SERVER["REQUEST_URI"] ?? "";
 
 // Imprimir el resultado en http,dominio,resto
 $web_basea = array($protocolo, $dominio, $resto_url);
@@ -165,6 +177,22 @@ $logo_web_login = '<img class="img-fluid" src="'.$pag_web.'/images/logo.png" wid
 $logo_uptpc = '<img class="img-fluid" src="'.$pag_web.'/images/uptpc.png" width="150" height="150">';
 $logo_uptpcp = '<img class="img-fluid" src="'.$pag_web.'/images/uptpc.png" width="25" height="25">';
 $logopertenencia = '<img class="img-fluid logo-header" src="'.$pag_web.'/images/logo.png"  style="max-height: 55px; width: auto;" alt="UPTPC">';
+
+$footer_institucional = '<footer class="bg-dark text-white py-4 mt-5">
+    <div class="container-fluid text-center">
+        <p class="mb-2">
+            Potenciado por la <a href="' . ($sitio_cyt ?? 'https://www.uptpc.edu.ve/ciencia-y-tecnolog%C3%ADa') . '" target="_blank" rel="noopener noreferrer" class="text-info font-weight-bold">Unidad de Ciencia y Tecnología de la ' . ($siglas_institucion ?? 'UPTPC') . '</a>
+        </p>
+        <p class="mb-1 small text-light">
+            &copy; ' . date('Y') . ' ' . ($nombre_empresa ?? 'UNIVERSIDAD POLITÉCNICA TERRITORIAL DE PUERTO CABELLO') . '. Reservados Todos los Derechos.
+        </p>
+        <p class="mb-0 small text-muted">
+            Licencia de uso: <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" rel="noopener noreferrer" class="text-light text-decoration-underline">CC BY-NC-ND 4.0</a> | 
+            <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener noreferrer" class="text-light text-decoration-underline">Licencia Pública General Apache 3.0</a>
+        </p>
+    </div>
+</footer>';
+
 $logo_footer = '<img class="img-fluid" src="'.$pag_web.'/images/educacion_universitaria.jpg" style="max-height: 35px; width: auto;" alt="Logo Footer">';
 $logopertenenciag = '<img class="img-fluid" src="'.$pag_web.'/images/logopertenenciag.png" width="700" height="100">';
  

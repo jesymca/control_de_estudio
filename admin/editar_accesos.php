@@ -136,6 +136,17 @@ include("includes/head.php");
                         <th>Gestión Grado</th>
                         <!-- NUEVO CAMPO VISITA -->
                         <th>Visita</th>
+                        <!-- NUEVOS ACCESOS DEL PANEL ADMINISTRATIVO -->
+                        <th>Constancias</th>
+                        <th>Preinscripciones</th>
+                        <th>Inscripción Materias</th>
+                        <th>Aprobar Secciones</th>
+                        <th>Aulas</th>
+                        <th>Actas Calificación</th>
+                        <th>Secretaría</th>
+                        <th>Ver Estudiantes</th>
+                        <th>Ver Docentes</th>
+                        <th>Mensajería</th>
                     </tr>
                 </thead>
                 <tbody id="tabla-usuarios">
@@ -164,7 +175,17 @@ include("includes/head.php");
                                            (isset($user['titulos_re_materia']) && $user['titulos_re_materia']) ||
                                            (isset($user['grado']) && $user['grado']) || 
                                            (isset($user['gestion_grado']) && $user['gestion_grado']) ||
-                                           (isset($user['visita']) && $user['visita']);
+                                           (isset($user['visita']) && $user['visita']) ||
+                                           (isset($user['constancias']) && $user['constancias']) ||
+                                           (isset($user['preinscripciones']) && $user['preinscripciones']) ||
+                                           (isset($user['inscripcion_materias']) && $user['inscripcion_materias']) ||
+                                           (isset($user['aprobar_secciones']) && $user['aprobar_secciones']) ||
+                                           (isset($user['aulas']) && $user['aulas']) ||
+                                           (isset($user['actas_calificacion']) && $user['actas_calificacion']) ||
+                                           (isset($user['secretaria']) && $user['secretaria']) ||
+                                           (isset($user['ver_estudiantes']) && $user['ver_estudiantes']) ||
+                                           (isset($user['ver_docentes']) && $user['ver_docentes']) ||
+                                           (isset($user['mensajeria']) && $user['mensajeria']);
                             
                             $clases = 'fila-usuario';
                             $clases .= $esUsuario ? ' usuario' : '';
@@ -303,13 +324,45 @@ include("includes/head.php");
                         <td class="text-center">
                             <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][visita]" <?= isset($user['visita']) && $user['visita'] ? 'checked' : '' ?>>
                         </td>
+                        
+                        <!-- NUEVOS ACCESOS DEL PANEL ADMINISTRATIVO -->
+                        <td class="text-center">
+                            <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][constancias]" <?= isset($user['constancias']) && $user['constancias'] ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][preinscripciones]" <?= isset($user['preinscripciones']) && $user['preinscripciones'] ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][inscripcion_materias]" <?= isset($user['inscripcion_materias']) && $user['inscripcion_materias'] ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][aprobar_secciones]" <?= isset($user['aprobar_secciones']) && $user['aprobar_secciones'] ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][aulas]" <?= isset($user['aulas']) && $user['aulas'] ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][actas_calificacion]" <?= isset($user['actas_calificacion']) && $user['actas_calificacion'] ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][secretaria]" <?= isset($user['secretaria']) && $user['secretaria'] ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][ver_estudiantes]" <?= isset($user['ver_estudiantes']) && $user['ver_estudiantes'] ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][ver_docentes]" <?= isset($user['ver_docentes']) && $user['ver_docentes'] ? 'checked' : '' ?>>
+                        </td>
+                        <td class="text-center">
+                            <input type="checkbox" name="permisos[<?= (int)$user['id'] ?>][mensajeria]" <?= isset($user['mensajeria']) && $user['mensajeria'] ? 'checked' : '' ?>>
+                        </td>
                     </tr>
                     <?php
                         endwhile;
                     else:
                     ?>
                     <tr>
-                        <td colspan="42" class="text-center">No hay usuarios registrados</td>
+                        <td colspan="52" class="text-center">No hay usuarios registrados</td>
                     </tr>
                     <?php endif; ?>
                 </tbody>

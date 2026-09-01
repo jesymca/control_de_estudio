@@ -5,6 +5,10 @@ ini_set('display_errors', '1');
 $titulopag = "Gestión de Aulas";
 include('../funciones/functions.php');
 
+cargarPermisosUsuario();
+verificarPermiso('aulas');
+visita();
+
 
 
 // Procesar formularios

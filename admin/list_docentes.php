@@ -8,6 +8,9 @@ ini_set('display_errors', 1);
 // Procesamiento antes de cualquier salida
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
     require_once('../funciones/functions.php');
+
+cargarPermisosUsuario();
+verificarPermiso('ver_docentes');
     requireAdmin();
     
     if ($_POST['action'] == 'update_status' && isset($_POST['user_id'])) {
@@ -32,6 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['action'])) {
 // Configuración de página e includes
 $titulopag = "Lista de docentes";
 require_once('../funciones/functions.php');
+
+cargarPermisosUsuario();
+verificarPermiso('ver_docentes');
 require_once("includes/head.php");
 
 // Obtener solo usuarios que son docentes (docente = 1)

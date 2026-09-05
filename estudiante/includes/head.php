@@ -179,6 +179,42 @@ if (isset($_SESSION['user']['id'])) {
     .container {
         margin-top: 20px;
     }
+
+    /* DESPLEGAR DROPDOWNS AL PASAR EL MOUSE (HOVER) EN PANTALLAS GRANDES */
+    @media (min-width: 992px) {
+        .navbar-nav .dropdown:hover > .dropdown-menu,
+        .navbar-nav .nav-item.dropdown:hover > .dropdown-menu {
+            display: block !important;
+            margin-top: 0;
+            opacity: 1;
+            visibility: visible;
+            animation: navDropdownFade 0.22s ease-in-out;
+        }
+
+        .navbar-nav .dropdown > .dropdown-menu {
+            margin-top: 0;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+        }
+
+        .navbar-nav .dropdown > .dropdown-toggle::after {
+            transition: transform 0.2s ease;
+        }
+
+        .navbar-nav .dropdown:hover > .dropdown-toggle::after {
+            transform: rotate(180deg);
+        }
+    }
+
+    @keyframes navDropdownFade {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
 </style>
 </head>
 
@@ -394,6 +430,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
+        // ABRIR DROPDOWNS AL PASAR EL MOUSE EN ESCRITORIO (>= 992px)
+    $('.navbar-nav .dropdown').on('mouseenter', function() {
+        if (window.innerWidth >= 992) {
+            $(this).addClass('show');
+            $(this).find('> .dropdown-menu').addClass('show');
+            $(this).find('> .dropdown-toggle').attr('aria-expanded', 'true');
+        }
+    }).on('mouseleave', function() {
+        if (window.innerWidth >= 992) {
+            $(this).removeClass('show');
+            $(this).find('> .dropdown-menu').removeClass('show');
+            $(this).find('> .dropdown-toggle').attr('aria-expanded', 'false');
+        }
+    });
+
+    // En escritorio, prevenir cierre brusco al hacer clic sobre el botón principal
+    $('.navbar-nav .dropdown-toggle').on('click', function(e) {
+        if (window.innerWidth >= 992) {
+            e.preventDefault();
+        }
+    });
+
     // MEJORA PARA DROPDOWNS EN MÓVILES
     if (window.innerWidth <= 991) {
         // Cerrar dropdowns al hacer clic en un enlace

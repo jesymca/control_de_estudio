@@ -70,7 +70,7 @@ while ($materia = mysqli_fetch_assoc($result_materias)) {
 }
 
 // PDF
-if (isset($_GET['pdf']) && $_GET['pdf'] == '1') {
+if ((isset($_POST['pdf']) && $_POST['pdf'] == '1') || (isset($_GET['pdf']) && $_GET['pdf'] == '1')) {
     ini_set('display_errors', '0');
     require_once __DIR__ . '/../fpdf/fpdf.php';
     $pdf = new FPDF('P', 'mm', 'A4');
@@ -103,7 +103,9 @@ if (isset($_GET['pdf']) && $_GET['pdf'] == '1') {
         $pdf->Ln();
 
         $pdf->SetFont('Arial', '', 8);
+        $total_uc_trayecto = 0;
         foreach ($materias as $m) {
+            $total_uc_trayecto += (int)($m['creditos'] ?? 0);
             $nb_lines = $pdf->GetStringWidth(to_iso($m['nombre_materia'])) > $w[1] ? 2 : 1;
             $h_fila = 6 * $nb_lines;
             if ($pdf->GetY() + $h_fila > 270) $pdf->AddPage();
@@ -120,8 +122,21 @@ if (isset($_GET['pdf']) && $_GET['pdf'] == '1') {
             $pdf->Cell($w[7], $h_fila, to_iso($m['duracion_periodo'] ?? ''), 1, 0, 'C');
             $pdf->Cell($w[8], $h_fila, ($m['activa'] ? 'Activa' : 'Inactiva'), 1, 1, 'C');
         }
+
+        // Fila Total UC por Trayecto en PDF
+        if ($pdf->GetY() + 6 > 270) $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(240, 240, 240);
+        $pdf->Cell($w[0] + $w[1], 6, to_iso('Total Unidades de Crédito (UC):'), 1, 0, 'R', true);
+        $pdf->Cell($w[2], 6, $total_uc_trayecto, 1, 0, 'C', true);
+        $pdf->Cell($w[3] + $w[4] + $w[5] + $w[6] + $w[7] + $w[8], 6, '', 1, 1, 'C', true);
         $pdf->Ln(4);
     }
+    
+    // Leyenda de abreviaturas al pie del PDF
+    $pdf->SetFont('Arial', 'I', 7);
+    $pdf->Cell(0, 4, to_iso('Leyenda: UC = Unidades de Crédito | H.T. = Horas Teóricas | H.P. = Horas Prácticas | H.L. = Horas en Laboratorio | H.S. = Horas Semanales'), 0, 1, 'L');
+    
     $pdf->Output('I', 'Mi_Pensum.pdf');
     exit();
 }
@@ -137,13 +152,16 @@ include("includes/head.php");
                 <span class="badge badge-info mt-1"><?= htmlspecialchars($codigo_malla) ?></span>
             <?php endif; ?>
         </div>
-        <div class="d-flex">
+        <div class="d-flex align-items-center">
             <a href="index.php" class="btn btn-sm btn-primary shadow-sm no-print">
-                <i class="fas fa-arrow-left"></i> <span class="d-none d-sm-inline">Volver</span>
+                <i class="fas fa-arrow-left mr-1"></i> <span class="d-none d-sm-inline">Volver</span>
             </a>
-            <a href="?pdf=1" class="btn btn-sm btn-success shadow-sm no-print ml-2">
-                <i class="fas fa-print"></i> <span class="d-none d-sm-inline">Imprimir</span>
-            </a>
+            <form method="POST" action="mi_pensum.php" target="_blank" class="d-inline m-0 ml-2">
+                <input type="hidden" name="pdf" value="1">
+                <button type="submit" class="btn btn-sm btn-success shadow-sm no-print">
+                    <i class="fas fa-print mr-1"></i> <span class="d-none d-sm-inline">Imprimir PDF</span>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -162,17 +180,66 @@ include("includes/head.php");
                             <tr>
                                 <th>Código</th>
                                 <th class="text-left">Nombre de la Asignatura</th>
-                                <th>UC</th>
-                                <th>H.T.</th>
-                                <th>H.P.</th>
-                                <th>H.L.</th>
-                                <th>H.S.</th>
+                                <th>
+                                    <span class="abbr-popover" 
+                                          data-toggle="popover" 
+                                          data-trigger="hover focus" 
+                                          data-placement="top" 
+                                          title="UC" 
+                                          data-content="Unidades de Crédito">
+                                        UC <i class="fas fa-info-circle text-primary ml-1" style="font-size: 0.65rem;"></i>
+                                    </span>
+                                </th>
+                                <th>
+                                    <span class="abbr-popover" 
+                                          data-toggle="popover" 
+                                          data-trigger="hover focus" 
+                                          data-placement="top" 
+                                          title="H.T." 
+                                          data-content="Horas Teóricas">
+                                        H.T. <i class="fas fa-info-circle text-primary" style="font-size: 0.65rem;"></i>
+                                    </span>
+                                </th>
+                                <th>
+                                    <span class="abbr-popover" 
+                                          data-toggle="popover" 
+                                          data-trigger="hover focus" 
+                                          data-placement="top" 
+                                          title="H.P." 
+                                          data-content="Horas Prácticas">
+                                        H.P. <i class="fas fa-info-circle text-primary" style="font-size: 0.65rem;"></i>
+                                    </span>
+                                </th>
+                                <th>
+                                    <span class="abbr-popover" 
+                                          data-toggle="popover" 
+                                          data-trigger="hover focus" 
+                                          data-placement="top" 
+                                          title="H.L." 
+                                          data-content="Horas en Laboratorio">
+                                        H.L. <i class="fas fa-info-circle text-primary" style="font-size: 0.65rem;"></i>
+                                    </span>
+                                </th>
+                                <th>
+                                    <span class="abbr-popover" 
+                                          data-toggle="popover" 
+                                          data-trigger="hover focus" 
+                                          data-placement="top" 
+                                          title="H.S." 
+                                          data-content="Horas Semanales">
+                                        H.S. <i class="fas fa-info-circle text-primary" style="font-size: 0.65rem;"></i>
+                                    </span>
+                                </th>
                                 <th>Duración</th>
                                 <th>Estado</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($materias as $m): ?>
+                            <?php 
+                            $total_uc_trayecto = 0;
+                            foreach ($materias as $m): 
+                                $total_uc_trayecto += (int)($m['creditos'] ?? 0);
+                            ?>
                                 <tr>
                                     <td class="align-middle"><?= htmlspecialchars($m['cod_materia'] ?? '') ?></td>
                                     <td class="text-left align-middle"><?= htmlspecialchars($m['nombre_materia'] ?? '') ?></td>
@@ -186,6 +253,17 @@ include("includes/head.php");
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
+                        <tfoot class="thead-light">
+                            <tr class="font-weight-bold bg-light">
+                                <td colspan="2" class="text-right align-middle py-2">
+                                    <i class="fas fa-calculator text-primary mr-1"></i> Total Unidades de Crédito (UC):
+                                </td>
+                                <td class="text-center align-middle py-2 text-primary font-weight-bold" style="font-size: 1.05rem;">
+                                    <?= $total_uc_trayecto ?>
+                                </td>
+                                <td colspan="6" class="py-2"></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
                 
@@ -204,7 +282,7 @@ include("includes/head.php");
                                 
                                 <div class="row mb-2">
                                     <div class="col-6 text-muted">
-                                        <i class="fas fa-star"></i> Unidades Crédito:
+                                        <i class="fas fa-star"></i> Unidades de Crédito (UC):
                                     </div>
                                     <div class="col-6">
                                         <strong><?= (int)($m['creditos'] ?? 0) ?></strong>
@@ -213,7 +291,7 @@ include("includes/head.php");
                                 
                                 <div class="row mb-2">
                                     <div class="col-6 text-muted">
-                                        <i class="fas fa-chalkboard"></i> Horas Teóricas:
+                                        <i class="fas fa-chalkboard"></i> Horas Teóricas (H.T.):
                                     </div>
                                     <div class="col-6">
                                         <?= (int)($m['horas_teoricas'] ?? 0) ?>
@@ -222,7 +300,7 @@ include("includes/head.php");
                                 
                                 <div class="row mb-2">
                                     <div class="col-6 text-muted">
-                                        <i class="fas fa-laptop-code"></i> Horas Prácticas:
+                                        <i class="fas fa-laptop-code"></i> Horas Prácticas (H.P.):
                                     </div>
                                     <div class="col-6">
                                         <?= (int)($m['horas_practicas'] ?? 0) ?>
@@ -231,7 +309,7 @@ include("includes/head.php");
                                 
                                 <div class="row mb-2">
                                     <div class="col-6 text-muted">
-                                        <i class="fas fa-flask"></i> Horas Laboratorio:
+                                        <i class="fas fa-flask"></i> Horas en Laboratorio (H.L.):
                                     </div>
                                     <div class="col-6">
                                         <?= (int)($m['horas_laboratorio'] ?? 0) ?>
@@ -240,7 +318,7 @@ include("includes/head.php");
                                 
                                 <div class="row mb-2">
                                     <div class="col-6 text-muted">
-                                        <i class="fas fa-clock"></i> Horas Semanales:
+                                        <i class="fas fa-clock"></i> Horas Semanales (H.S.):
                                     </div>
                                     <div class="col-6">
                                         <?= (int)($m['horas_semanales'] ?? 0) ?>
@@ -258,9 +336,35 @@ include("includes/head.php");
                             </div>
                         </div>
                     <?php endforeach; ?>
+                    
+                    <!-- Total UC del Trayecto en vista móvil -->
+                    <div class="card mb-4 border-left-primary shadow-sm bg-light">
+                        <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center">
+                            <span class="font-weight-bold text-gray-800">
+                                <i class="fas fa-calculator text-primary mr-1"></i> Total Unidades de Crédito (UC):
+                            </span>
+                            <span class="badge badge-primary badge-pill font-weight-bold px-2 py-1" style="font-size: 1rem;">
+                                <?= $total_uc_trayecto ?>
+                            </span>
+                        </div>
+                    </div>
                 </div>
                 
             <?php endforeach; ?>
+            
+            <!-- Leyenda informativa de abreviaturas -->
+            <div class="alert alert-info mt-4 d-none d-md-block">
+                <small>
+                    <i class="fas fa-info-circle mr-1"></i> 
+                    <strong>Abreviaturas:</strong> 
+                    <strong>UC</strong> = Unidades de Crédito | 
+                    <strong>H.T.</strong> = Horas Teóricas | 
+                    <strong>H.P.</strong> = Horas Prácticas | 
+                    <strong>H.L.</strong> = Horas en Laboratorio | 
+                    <strong>H.S.</strong> = Horas Semanales
+                    <span class="text-muted ml-1">(Pase el cursor o toque cada abreviatura para ver su significado).</span>
+                </small>
+            </div>
             
             <!-- Resumen del Pensum para móviles -->
             <div class="d-block d-md-none mt-4">
@@ -312,6 +416,23 @@ include("includes/head.php");
 </div>
 
 <style>
+/* Estilos para popovers de abreviaturas */
+.abbr-popover {
+    cursor: pointer;
+    border-bottom: 1px dotted #007bff;
+    display: inline-block;
+    padding-bottom: 1px;
+    transition: color 0.15s ease-in-out;
+}
+.abbr-popover:hover {
+    color: #007bff;
+}
+.popover-header {
+    font-weight: bold;
+    background-color: #007bff;
+    color: #fff;
+}
+
 /* Estilos responsivos */
 @media (max-width: 767.98px) {
     .h2-sm {
@@ -394,5 +515,26 @@ include("includes/head.php");
     }
 }
 </style>
+
+<!-- Script para popovers de Bootstrap -->
+<script>
+$(document).ready(function() {
+    // Inicializar popovers de Bootstrap para abreviaturas
+    $('[data-toggle="popover"]').popover({
+        trigger: 'hover focus',
+        placement: 'top',
+        container: 'body'
+    });
+
+    // Cerrar popover al hacer clic fuera
+    $('body').on('click', function (e) {
+        $('[data-toggle="popover"]').each(function () {
+            if (!$(this).is(e.target) && $(this).has(e.target).length === 0 && $('.popover').has(e.target).length === 0) {
+                $(this).popover('hide');
+            }
+        });
+    });
+});
+</script>
 
 <?php include("includes/footer.php"); ?>

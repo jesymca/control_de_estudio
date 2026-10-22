@@ -1,0 +1,5 @@
+# Deshabilitar listado de directorios globalmente
+Options -Indexes
+
+# Establecer index.php por defecto
+DirectoryIndex index.php login.php

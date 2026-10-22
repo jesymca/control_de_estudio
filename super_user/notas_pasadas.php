@@ -477,6 +477,35 @@ $(document).ready(function() {
 });
 
 // Manejar clic en botón PDF
+// Función reutilizable para abrir/descargar PDF de notas definitivas vía POST
+function generarPdfNotasDefinitivasPost(docenteId, materiaId, periodoId) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = 'generar_pdf_notas_definitivas.php';
+    form.target = '_blank';
+    form.style.display = 'none';
+
+    const campos = {
+        docente_id: docenteId,
+        materia_id: materiaId,
+        periodo_id: periodoId
+    };
+
+    for (const clave in campos) {
+        if (campos.hasOwnProperty(clave)) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = clave;
+            input.value = campos[clave];
+            form.appendChild(input);
+        }
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
+
 $('.btn-pdf').click(function() {
     const docenteId = $(this).data('docente-id');
     const materiaId = $(this).data('materia-id');
@@ -488,8 +517,8 @@ $('.btn-pdf').click(function() {
     $btn.html('<i class="fas fa-spinner fa-spin"></i> Generando...');
     $btn.prop('disabled', true);
     
-    // Redirigir directamente al generador de PDF
-    window.location.href = `generar_pdf_notas_definitivas.php?docente_id=${docenteId}&materia_id=${materiaId}&periodo_id=${periodoId}`;
+    // Generar PDF vía POST
+    generarPdfNotasDefinitivasPost(docenteId, materiaId, periodoId);
     
     // Restaurar botón después de 3 segundos
     setTimeout(() => {

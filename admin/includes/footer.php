@@ -13,6 +13,9 @@
 
 <ul class="nav justify-content-end">
   <li class="nav-item">
+    <a class="nav-link font-weight-bold text-primary" href="<?= $base_url ?? '..' ?>/manual_usuario.php"><i class="fas fa-book-reader mr-1"></i>Manual de Usuario</a>
+  </li>
+  <li class="nav-item">
     <a class="nav-link" href="#" data-toggle="modal" data-target="#modalTerminos">Términos y Condiciones</a>
   </li>
   <li class="nav-item">

@@ -129,7 +129,9 @@ if (isset($_GET['pdf']) && $_GET['pdf'] == '1') {
         $pdf->Ln();
 
         $pdf->SetFont('Arial', '', 8);
+        $total_uc_trayecto = 0;
         foreach ($materias as $m) {
+            $total_uc_trayecto += (int)($m['creditos'] ?? 0);
             // Calcular altura de la fila basándose en el nombre de la materia
             $nb_lines = $pdf->GetStringWidth(to_iso($m['nombre_materia'])) > $w[1] ? 2 : 1;
             $h_fila = 6 * $nb_lines;
@@ -153,6 +155,14 @@ if (isset($_GET['pdf']) && $_GET['pdf'] == '1') {
             $pdf->Cell($w[6], $h_fila, $m['horas_semanales'], 1, 0, 'C');
             $pdf->Cell($w[7], $h_fila, ($m['activa'] ? 'Activa' : 'Inactiva'), 1, 1, 'C');
         }
+
+        // Fila Total UC por Trayecto en PDF
+        if ($pdf->GetY() + 6 > 270) $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(240, 240, 240);
+        $pdf->Cell($w[0] + $w[1], 6, to_iso('Total Unidades de Crédito (UC):'), 1, 0, 'R', true);
+        $pdf->Cell($w[2], 6, $total_uc_trayecto, 1, 0, 'C', true);
+        $pdf->Cell($w[3] + $w[4] + $w[5] + $w[6] + $w[7], 6, '', 1, 1, 'C', true);
         $pdf->Ln(4);
     }
     $pdf->Output('I', 'Pensum_Academico.pdf');
@@ -198,7 +208,11 @@ include("includes/head.php");
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($materias as $m): ?>
+                                <?php 
+                                $total_uc_trayecto = 0;
+                                foreach ($materias as $m): 
+                                    $total_uc_trayecto += (int)($m['creditos'] ?? 0);
+                                ?>
                                     <tr>
                                         <td class="text-center"><?= htmlspecialchars($m['cod_materia']) ?></td>
                                         <td><?= htmlspecialchars($m['nombre_materia']) ?></td>
@@ -215,6 +229,17 @@ include("includes/head.php");
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
+                            <tfoot class="thead-light">
+                                <tr class="font-weight-bold bg-light">
+                                    <td colspan="2" class="text-right align-middle py-2">
+                                        <i class="fas fa-calculator text-primary mr-1"></i> Total Unidades de Crédito (UC):
+                                    </td>
+                                    <td class="text-center align-middle py-2 text-primary font-weight-bold" style="font-size: 1.05rem;">
+                                        <?= $total_uc_trayecto ?>
+                                    </td>
+                                    <td colspan="5" class="py-2"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 <?php endforeach; ?>

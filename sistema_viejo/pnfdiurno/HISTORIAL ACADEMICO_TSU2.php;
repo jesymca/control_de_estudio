@@ -1,0 +1,27 @@
+
+Deprecated: The each() function is deprecated. This message will be suppressed on further calls in C:\Users\DarkSide\AppData\Roaming\Sublime Text\Packages\PHPTools\php.tools\codeFormatter.php on line 54
+<?php
+
+session_start();
+if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true && $_SESSION['historiales'] == 1) {
+} else {
+	header("Location: index.html");
+	exit;
+}
+$now = time();
+if ($now > $_SESSION['expire']) {
+	session_destroy();
+	echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+	exit;
+}
+
+include ('/Classes/class_api.php');
+$pdf = new PDF();
+
+$cedula = $_POST["cedula"];
+$pensum = $_POST["pensum"];
+$grado  = $_POST["grado"];
+
+$pdf->historial_academico($pensum, $grado, $cedula);
+
+?>

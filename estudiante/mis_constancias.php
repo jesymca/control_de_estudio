@@ -3,7 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 $titulopag = "Mis Constancias y Solicitudes";
-include('../funciones/functions.php');
+require_once __DIR__ . '/../funciones/functions.php';
 
 // Verificar autenticación y rol de estudiante
 if (!isLoggedIn() || !isEstudiante()) {
@@ -16,8 +16,24 @@ if (!isLoggedIn() || !isEstudiante()) {
 visita();
 
 // Obtener información del estudiante desde la sesión
-$estudiante_id = $_SESSION['user']['id'];
-$estudiante = obtenerEstudiantePorId($estudiante_id);
+$estudiante_id = intval($_SESSION['user']['id'] ?? 0);
+$estudiante = ($estudiante_id > 0) ? obtenerEstudiantePorId($estudiante_id) : null;
+
+// Validar que se haya obtenido un registro válido con 'id'
+if (!$estudiante || !is_array($estudiante) || isset($estudiante['error']) || empty($estudiante['id'])) {
+    // Si estamos en Modo Dios o la sesión es virtual, buscar un estudiante real activo para previsualización
+    if (!empty($_SESSION['dios_fantasma']) || !empty($_SESSION['dios_autenticado'])) {
+        $res_dios_est = $db->query("SELECT * FROM users WHERE estudiante = 1 AND status = 1 ORDER BY id ASC LIMIT 1");
+        if ($res_dios_est && $row_de = $res_dios_est->fetch_assoc()) {
+            $estudiante_id = intval($row_de['id']);
+            $estudiante = $row_de;
+        } else {
+            $estudiante = null;
+        }
+    } else {
+        $estudiante = null;
+    }
+}
 $carrera = null;
 $error = "";
 $exito = "";
@@ -44,7 +60,7 @@ if (isset($_SESSION['flash_solicitud'])) {
 }
 
 
-if ($estudiante) {
+if ($estudiante && !empty($estudiante['id'])) {
     // Obtener información de la carrera
     $carrera = obtenerCarreraEstudiante($estudiante['id']);
     $id_carrera = intval($carrera['id_carrera'] ?? 0);
@@ -69,7 +85,7 @@ if ($estudiante) {
     $es_apto_pasantias = esAptoParaPasantias($estudiante['id']);
     
     // PROCESAR CREACIÓN DE SOLICITUDES VÍA POST
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action_solicitud'])) {
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['action_solicitud'])) {
         if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
             $error = "Error de validación de seguridad (CSRF). Por favor recarga la página.";
         } else {

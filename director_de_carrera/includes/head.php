@@ -282,6 +282,9 @@ if (!isLoggedIn() || !isUser()) {
                     <a title="Cambiar Perfil de Usuario" class="dropdown-item" href="../profile_selector.php">
                         <i class="fas fa-user-edit fa-fw"></i> Cambiar Perfil
                     </a>
+                    <a title="Manual Oficial de Usuario" class="dropdown-item" href="../manual_usuario.php">
+                        <i class="fas fa-book-reader fa-fw"></i> Manual de Usuario
+                    </a>
                     
                     <div class="dropdown-divider"></div>
                     <a title="Salir del Sistema" class="dropdown-item" href="#" id="logoutLink">

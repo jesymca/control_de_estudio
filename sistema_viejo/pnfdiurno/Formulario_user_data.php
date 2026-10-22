@@ -1,0 +1,169 @@
+<?php
+session_start();
+if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true) {
+} else {
+  header("Location: index.html");
+  exit;
+}
+$now = time();
+  if($now > $_SESSION['expire']) {
+  session_destroy();
+  echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+  exit;
+}
+
+
+require ("configuracion.php");
+
+$job = '';
+$id  = '';
+if (isset($_GET['job'])){
+  $job = $_GET['job'];
+  if ($job == 'get_companies' ||
+      $job == 'get_company'){
+    if (isset($_GET['id'])){
+      $id = $_GET['id'];
+      if (!is_numeric($id)){
+        $id = '';
+      }
+    }
+  } else {
+    $job = '';
+  }
+}
+
+
+$mysql_data = array();
+
+if ($job != ''){  
+
+  $db_connection = mysqli_connect($servidor, $usuario, $clave, $base_datos);
+  if (mysqli_connect_errno()){
+    $result  = 'error';
+    $message = 'Failed to connect to database: ' . mysqli_connect_error();
+    $job     = '';
+}
+
+if ($job == 'get_companies'){ 
+
+    $query = "SELECT * FROM user ORDER BY nombre";
+    $query = mysqli_query($db_connection, $query);
+    if (!$query){
+      $result  = 'error';
+      $message = 'query error';
+  } else {
+      $result  = 'success';
+      $message = 'query success';
+      while ($row = mysqli_fetch_array($query)){
+        $functions  = '<div class="function_buttons"><ul>';
+        $functions .= '<li class="function_edit"><a href="Formulario_user_form_editar.php?action=editar&id='.$row['id'].'" data-id="'. $row['id'].'" data-name="' . $row['nombre'] . '"  style="background: #FF7D00"><span>Edit</span></a></li>';
+        $functions .= '<li class="function_delete"><a data-id="'.$row['id'].'" data-name="'.$row['nombre'].'" style="background: #FF292B"><span>Delete</span></a></li>';
+        $functions .= '</ul></div>';
+        $mysql_data[] = array(
+          "nombre"  => $row['nombre'],
+          "login"  => $row['login'],
+          "clave"  => $row['clave'],
+          "alumno"  => $row['alumno'],
+          "docente"  => $row['docente'],
+          "notas"  => $row['notas'],
+          "notas_guardar"  => $row['notas_guardar'],
+          "notas_modificar"  => $row['notas_modificar'],
+          "notas_borrar"  => $row['notas_borrar'],
+          "lapso"  => $row['lapso'],
+          "lismat"  => $row['lismat'],
+          "seccion"  => $row['seccion'],
+          "tipos_lapso"  => $row['tipos_lapso'],
+          "nota"  => $row['nota'],
+          "user"  => $row['user'],
+          "user_clave"  => $row['user_clave'],
+          "auditoria"  => $row['auditoria'],
+          "actas"  => $row['actas'],
+          "historiales"  => $row['historiales'],
+          "agregar_seccion"  => $row['agregar_seccion'],
+          "inscribir_materia"  => $row['inscribir_materia'],
+          "copiar_seccion"  => $row['copiar_seccion'],
+          "eliminar_seccion"  => $row['eliminar_seccion'],
+          "horas"  => $row['horas'],
+          "aula"  => $row['aula'],
+          "electivas"  => $row['electivas'],
+          "cambiar_docente"  => $row['cambiar_docente'],
+          "cambiar_lapso"  => $row['cambiar_lapso'],
+          "cambiar_seccion"  => $row['cambiar_seccion'],
+          "cambiar_materia"  => $row['cambiar_materia'],
+          "desactivar_alumnos"  => $row['desactivar_alumnos'],
+          "functions"     => $functions
+          );
+    }
+}
+
+} elseif ($job == 'get_company'){
+
+
+    if ($id == ''){
+      $result  = 'error';
+      $message = 'id missing';
+  } else {
+      $query = "SELECT * FROM user WHERE id = '" . mysqli_real_escape_string($db_connection, $id) ."'";
+      $query = mysqli_query($db_connection, $query);
+      if (!$query){
+        $result  = 'error';
+        $message = 'query error';
+    } else {
+        $result  = 'success';
+        $message = 'query success';
+        while ($row = mysqli_fetch_array($query)){
+          $mysql_data[] = array(
+            "nombre"  => $row['nombre'],
+            "login"  => $row['login'],
+            "clave"  => $row['clave'],
+            "alumno"  => $row['alumno'],
+            "docente"  => $row['docente'],
+            "notas"  => $row['notas'],
+            "notas_guardar"  => $row['notas_guardar'],
+            "notas_modificar"  => $row['notas_modificar'],
+            "notas_borrar"  => $row['notas_borrar'],
+            "lapso"  => $row['lapso'],
+            "lismat"  => $row['lismat'],
+            "seccion"  => $row['seccion'],
+            "tipos_lapso"  => $row['tipos_lapso'],
+            "nota"  => $row['nota'],
+            "user"  => $row['user'],
+            "user_clave"  => $row['user_clave'],
+            "auditoria"  => $row['auditoria'],
+            "actas"  => $row['actas'],
+            "historiales"  => $row['historiales'],
+            "agregar_seccion"  => $row['agregar_seccion'],
+            "inscribir_materia"  => $row['inscribir_materia'],
+            "copiar_seccion"  => $row['copiar_seccion'],
+            "eliminar_seccion"  => $row['eliminar_seccion'],
+            "horas"  => $row['horas'],
+            "aula"  => $row['aula'],
+            "electivas"  => $row['electivas'],
+            "cambiar_docente"  => $row['cambiar_docente'],
+            "cambiar_lapso"  => $row['cambiar_lapso'],
+            "cambiar_seccion"  => $row['cambiar_seccion'],
+            "cambiar_materia"  => $row['cambiar_materia'],
+            "desactivar_alumnos"  => $row['desactivar_alumnos']
+
+            );
+      }
+  }
+}
+
+}
+
+   mysqli_close($db_connection);
+
+}
+
+$data = array(
+  "result"  => $result,
+  "message" => $message,
+  "data"    => $mysql_data
+  );
+
+$json_data = json_encode($data);
+print $json_data;
+
+
+?>

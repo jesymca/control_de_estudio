@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html >
+<head>
+	<meta charset="UTF-8">
+	<title>Control de Estudio</title>
+	<link rel="shortcut icon" href="CE.ico">
+	<link rel='stylesheet prefetch' href='css/bootstrap.css'>
+	<link rel="stylesheet" href="css/style.css" media="screen"> 
+
+	<style type="text/css">
+	
+
+		#marco{
+			max-width: 350px;
+			min-width: 220px;
+			margin:90px auto;
+		}
+
+		body{			
+			background-image: url("fondo.jpg") !important;
+		}
+
+	</style>
+
+</head>
+<body>
+
+	<div class="container" id="marco">
+		<form class="form-horizontal" id="effect2" method="post" action="verificacion.php">
+			<fieldset>
+				<div class="form-group" id="titulo_formulario"> 
+					<label id="titulo_formulario">Login de Usuario</label>
+				</div>
+
+				<br>
+
+				<center><table>
+
+					<tr>          
+						<div class="form-group">
+							<div class="col-md-12" style="width: 100%;padding-left: 35px;padding-right:35px;">
+								<input type="text" id="usuario" class="form-control" name="usuario" placeholder="Usuario" required autofocus=""/>
+							</div>
+						</tr>
+
+						<tr>
+							<div class="form-group">
+								<div class="col-md-12" style="width: 100%;padding-left: 35px;padding-right:35px;">
+									<input type="password" id="clave" class="form-control" name="clave" placeholder="clave" required/ style="background:#F0F0F0">
+								</div>
+							</tr>
+
+						</table></center>
+						<center><table>
+							<tr>
+								<div class="form-group">
+									<div class="col-md-12">
+										<button type="submit" class="btn btn-lg btn-primary btn-block" style="background: #0C4783;width: 88%">Aceptar</button>
+									</div>
+								</div>
+							</tr>
+						</table></center>
+					</fieldset>
+				</form>
+			</div>
+		</body>
+		</html>

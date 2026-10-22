@@ -1,71 +1,58 @@
 <?php
-// .dios/ajax_rps.php - Actualizar RPS en tiempo real (CORREGIDO)
+// .dios/ajax_rps.php - Telemetría en Tiempo Real para MODO DIOS
+require_once __DIR__ . '/config.php';
 
-// ==============================================
-// 1. INICIAR SESIÓN CON EL MISMO NOMBRE QUE EL PANEL DIOS
-// ==============================================
-session_name('DIOS_SESSION');  // ← Este es el nombre correcto
-session_start();
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
-// ==============================================
-// 2. VERIFICAR AUTENTICACIÓN
-// ==============================================
-if (!isset($_SESSION['dios_autenticado']) || $_SESSION['dios_autenticado'] !== true) {
-    echo json_encode(['error' => 'No autorizado - Sesión no válida']);
+$token_recibido = $_GET['token'] ?? $_POST['token'] ?? '';
+$autenticado = (isset($_SESSION['dios_autenticado']) && $_SESSION['dios_autenticado'] === true) ||
+               (!empty($_SESSION['dios_ajax_token']) && hash_equals($_SESSION['dios_ajax_token'], (string)$token_recibido));
+
+if (!$autenticado) {
+    http_response_code(403);
+    echo json_encode(['error' => 'No autorizado']);
     exit;
 }
 
-// ==============================================
-// 3. CONECTAR A LA BASE DE DATOS
-// ==============================================
-require_once '../funciones/functions.php';
-require_once '../funciones/seguridad.php';
+require_once __DIR__ . '/../funciones/functions.php';
+require_once __DIR__ . '/../funciones/seguridad.php';
 
-// Instanciar seguridad
-$seguridad = new Seguridad($db);
-
-// ==============================================
-// 4. OBTENER ESTADÍSTICAS
-// ==============================================
-// RPS actual (últimos 10 segundos)
-$sql = "SELECT COUNT(*) as total FROM seguridad_rps WHERE fecha > DATE_SUB(NOW(), INTERVAL 10 SECOND)";
-$result = mysqli_query($db, $sql);
-$row = mysqli_fetch_assoc($result);
-$rps_actual = $row['total'] ?? 0;
-
-// Intentos hoy
-$sql = "SELECT COUNT(*) as total FROM seguridad_intentos WHERE DATE(fecha) = CURDATE()";
-$result = mysqli_query($db, $sql);
-$intentos_hoy = mysqli_fetch_assoc($result)['total'] ?? 0;
-
-// Bloqueos activos
-$sql = "SELECT COUNT(*) as total FROM seguridad_bloqueos WHERE activo = 1 AND desbloqueo_en > NOW()";
-$result = mysqli_query($db, $sql);
-$bloqueos_activos = mysqli_fetch_assoc($result)['total'] ?? 0;
-
-// Tokens inválidos hoy
-$sql = "SELECT COUNT(*) as total FROM seguridad_tokens_invalidos WHERE DATE(fecha) = CURDATE()";
-$result = mysqli_query($db, $sql);
-$tokens_invalidos = mysqli_fetch_assoc($result)['total'] ?? 0;
-
-// Top IPs sospechosas
-$sql = "SELECT ip, COUNT(*) as total FROM seguridad_intentos WHERE fecha > DATE_SUB(NOW(), INTERVAL 1 HOUR) GROUP BY ip ORDER BY total DESC LIMIT 5";
-$result = mysqli_query($db, $sql);
-$top_ips = [];
-while($row = mysqli_fetch_assoc($result)) {
-    $top_ips[] = $row;
+if (!isset($db) || !$db) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Error de conexión a BD']);
+    exit;
 }
 
-// ==============================================
-// 5. DEVOLVER RESPUESTA JSON
-// ==============================================
+$seguridad = new Seguridad($db);
+
+// Limpiar RPS antiguos (>10s)
+mysqli_query($db, "DELETE FROM seguridad_rps WHERE fecha < DATE_SUB(NOW(), INTERVAL 10 SECOND)");
+
+// RPS actual (últimos 10 segundos)
+$res_rps = mysqli_query($db, "SELECT COUNT(*) as total FROM seguridad_rps WHERE fecha > DATE_SUB(NOW(), INTERVAL 10 SECOND)");
+$rps_actual = (int)(mysqli_fetch_assoc($res_rps)['total'] ?? 0);
+
+// Intentos hoy
+$res_int = mysqli_query($db, "SELECT COUNT(*) as total FROM seguridad_intentos WHERE DATE(fecha) = CURDATE()");
+$intentos_hoy = (int)(mysqli_fetch_assoc($res_int)['total'] ?? 0);
+
+// Bloqueos activos
+$res_bloq = mysqli_query($db, "SELECT COUNT(*) as total FROM seguridad_bloqueos WHERE activo = 1 AND desbloqueo_en > NOW()");
+$bloqueos_activos = (int)(mysqli_fetch_assoc($res_bloq)['total'] ?? 0);
+
+// Tokens inválidos hoy
+$res_tok = mysqli_query($db, "SELECT COUNT(*) as total FROM seguridad_tokens_invalidos WHERE DATE(fecha) = CURDATE()");
+$tokens_invalidos_hoy = (int)(mysqli_fetch_assoc($res_tok)['total'] ?? 0);
+
 echo json_encode([
-    'success' => true,
-    'rps_actual' => (int)$rps_actual,
-    'intentos_hoy' => (int)$intentos_hoy,
-    'bloqueos_activos' => (int)$bloqueos_activos,
-    'tokens_invalidos' => (int)$tokens_invalidos,
-    'top_ips' => $top_ips
+    'rps_actual' => $rps_actual,
+    'intentos_hoy' => $intentos_hoy,
+    'bloqueos_activos' => $bloqueos_activos,
+    'tokens_invalidos_hoy' => $tokens_invalidos_hoy,
+    'sistema_completo_activo' => $seguridad->sistemaCompletoActivo(),
+    'sistema_activo' => $seguridad->sistemaEstaActivo(),
+    'modo_mantenimiento' => $seguridad->sistemaEnMantenimiento(),
+    'memoria_mb' => round(memory_get_usage(true) / 1048576, 2),
+    'timestamp' => date('H:i:s')
 ]);
 ?>

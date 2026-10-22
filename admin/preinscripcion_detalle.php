@@ -11,7 +11,7 @@ visita();
 $success_message = '';
 $error_message = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $id = isset($_POST['aceptar_id']) ? (int)$_POST['aceptar_id'] : (int)($_POST['rechazar_id'] ?? 0);
 
     if (!empty($_POST['aceptar_id'])) {
@@ -52,8 +52,9 @@ if ($preinscripcion['status'] === 'Pendiente') {
     $carrera_id = $preinscripcion['carrera'];
     $turno = !empty($preinscripcion['turno']) ? $preinscripcion['turno'] : 'Diurno';
     
-    // Solo obtener secciones del Trayecto 0
-    $seccionesDisponibles = obtenerSeccionesDisponiblesPorCarreraYTurnoYTrayecto($carrera_id, $turno, 0);
+    // Solo obtener secciones del Trayecto 0 para el período del aspirante
+    $periodoPre = !empty($preinscripcion['id_periodo']) ? (int)$preinscripcion['id_periodo'] : null;
+    $seccionesDisponibles = obtenerSeccionesDisponiblesPorCarreraYTurnoYTrayecto($carrera_id, $turno, 0, $periodoPre);
     
     if (empty($seccionesDisponibles)) {
         $mensaje_secciones = "No hay secciones disponibles para el Trayecto 0 (Inicial) en esta carrera y turno.";

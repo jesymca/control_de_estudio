@@ -2,7 +2,7 @@
 function enviarEmail($email, $nombre, $asunto, $cuerpo) {
     global $footer_correo, $logo, $smtp_host, $smtp_port, $smtp_secure, $smtp_username, $smtp_password, $smtp_from_name, $smtp_bcc, $siglas_institucion, $nombre_sistema;
     
-    require_once 'PHPMailer/PHPMailerAutoload.php';
+    require_once __DIR__ . '/PHPMailer/PHPMailerAutoload.php';
     
     $mail = new PHPMailer();
     

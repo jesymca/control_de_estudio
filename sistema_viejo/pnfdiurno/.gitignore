@@ -1,0 +1,16 @@
+# Specify filepatterns you want git to ignore.
+
+**/.git
+**/.idea
+**/.eclipse
+**/.metadata
+**/.settings
+.git
+.idea
+.eclipse
+.metadata
+.settings
+.buildpath
+.project
+.sql
+*.sql

@@ -11,7 +11,7 @@ visita();
 $success_message = '';
 $error_message = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     if (!empty($_POST['aceptar_id'])) {
         $resultado = aceptarPreinscripcion((int)$_POST['aceptar_id'], $_SESSION['user']['id']);
         if ($resultado['success']) {
@@ -31,8 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$periodos = obtenerPeriodosAcademicos($db);
+$periodoFiltro = isset($_GET['periodo_id']) && $_GET['periodo_id'] !== '' ? (int)$_GET['periodo_id'] : null;
 $busqueda = trim($_GET['busqueda'] ?? '');
-$preinscripciones = obtenerPreinscripcionesPendientes($busqueda);
+$preinscripciones = obtenerPreinscripcionesPendientes($busqueda, $periodoFiltro);
 $carreras = obtenerTodasLasCarreras();
 $carreraMap = [];
 foreach ($carreras as $carrera) {
@@ -45,15 +47,23 @@ include('includes/head.php');
 
 <div class="container-fluid py-4">
     <div class="row mb-3">
-        <div class="col-12 col-md-8">
+        <div class="col-12 col-md-5">
             <h2 class="mb-4"><i class="fas fa-file-signature me-2"></i> Preinscripciones Pendientes</h2>
         </div>
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-md-7">
             <form method="get" action="preinscripciones.php" class="mb-3">
                 <div class="input-group">
-                    <input id="searchInput" type="search" name="busqueda" class="form-control" placeholder="Buscar por cédula, nombre, email, teléfono..." value="<?php echo htmlspecialchars($busqueda); ?>">
-                    <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i> Buscar</button>
-                    <a href="preinscripciones.php" class="btn btn-secondary"><i class="fas fa-times"></i> Limpiar</a>
+                    <select name="periodo_id" class="custom-select" style="max-width: 200px;" onchange="this.form.submit()">
+                        <option value="">-- Todos los períodos --</option>
+                        <?php foreach ($periodos as $p): ?>
+                            <option value="<?php echo (int)$p['id_periodo']; ?>" <?php echo ($periodoFiltro === (int)$p['id_periodo']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($p['nombre_periodo']); ?> <?php echo ($p['activo'] == 1) ? '(Activo)' : ''; ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <input id="searchInput" type="search" name="busqueda" class="form-control" placeholder="Buscar por cédula, nombre, email..." value="<?php echo htmlspecialchars($busqueda); ?>">
+                    <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
+                    <a href="preinscripciones.php" class="btn btn-secondary"><i class="fas fa-times"></i></a>
                 </div>
             </form>
         </div>
@@ -85,6 +95,7 @@ include('includes/head.php');
                 <thead class="thead-light">
                     <tr>
                         <th>ID</th>
+                        <th>Período</th>
                         <th>Cédula</th>
                         <th>Nombre</th>
                         <th>Carrera</th>
@@ -99,6 +110,7 @@ include('includes/head.php');
                     <?php foreach ($preinscripciones as $pre): ?>
                         <tr>
                             <td><?php echo htmlspecialchars($pre['id']); ?></td>
+                            <td><span class="badge badge-primary"><?php echo htmlspecialchars($pre['nombre_periodo'] ?? 'No asignado'); ?></span></td>
                             <td><?php echo htmlspecialchars($pre['idusuario']); ?></td>
                             <td><?php echo htmlspecialchars($pre['nombre']); ?></td>
                             <td><?php echo htmlspecialchars($carreraMap[$pre['carrera']] ?? 'No especificada'); ?></td>
@@ -110,7 +122,6 @@ include('includes/head.php');
                                 <a href="preinscripcion_detalle.php?id=<?php echo (int)$pre['id']; ?>" class="btn btn-sm btn-info mb-1">
                                     <i class="fas fa-eye"></i> Ver planilla
                                 </a>
-                                
                             </td>
                         </tr>
                     <?php endforeach; ?>

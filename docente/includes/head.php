@@ -216,7 +216,14 @@ if (!isLoggedIn() || !isDocente()) {
             
 
             <!-- Icono de Mensajería con Notificación para Docentes -->
-            
+            <li class="nav-item nav-item-mensajes">
+              <a title="Sistema de Mensajería" class="nav-link position-relative" href="mensajeria.php">
+                <i class="fas fa-envelope fa-fw"></i> Mensajes
+                <?php if ($mensajes_no_leidos > 0): ?>
+                  <span class="badge badge-danger badge-notificacion"><?php echo $mensajes_no_leidos; ?></span>
+                <?php endif; ?>
+              </a>
+            </li>
 
             <li id="dropdown-evaluaciones" class="nav-item dropdown">
               <a title="Gestión de Evaluaciones" class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -235,12 +242,23 @@ if (!isLoggedIn() || !isDocente()) {
               <i class="fa fa-cogs fa-fw"></i>  Ajustes
               </a>
               <div id="dropdown-ajus" class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                <!-- Mensajería -->
+                <a title="Sistema de Mensajería" class="dropdown-item position-relative" href="mensajeria.php">
+                  <i class="fas fa-envelope fa-fw"></i> Mensajes
+                  <?php if ($mensajes_no_leidos > 0): ?>
+                    <span class="badge badge-danger badge-notificacion ml-2"><?php echo $mensajes_no_leidos; ?></span>
+                  <?php endif; ?>
+                </a>
+                <div class="dropdown-divider"></div>
                 <!-- Nueva opción: Cambiar Perfil -->
                 <a title="Cambiar Perfil de Usuario" class="dropdown-item" href="../profile_selector.php">
                   <i class="fas fa-user-edit fa-fw"></i> Cambiar Perfil
                 </a>
                 
                 <a title="Horario" class="dropdown-item" href="mi_horario.php"><i class="fas fa-calendar-alt fa-fw"></i> Mi Horario</a>
+                <a title="Manual Oficial de Usuario" class="dropdown-item" href="../manual_usuario.php">
+                  <i class="fas fa-book-reader fa-fw"></i> Manual de Usuario
+                </a>
                 <div class="dropdown-divider"></div>
                 <a title="Salir del Sistema" class="dropdown-item" href="#" id="logoutLink">
                   <i class="fas fa-sign-out-alt fa-fw"></i> Cerrar Sesión
@@ -256,7 +274,7 @@ if (!isLoggedIn() || !isDocente()) {
     <div class="container-fluid">
     <div class="row">
 <div class="col-sm-6">
-    <b class="mt-5"><?php echo 'Bienvenido ' .$_SESSION['user']['nombre']; ?></b>
+    <b class="mt-5"><?php echo 'Bienvenido ' . ($_SESSION['user']['nombre'] ?? $_SESSION['user']['nombre_completo'] ?? $_SESSION['user']['username'] ?? 'Docente'); ?></b>
             <div class="mt-1 mb-2">
                 <span class="badge badge-pill shadow-sm px-3 py-1 text-uppercase font-weight-bold text-white" style="background-color: #28a745; font-size: 0.8rem; letter-spacing: 0.5px;">
                     <i class="fas fa-chalkboard-teacher mr-1"></i> Panel del Docente

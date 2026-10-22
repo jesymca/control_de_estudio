@@ -1,0 +1,8456 @@
+<?php
+ /**
+  * PHPCE Control de Estudio Class
+  *
+  * @package     PHPCE
+  * @author      Walter Salazar
+  * @copyright   Copyright (c) 2012, Titaniun Software
+  * 
+  
+  // !
+  Para este sistema se tomó muchas ideas de un programa que ya  
+    existía pero que requería muchas mejoras y hacerlo compatible  
+    con los pnf, las condiciones de su creación fue todo bajo un  
+    aviente de mucho estrés y una economía muy sebera, es difícil 
+    programar con el estómago vacío, así que no se respetó mucho 
+    la norma de código limpio, documentación entre otras cosas,
+    se requiere validar muchos formularios todavía además de las
+    constantes modificaciones a la que este programa es sometido
+    cada tanto tiempo viene un jefe nuevo y cambia los reportes o 
+    pide una función nueva así que es difícil terminar el programa
+
+    También como el php es lenguaje de código abierto se requiere  
+    encriptarlo ya que no se cuenta con un servidor exclusivo para  
+    el funcionamiento del mismo como es lo habituar.
+    Ante de colocar este programa avía usuarios mal intencionados  
+    que borraban la información con una sentencia sql, por que  
+    antes era en foxpro y estaba compartido en red no avía  
+    seguridad y no se sabía quién borraba los registros por esta  
+    razón se optó por mysql y php, para bloquear el acceso mal  
+    intencionado, también se hizo un control de privilegios y  
+    auditoria de usuario terminando así con este problema
+
+    este sistema fue creado en php para poder usarlo en una  
+    página web si fuera necesario y en cualquier sistema  
+    operativo, está hecho con la mentalidad de software libre
+    fue pensado que si otras instituciones hacen programas para  
+    la administración pública, porque nosotros no podemos hacer  
+    uno para control de estudio, esa fue la verdadera mentalidad  
+    por la cual fue creado el pnf informática
+    "crear software libre para la institucion publicas"
+
+    siempre tuve un sueño loco de crear una oficina dedicada a crear
+    aplicaciones para los diferentes departamentos donde todo fuera
+    por internet y todos estuviéramos enlazado, donde todo se pueda
+    solicitar por internet y acceder desde cualquier lugar y desde 
+    cualquier dispositivo un típico proyecto de investigación y 
+    desarrollo para el mejoramiento de una institución o ambiente 
+    laboral pero hay que vencer a la resistencia al cambio, vencer 
+    a nuestras viejas costumbres y avanzar a la automatización de 
+    los procesos y un mejor manejo de la información, cambiar nuestra 
+    manera de pensar para cambiar nuestra manera de vivir.
+  */
+ require('fpdf.php');
+ class PDF extends FPDF {
+     function Encabezado_graduados($fe_gr_alu) {
+         $this->AddPage();
+         $this->Encabezado_general(8);
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(15, 35 + $X1);
+         $this->Cell(270, 7, "LISTADO DE ALUMNOS GRADUADOS", 0, 0, 'C', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(15, 50);
+         $this->Cell(136, 5, utf8_decode("PROMOCION:"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(15, 58);
+         $this->Cell(136, 5, "TOTAL DE GRADUADOS:", 0, 0, 'L', 0);
+         if ($grado == "T") {
+             $titulo="T.S.U";
+         }
+         if ($grado == "I") {
+             $titulo="ING.";
+         }
+         if ($grado == "L") {
+             $titulo="LIC.";
+         }
+         $this->SetXY(35, 58);
+         $this->Cell(136, 5, $carrera_a1 . "  " . $titulo, 0, 0, 'L', 0);
+         $this->SetXY(210, 45 + $X1);
+         $this->Cell(136, 5, utf8_decode("FECHA DE GRADO: "), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(15, 64 + $X1);
+         $this->Cell(12, 7, utf8_decode("LUGAR"), 1, 0, 'L', 0);
+         $this->SetXY(27, 64 + $X1);
+         $this->Cell(17, 7, utf8_decode("CEDULA"), 1, 0, 'L', 0);
+         $this->SetXY(44, 64 + $X1);
+         $this->Cell(80, 7, utf8_decode("NOMBRE DEL ASPIRANTE A GRADUADO"), 1, 0, 'L', 0);
+         $this->SetXY(124, 64 + $X1);
+         $this->Cell(45, 7, utf8_decode("CARRERA"), 1, 0, 'L', 0);
+         $this->SetXY(169, 64 + $X1);
+         $this->Cell(15, 7, utf8_decode("IRA"), 1, 0, 'L', 0);
+         $this->SetXY(184, 64 + $X1);
+         $this->Cell(15, 7, utf8_decode("INGRESO"), 1, 0, 'L', 0);
+         $this->SetXY(199, 64 + $X1);
+         $this->Cell(15, 7, utf8_decode("EGRESO"), 1, 0, 'L', 0);
+         $this->SetXY(214, 64 + $X1);
+         $this->Cell(71, 7, utf8_decode("GRADO OBTENIDO"), 1, 0, 'L', 0);
+         $this->SetXY(40, 50);
+         $this->Cell(136, 5, $promocion, 0, 0, 'L', 0);
+         $this->SetXY(240, 50);
+         $this->Cell(136, 5, $fe_gr_alu, 0, 0, 'L', 0);
+     }
+     function datos_graduados($fe_gr_alu) {
+         $this->Encabezado_graduados($fe_gr_alu);
+         $X0_2=0;
+         if ($fe_gr_alu <> "") {
+             include "db.php";
+             $sql="SELECT `cedula`,`nombre`,`carrera`,`direccion`,`ingreso`,`egreso`,`ira`,`grado` FROM alumno WHERE fe_gr_alu ='" . $fe_gr_alu . "' ORDER BY ira DESC";
+             $resultado=$conn->query($sql);
+             $X0=0;
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $cedula[$X0]=$fila['cedula'];
+                     $nombre[$X0]=$fila['nombre'];
+                     $carrera[$X0]=$fila['carrera'];
+                     $direccion[$X0]=$fila['direccion'];
+                     $ingreso[$X0]=$fila['ingreso'];
+                     $egreso[$X0]=$fila['egreso'];
+                     $ira[$X0]=$fila['ira'];
+                     $grado[$X0]=$fila['grado'];
+                     $this->UPDATE_ubicacion($fila['cedula'], $X0 + 1, $resultado->num_rows);
+                     $X0++;
+                 }
+             }
+             $this->SetFont('Arial', 'B', 8);
+             $this->SetXY(50, 58);
+             $this->Cell(40, 5, $X0, 0, 0, 'L', 0);
+             $X1=6;
+             for ($i=0; $i < count($cedula); $i++) {
+                 $this->SetFont('Arial', '', 8);
+                 $this->SetXY(15, 65 + $X1);
+                 $this->Cell(12, 4, $i + 1, 1, 1, 'C', 0);
+                 $this->SetXY(27, 65 + $X1);
+                 $this->Cell(17, 4, $cedula[$i], 1, 1, 'L', 0);
+                 $this->SetXY(44, 65 + $X1);
+                 $this->Cell(80, 4, utf8_decode($nombre[$i]), 1, 1, 'L', 0);
+                 $carrera_a1=$this->carrera_larga($carrera[$i]);
+                 $this->SetXY(124, 65 + $X1);
+                 $this->Cell(45, 4, utf8_decode($carrera_a1), 1, 1, 'L', 0);
+                 $this->SetXY(169, 65 + $X1);
+                 $this->Cell(15, 4, $ira[$i], 1, 0, 'L', 0);
+                 $this->SetXY(184, 65 + $X1);
+                 $this->Cell(15, 4, $ingreso[$i], 1, 0, 'L', 0);
+                 $this->SetXY(199, 65 + $X1);
+                 $this->Cell(15, 4, $egreso[$i], 1, 0, 'L', 0);
+                 if ($grado[$i] == "T") {
+                     $grado2="Tsu";
+                 }
+                 if ($grado[$i] == "I") {
+                     $grado2="Ingeniero";
+                 }
+                 if ($grado[$i] == "L") {
+                     $grado2="Licenciado";
+                 }
+                 $this->SetXY(214, 65 + $X1);
+                 $this->Cell(71, 4, strtoupper($grado2), 1, 0, 'L', 0);
+                 $grado2="";
+                 $X0_2=$X0_2 + 1;
+                 $X1=$X1 + 4;
+                 if ($X0_2 > 25) {
+                     $this->Encabezado_graduados($fe_gr_alu);
+                     $this->SetFont('Arial', 'B', 8);
+                     $this->SetXY(50, 58);
+                     $this->Cell(40, 5, $X0, 0, 0, 'L', 0);
+                     $X1=6;
+                     $X0_2=0;
+                 }
+             }
+             $this->Output();
+         }
+     }
+     function datos_graduados_carreras($fe_gr_alu, $pensum, $grado) {
+         $this->Encabezado_graduados($fe_gr_alu);
+         $carrera=substr($pensum, 0, 1);
+         $X0_2=0;
+         if ($fe_gr_alu <> "") {
+             include "db.php";
+             $sql="SELECT `cedula`,`nombre`,`carrera`,`direccion`,`ingreso`,`egreso`,`ira`,`grado` FROM alumno WHERE fe_gr_alu ='" . $fe_gr_alu . "' and carrera ='" . $carrera . "' and grado ='" . $grado . "' ORDER BY ira DESC";
+             $resultado=$conn->query($sql);
+             $X0=0;
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $cedula[$X0]=$fila['cedula'];
+                     $nombre[$X0]=$fila['nombre'];
+                     $carrera[$X0]=$fila['carrera'];
+                     $direccion[$X0]=$fila['direccion'];
+                     $ingreso[$X0]=$fila['ingreso'];
+                     $egreso[$X0]=$fila['egreso'];
+                     $ira[$X0]=$fila['ira'];
+                     $grado[$X0]=$fila['grado'];
+                     $this->UPDATE_ubicacion($fila['cedula'], $X0 + 1, $resultado->num_rows);
+                     $X0++;
+                 }
+             }
+             $this->SetFont('Arial', 'B', 8);
+             $this->SetXY(50, 58);
+             $this->Cell(40, 5, $X0, 0, 0, 'L', 0);
+             $X1=6;
+             for ($i=0; $i < count($cedula); $i++) {
+                 $this->SetFont('Arial', '', 8);
+                 $this->SetXY(15, 65 + $X1);
+                 $this->Cell(12, 4, $i + 1, 1, 1, 'C', 0);
+                 $this->SetXY(27, 65 + $X1);
+                 $this->Cell(17, 4, $cedula[$i], 1, 1, 'L', 0);
+                 $this->SetXY(44, 65 + $X1);
+                 $this->Cell(80, 4, utf8_decode($nombre[$i]), 1, 1, 'L', 0);
+                 $carrera_a1=$this->carrera_larga($carrera[$i]);
+                 $this->SetXY(124, 65 + $X1);
+                 $this->Cell(45, 4, utf8_decode($carrera_a1), 1, 1, 'L', 0);
+                 $this->SetXY(169, 65 + $X1);
+                 $this->Cell(15, 4, $ira[$i], 1, 0, 'L', 0);
+                 $this->SetXY(184, 65 + $X1);
+                 $this->Cell(15, 4, $ingreso[$i], 1, 0, 'L', 0);
+                 $this->SetXY(199, 65 + $X1);
+                 $this->Cell(15, 4, $egreso[$i], 1, 0, 'L', 0);
+                 if ($grado[$i] == "T") {
+                     $grado2="Tsu";
+                 }
+                 if ($grado[$i] == "I") {
+                     $grado2="Ingeniero";
+                 }
+                 if ($grado[$i] == "L") {
+                     $grado2="Licenciado";
+                 }
+                 $this->SetXY(214, 65 + $X1);
+                 $this->Cell(71, 4, strtoupper($grado2), 1, 0, 'L', 0);
+                 $grado2="";
+                 $X0_2=$X0_2 + 1;
+                 $X1=$X1 + 4;
+                 if ($X0_2 > 25) {
+                     $this->Encabezado_graduados($fe_gr_alu);
+                     $this->SetFont('Arial', 'B', 8);
+                     $this->SetXY(50, 58);
+                     $this->Cell(40, 5, $X0, 0, 0, 'L', 0);
+                     $X1=6;
+                     $X0_2=0;
+                 }
+             }
+             $this->Output();
+         }
+     }
+     function actualizar_ingreso($cedula, $grado) {
+         include "db.php";
+         $sql="SELECT MIN(`lapso`) AS 'ingreso_lapso' FROM `notas`,lismat WHERE notas.`codigo`='" . $cedula . "' and notas.cod_mat=lismat.cod_mat";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($row=$resultado->fetch_assoc()) {
+                 $ingreso_lapso=$row['ingreso_lapso'];
+             }
+         }
+         $sql="UPDATE `alumno` SET ingreso='" . $ingreso_lapso . "' WHERE cedula='" . $cedula . "'";
+         $result=$conn->query($sql);
+     }
+     function actualizar_egreso($cedula, $grado) {
+         include "db.php";
+         $sql="SELECT MAX(`lapso`) AS 'ultimo_lapso' FROM `notas`,lismat WHERE notas.`codigo`='" . $cedula . "' and lismat.`grado`='" . $grado . "' and notas.cod_mat=lismat.cod_mat";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($row=$resultado->fetch_assoc()) {
+                 $ultimo_lapso=$row['ultimo_lapso'];
+             }
+         }
+         $sql="UPDATE `alumno` SET egreso='" . $ultimo_lapso . "' WHERE cedula='" . $cedula . "'";
+         $result=$conn->query($sql);
+     }
+     function num2letras($num, $fem = false, $dec = true) {
+         $matuni[1]="uno";
+         $matuni[2]="dos";
+         $matuni[3]="tres";
+         $matuni[4]="cuatro";
+         $matuni[5]="cinco";
+         $matuni[6]="seis";
+         $matuni[7]="siete";
+         $matuni[8]="ocho";
+         $matuni[9]="nueve";
+         $matuni[10]="diez";
+         $matuni[11]="once";
+         $matuni[12]="doce";
+         $matuni[13]="trece";
+         $matuni[14]="catorce";
+         $matuni[15]="quince";
+         $matuni[16]="dieciseis";
+         $matuni[17]="diecisiete";
+         $matuni[18]="dieciocho";
+         $matuni[19]="diecinueve";
+         $matuni[20]="veinte";
+         $matunisub[1]="uno";
+         $matunisub[2]="dos";
+         $matunisub[3]="tres";
+         $matunisub[4]="cuatro";
+         $matunisub[5]="quin";
+         $matunisub[6]="seis";
+         $matunisub[7]="sete";
+         $matunisub[8]="ocho";
+         $matunisub[9]="nove";
+         $matdec[1]="diez";
+         $matdec[2]="veint";
+         $matdec[3]="treinta";
+         $matdec[4]="cuarenta";
+         $matdec[5]="cincuenta";
+         $matdec[6]="sesenta";
+         $matdec[7]="setenta";
+         $matdec[8]="ochenta";
+         $matdec[9]="noventa";
+         $matsub[3]='mill';
+         $matsub[5]='bill';
+         $matsub[7]='mill';
+         $matsub[9]='trill';
+         $matsub[11]='mill';
+         $matsub[13]='bill';
+         $matsub[15]='mill';
+         $matmil[4]='millones';
+         $matmil[6]='billones';
+         $matmil[7]='de billones';
+         $matmil[8]='millones de billones';
+         $matmil[10]='trillones';
+         $matmil[11]='de trillones';
+         $matmil[12]='millones de trillones';
+         $matmil[13]='de trillones';
+         $matmil[14]='billones de trillones';
+         $matmil[15]='de billones de trillones';
+         $matmil[16]='millones de billones de trillones';
+         $float=explode('.', $num);
+         $num=$float[0];
+         $num=trim((string) @$num);
+         if ($num[0] == '-') {
+             $neg='menos ';
+             $num=substr($num, 1);
+         } else {
+             $neg='';
+         }
+         while ($num[0] == '0') {
+             $num=substr($num, 1);
+         }
+         if ($num[0] < '1' or $num[0] > 9) {
+             $num='0' . $num;
+         }
+         $zeros=true;
+         $punt=false;
+         $ent='';
+         $fra='';
+         for ($c=0; $c < strlen($num); $c++) {
+             $n=$num[$c];
+             if (!(strpos(".,'''", $n) === false)) {
+                 if ($punt) {
+                     break;
+                 } else {
+                     $punt=true;
+                     continue;
+                 }
+             } elseif (!(strpos('0123456789', $n) === false)) {
+                 if ($punt) {
+                     if ($n != '0') {
+                         $zeros=false;
+                     }
+                     $fra.=$n;
+                 } else {
+                     $ent.=$n;
+                 }
+             } else {
+                 break;
+             }
+         }
+         $ent='     ' . $ent;
+         if ($dec and $fra and !$zeros) {
+             $fin=' coma';
+             for ($n=0; $n < strlen($fra); $n++) {
+                 if (($s=$fra[$n]) == '0') {
+                     $fin.=' cero';
+                 } elseif ($s == '1') {
+                     $fin.=$fem ? ' una' : ' un';
+                 } else {
+                     $fin.=' ' . $matuni[$s];
+                 }
+             }
+         } else {
+             $fin='';
+         }
+         if ((int) $ent === 0) {
+             return '' . $fin;
+         }
+         $tex='';
+         $sub=0;
+         $mils=0;
+         $neutro=false;
+         while (($num=substr($ent, -3)) != '   ') {
+             $ent=substr($ent, 0, -3);
+             if (++$sub < 3 and $fem) {
+                 $matuni[1]='una';
+                 $subcent='as';
+             } else {
+                 $matuni[1]=$neutro ? 'un' : 'uno';
+                 $subcent='os';
+             }
+             $t='';
+             $n2=substr($num, 1);
+             if ($n2 == '00') {
+             } elseif ($n2 < 21) {
+                 $t=' ' . $matuni[(int) $n2];
+             } elseif ($n2 < 30) {
+                 $n3=$num[2];
+                 if ($n3 != 0) {
+                     $t='i' . $matuni[$n3];
+                 }
+                 $n2=$num[1];
+                 $t=' ' . $matdec[$n2] . $t;
+             } else {
+                 $n3=$num[2];
+                 if ($n3 != 0) {
+                     $t=' y ' . $matuni[$n3];
+                 }
+                 $n2=$num[1];
+                 $t=' ' . $matdec[$n2] . $t;
+             }
+             $n=$num[0];
+             if ($n == 1) {
+                 $t=' ciento' . $t;
+             } elseif ($n == 5) {
+                 $t=' ' . $matunisub[$n] . 'ient' . $subcent . $t;
+             } elseif ($n != 0) {
+                 $t=' ' . $matunisub[$n] . 'cient' . $subcent . $t;
+             }
+             if ($sub == 1) {
+             } elseif (!isset($matsub[$sub])) {
+                 if ($num == 1) {
+                     $t=' mil';
+                 } elseif ($num > 1) {
+                     $t.=' mil';
+                 }
+             } elseif ($num == 1) {
+                 $t.=' ' . $matsub[$sub] . '?n';
+             } elseif ($num > 1) {
+                 $t.=' ' . $matsub[$sub] . 'ones';
+             }
+             if ($num == '000') {
+                 $mils++;
+             } elseif ($mils != 0) {
+                 if (isset($matmil[$sub])) {
+                     $t.=' ' . $matmil[$sub];
+                 }
+                 $mils=0;
+             }
+             $neutro=true;
+             $tex=$t . $tex;
+         }
+         $tex=$neg . substr($tex, 1) . $fin;
+         $end_num=$tex;
+         return $end_num;
+     }
+     function encabezado($titulo) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $carrera=substr($cod_mat, 0, 1);
+         if (substr($cod_mat, 1, 1) == "P" OR substr($cod_mat, 1, 1) == "T" OR substr($cod_mat, 1, 1) == "E") {
+             $TIPO=substr($cod_mat, 1, 1);
+         } else {
+             $TIPO="";
+         }
+         $carrera_a1=$this->carrera_larga($carrera);
+         $carrera_a2=$this->carrera_corta($carrera);
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 0 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         //$this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         include "db.php";
+         $sql="SELECT * FROM sede where id=1";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $sede=$fila['lugar'];
+             }
+         }
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode($sede), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(15, 35 + $X1);
+         $this->Cell(180, 7, utf8_decode($titulo), 0, 0, 'C', 0);
+     }
+     function acta_De_calificacion_Encabezado($LAPSO, $MATERIA, $cod_doc, $SECCION) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $carrera=substr($MATERIA, 0, 1);
+         if (substr($MATERIA, 1, 1) == "P" OR substr($MATERIA, 1, 1) == "T" OR substr($MATERIA, 1, 1) == "E") {
+             $TIPO=substr($MATERIA, 1, 1);
+         } else {
+             $TIPO="";
+         }
+         $carrera_a1=$this->carrera_larga($carrera);
+         $carrera_a2=$this->carrera_corta($carrera);
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 0 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         //$this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         include "db.php";
+         $sql="SELECT * FROM sede where id=1";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $sede=$fila['lugar'];
+             }
+         }
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode($sede), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(55, 35 + $X1);
+         $this->Cell(100, 7, "ACTA DE CALIFICACION FINAL " . substr($LAPSO, 0, 4) . " " . $TIPO, 1, 1, 'C', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(15, 45 + $X1);
+         $this->Cell(136, 5, utf8_decode("ASIGNATURA:"), 0, 0, 'L', 0);
+         $LAPSO=$_POST["lapso"];
+         $MATERIA=$_POST["cod_mat"];
+         $cod_doc=$_POST["cod_doc"];
+         $SECCION=$_POST["seccion"];
+         $COD=substr($MATERIA, 0, 5);
+         $SECCION=$_POST["seccion"];
+         $carrera=substr($MATERIA, 0, 1);
+         if (substr($MATERIA, 1, 1) == "P" OR substr($MATERIA, 1, 1) == "T" OR substr($MATERIA, 1, 1) == "E") {
+             $TIPO=substr($MATERIA, 1, 1);
+         } else {
+             $TIPO="";
+         }
+         $sql="SELECT * FROM lismat WHERE cod_mat='" . $MATERIA . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $DESCRIP2=substr(utf8_decode($fila['descrip2']), 0, 70);
+                 $CRED=$fila['creditos'];
+                 $semestre=$fila['semestre'];
+                 $pensum=$fila['pensum'];
+                 $aprobatori=$fila['aprobatori'];
+             }
+         }
+         $this->SetXY(38, 45 + $X1);
+         $this->Cell(250, 5, $DESCRIP2 . " (" . $COD . ")", 0, 0, 'L', 0);
+         $this->SetXY(172, 45 + $X1);
+         $this->Cell(136, 5, utf8_decode("SECCIÓN: ") . $semestre . " - " . $SECCION, 0, 0, 'L', 0);
+         $this->SetXY(185, 53 + $X1);
+         $this->Cell(20, 5, utf8_decode("U.C.: ") . $CRED, 0, 0, 'L', 0);
+         $sql="SELECT * FROM docente WHERE cod_doc='" . $cod_doc . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $CEDULA=utf8_decode($fila['cedula']);
+                 $NOMBRE=utf8_decode($fila['nombre']);
+             }
+         }
+         $this->SetXY(15, 53 + $X1);
+         $this->Cell(136, 5, "DOCENTE:", 0, 0, 'L', 0);
+         $this->SetXY(35, 53 + $X1);
+         $this->Cell(136, 5, $NOMBRE . "  (" . $cod_doc . ")", 0, 0, 'L', 0);
+         $this->SetLineWidth(0.4);
+         $this->Line(35, 63, 97, 63);
+         $this->Line(125, 63, 142, 63);
+         $this->SetLineWidth(0.2);
+         $this->SetXY(110, 53 + $X1);
+         $this->Cell(136, 5, utf8_decode("CÉDULA:"), 0, 0, 'L', 0);
+         $this->SetXY(125, 53 + $X1);
+         $this->Cell(136, 5, $CEDULA, 0, 0, 'L', 0);
+         $this->SetXY(145, 53 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPT.:"), 0, 0, 'L', 0);
+         $this->SetXY(156, 53 + $X1);
+         $this->Cell(136, 5, utf8_decode($carrera_a2), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(15, 60 + $X1);
+         $this->Cell(180, 10, "", 1, 1, 'L', 0);
+         $this->SetXY(15, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("NUM."), 0, 0, 'L', 0);
+         $this->SetXY(23, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("CODIGO"), 0, 0, 'L', 0);
+         $this->SetXY(35, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("CEDULA"), 0, 0, 'L', 0);
+         $this->SetXY(55, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("NOMBRE DEL ALUMNO"), 0, 0, 'L', 0);
+         $this->SetXY(125, 60 + $X1);
+         $this->Cell(70, 10, "", 1, 1, 'L', 0);
+         $this->SetXY(125, 60 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEFINITIVA"), 0, 0, 'L', 0);
+         $this->SetXY(125, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("ACUM"), 0, 0, 'L', 0);
+         $this->SetXY(140, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("NOTA"), 0, 0, 'L', 0);
+         $this->SetXY(155, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("LETRA"), 0, 0, 'L', 0);
+         $this->SetXY(172, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("Observaciones"), 0, 0, 'L', 0);
+     }
+     function listado_per_Encabezado($lapso, $cod_mat, $descrip2, $cod_doc, $trayecto) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $carrera=substr($cod_mat, 0, 1);
+         $carrera_a1=$this->carrera_larga($carrera);
+         $carrera_a2=$this->carrera_corta($carrera);
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 0 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         //$this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         include "db.php";
+         $sql="SELECT * FROM sede where id=1";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $sede=$fila['lugar'];
+             }
+         }
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode($sede), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(0, 35 + $X1);
+         $this->Cell(210, 7, "LISTADO DE ALUMNOS A PER " . $lapso, 0, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(14, 45 + $X1);
+         $this->Cell(22, 5, "Dept.: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(23, 45 + $X1);
+         $this->Cell(22, 5, utf8_decode($carrera_a2), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(54, 45 + $X1);
+         $this->Cell(12, 5, "Asignatura: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(71, 45 + $X1);
+         $this->Cell(80, 5, substr(utf8_decode($descrip2), 0, 53) . "  (" . utf8_decode($cod_mat) . ")", 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(176, 45 + $X1);
+         if ($carrera == "A" or $carrera == "R") {
+             $this->Cell(14, 5, "Semestre: ", 0, 0, 'L', 0);
+         } else {
+             $this->Cell(14, 5, "Trayecto: ", 0, 0, 'L', 0);
+         }
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(190, 45 + $X1);
+         $this->Cell(5, 5, $trayecto, 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(15, 50 + $X1);
+         $this->Cell(9, 5, "Num.", 1, 1, 'L', 0);
+         $this->SetXY(24, 50 + $X1);
+         $this->Cell(22, 5, "Cedula", 1, 1, 'L', 0);
+         $this->SetXY(46, 50 + $X1);
+         $this->Cell(98, 5, "Nombre", 1, 1, 'L', 0);
+         $this->SetXY(144, 50 + $X1);
+         $this->Cell(10, 5, "Nota", 1, 1, 'C', 0);
+         $this->SetXY(154, 50 + $X1);
+         $this->Cell(13, 5, utf8_decode("Sección"), 1, 1, 'C', 0);
+         $this->SetXY(167, 50 + $X1);
+         $this->Cell(14, 5, "Cantidad", 1, 1, 'C', 0);
+         $this->SetXY(181, 50 + $X1);
+         $this->Cell(14, 5, "Cargadas", 1, 1, 'C', 0);
+     }
+     function estadistica_de_carga_de_notas_encabezado() {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 0 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         //$this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         include "db.php";
+         $sql="SELECT * FROM sede where id=1";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $sede=$fila['lugar'];
+             }
+         }
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode($sede), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(0, 35 + $X1);
+         $this->Cell(210, 7, "ESTADISTA DE CARGA DE NOTAS DEL USUARIOS", 0, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(156, 45 + $X1);
+         $this->Cell(14, 5, "Fecha: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(167, 45 + $X1);
+         $this->Cell(5, 5, $fechaActual, 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(15, 50 + $X1);
+         $this->Cell(12, 5, "Num.", 1, 1, 'L', 0);
+         $this->SetXY(27, 50 + $X1);
+         $this->Cell(30, 5, "Usuario", 1, 1, 'L', 0);
+         $this->SetXY(57, 50 + $X1);
+         $this->Cell(120, 5, "Nombre", 1, 1, 'L', 0);
+         $this->SetXY(177, 50 + $X1);
+         $this->Cell(15, 5, "Cantidad", 1, 1, 'C', 0);
+     }
+     function estadistica_de_carga_de_notas_contenido() {
+         include "db.php";
+         $sql="SELECT notas.cod_usu, COUNT(*) Total,user.nombre FROM notas,user where notas.cod_usu=user.login GROUP BY `cod_usu` HAVING COUNT(*) > 1";
+         $resultado=$conn->query($sql);
+         $s=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $cod_usu_1[$s]=strtoupper(utf8_decode($fila['cod_usu']));
+                 $nombre_1[$s]=strtoupper(utf8_decode($fila['nombre']));
+                 $total_1[$s]=$fila['Total'];
+                 $s=$s + 1;
+             }
+         }
+         $X1=10;
+         $this->SetFont('Arial', '', 8);
+         for ($i=0; $i < count($cod_usu_1); $i++) {
+             $this->SetXY(15, 50 + $X1);
+             $this->Cell(12, 5, $i + 1, 1, 1, 'L', 0);
+             $this->SetXY(27, 50 + $X1);
+             $this->Cell(30, 5, $cod_usu_1[$i], 1, 1, 'L', 0);
+             $this->SetXY(57, 50 + $X1);
+             $this->Cell(120, 5, $nombre_1[$i], 1, 1, 'L', 0);
+             $this->SetXY(177, 50 + $X1);
+             $this->Cell(15, 5, $total_1[$i], 1, 1, 'C', 0);
+             $X1=$X1 + 5;
+         }
+     }
+     function estadistica_de_carga_de_notas_por_carrera_encabezado($carrera_a2) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 0 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         //$this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         include "db.php";
+         $sql="SELECT * FROM sede where id=1";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $sede=$fila['lugar'];
+             }
+         }
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode($sede), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(0, 35 + $X1);
+         $this->Cell(210, 7, "ESTADISTA DE CARGA DE NOTAS DEL USUARIOS", 0, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(14, 45 + $X1);
+         $this->Cell(22, 5, "Especialidad: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(35, 45 + $X1);
+         $this->Cell(22, 5, utf8_decode($carrera_a2), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(156, 45 + $X1);
+         $this->Cell(14, 5, "Fecha: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(167, 45 + $X1);
+         $this->Cell(5, 5, $fechaActual, 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(15, 50 + $X1);
+         $this->Cell(12, 5, "Num.", 1, 1, 'L', 0);
+         $this->SetXY(27, 50 + $X1);
+         $this->Cell(30, 5, "Usuario", 1, 1, 'L', 0);
+         $this->SetXY(57, 50 + $X1);
+         $this->Cell(120, 5, "Nombre", 1, 1, 'L', 0);
+         $this->SetXY(177, 50 + $X1);
+         $this->Cell(15, 5, "Cantidad", 1, 1, 'C', 0);
+     }
+     function estadistica_de_carga_de_notas_por_carrera_contenido($carrera) {
+         include "db.php";
+         $sql="SELECT notas.cod_usu, COUNT(*) Total,user.nombre FROM notas,user where carrera='" . $carrera . "' and notas.cod_usu=user.login GROUP BY `cod_usu` HAVING COUNT(*) > 1";
+         $resultado=$conn->query($sql);
+         $s=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $cod_usu_1[$s]=strtoupper(utf8_decode($fila['cod_usu']));
+                 $nombre_1[$s]=strtoupper(utf8_decode($fila['nombre']));
+                 $total_1[$s]=$fila['Total'];
+                 $s=$s + 1;
+             }
+         }
+         $X1=10;
+         $this->SetFont('Arial', '', 8);
+         for ($i=0; $i < count($cod_usu_1); $i++) {
+             $this->SetXY(15, 50 + $X1);
+             $this->Cell(12, 5, $i + 1, 1, 1, 'L', 0);
+             $this->SetXY(27, 50 + $X1);
+             $this->Cell(30, 5, $cod_usu_1[$i], 1, 1, 'L', 0);
+             $this->SetXY(57, 50 + $X1);
+             $this->Cell(120, 5, $nombre_1[$i], 1, 1, 'L', 0);
+             $this->SetXY(177, 50 + $X1);
+             $this->Cell(15, 5, $total_1[$i], 1, 1, 'C', 0);
+             $X1=$X1 + 5;
+         }
+     }
+     function contar_cargadas($codigo, $cod_mat, $lapso) {
+         $sql="SELECT * FROM notas WHERE $codigo='" . $codigo . "' and cod_mat='" . $cod_mat . "' and lapso='" . $lapso . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $cedula=utf8_decode($fila['cedula']);
+                 $nombre=utf8_decode($fila['nombre']);
+             }
+         }
+     }
+     function acta_De_calificacion_Piedepagina($X1B, $IN, $APRO, $REPR, $LAPSO, $MATERIA, $cod_doc, $SECCION) {
+         $COD=substr($MATERIA, 0, 5);
+         $carrera=substr($MATERIA, 0, 1);
+         if (substr($MATERIA, 1, 1) == "P" OR substr($MATERIA, 1, 1) == "T" OR substr($MATERIA, 1, 1) == "E") {
+             $TIPO=substr($MATERIA, 1, 1);
+         } else {
+             $TIPO="";
+         }
+         $carrera_a1=$this->carrera_larga($carrera);
+         $carrera_a2=$this->carrera_corta($carrera);
+         $this->SetLineWidth(0.4);
+         $X3=20;
+         $this->SetXY(30, 73 + $X1B);
+         $this->Cell(150, 5, "========================= FIN DEL ACTA =========================", 0, 0, 'C', 0);
+         $this->SetXY(15, 80 + $X1B);
+         $this->Cell(40, 5, "Conformes", 1, 1, 'L', 0);
+         $this->SetXY(15, 85 + $X1B);
+         $this->Cell(40, 5, "Prof. Materia", 1, 1, 'L', 0);
+         $this->SetXY(15, 90 + $X1B);
+         $this->Cell(40, 5, "Control Estudios", 1, 1, 'L', 0);
+         $this->SetXY(15, 95 + $X1B);
+         $this->Cell(40, 5, "Director", 1, 1, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(57, 80 + $X1B);
+         $this->Cell(20, 5, "Observaciones", 0, 0, 'L', 0);
+         $this->SetXY(55, 80 + $X1B);
+         $this->Cell(100, 20, "", 1, 1, 'L', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(57, 85 + $X1B);
+         $this->Cell(40, 5, $MATERIA . " - " . $LAPSO . " - " . $cod_doc . " - " . $SECCION, 0, 0, 'L', 0);
+         $this->SetXY(57, 90 + $X1B);
+         $this->Cell(40, 5, utf8_decode($carrera_a1), 0, 0, 'L', 0);
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $this->SetXY(155, 80 + $X1B);
+         $this->Cell(40, 5, "Fecha:            " . $hoy, 1, 1, 'L', 0);
+         $this->SetXY(155, 85 + $X1B);
+         $this->Cell(40, 5, "Aprobados:             " . $APRO, 1, 1, 'L', 0);
+         $this->SetXY(155, 90 + $X1B);
+         $this->Cell(40, 5, "Reprobados:           " . $REPR, 1, 1, 'L', 0);
+         $this->SetXY(155, 95 + $X1B);
+         $this->Cell(40, 5, "Inasistentes:           " . $IN, 1, 1, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(15, 100 + $X1B);
+         $this->Cell(40, 5, "ORIGINAL Y COPIA:", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(43, 100 + $X1B);
+         $this->Cell(80, 5, "Departamento de Control de Estudios", 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(25, 105 + $X1B);
+         $this->Cell(40, 5, "TRIPLICADO", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(43, 105 + $X1B);
+         $this->Cell(40, 5, "Para ser Publicado", 0, 0, 'L', 0);
+         include "db.php";
+         $sql="SELECT * FROM user WHERE login='" . $_SESSION['username'] . "'";
+         $resultado=$conn->query($sql);
+         $CREDSUM=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $NOMBRE_USER=$fila['nombre'];
+             }
+         }
+         $this->SetXY(120, 105 + $X1B);
+         $this->Cell(40, 5, "USUARIO: " . $NOMBRE_USER, 0, 0, 'L', 0);
+     }
+     function nombremes($mes1) {
+         setlocale(LC_TIME, 'spanish');
+         $mes=strftime("%B", mktime(0, 0, 0, $mes1, 1, 2000));
+         return $mes;
+     }
+     function i25($xpos, $ypos, $code, $basewidth = 1, $height = 10) {
+         $wide=$basewidth;
+         $narrow=$basewidth / 3;
+         $barChar['0']='nnwwn';
+         $barChar['1']='wnnnw';
+         $barChar['2']='nwnnw';
+         $barChar['3']='wwnnn';
+         $barChar['4']='nnwnw';
+         $barChar['5']='wnwnn';
+         $barChar['6']='nwwnn';
+         $barChar['7']='nnnww';
+         $barChar['8']='wnnwn';
+         $barChar['9']='nwnwn';
+         $barChar['A']='nn';
+         $barChar['Z']='wn';
+         if (strlen($code) % 2 != 0) {
+             $code='0' . $code;
+         }
+         $code='AA' . strtolower($code) . 'ZA';
+         for ($i=0; $i < strlen($code); $i=$i + 2) {
+             $charBar=$code[$i];
+             $charSpace=$code[$i + 1];
+             if (!isset($barChar[$charBar])) {
+                 $this->Error('Invalid character in barcode: ' . $charBar);
+             }
+             if (!isset($barChar[$charSpace])) {
+                 $this->Error('Invalid character in barcode: ' . $charSpace);
+             }
+             $seq='';
+             for ($s=0; $s < strlen($barChar[$charBar]); $s++) {
+                 $seq.=$barChar[$charBar][$s] . $barChar[$charSpace][$s];
+             }
+             for ($bar=0; $bar < strlen($seq); $bar++) {
+                 if ($seq[$bar] == 'n') {
+                     $lineWidth=$narrow;
+                 } else {
+                     $lineWidth=$wide;
+                 }
+                 if ($bar % 2 == 0) {
+                     $this->Rect($xpos, $ypos, $lineWidth, $height, 'F');
+                 }
+                 $xpos+=$lineWidth;
+             }
+         }
+     }
+     function reporte_de_carga_de_nota_Encabezado($titulo, $X0_3, $LAPSO) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 0 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         //$this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIALA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode("PUERTO CABELLO"), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(55, 35 + $X1);
+         $this->Cell(100, 7, $titulo . " " . substr($LAPSO, 0, 4), 0, 0, 'C', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(170, 45);
+         $this->Cell(136, 5, utf8_decode("Fecha: "), 0, 0, 'L', 0);
+         $this->SetXY(180, 45);
+         $this->Cell(136, 5, $hoy, 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $X1=-15;
+         $this->SetXY(5, 64 + $X1);
+         $this->Cell(6, 7, utf8_decode("N°"), 1, 1, 'C', 0);
+         $this->SetXY(11, 64 + $X1);
+         $this->Cell(17, 7, utf8_decode("Cedula"), 1, 1, 'C', 0);
+         $this->SetXY(28, 64 + $X1);
+         $this->Cell(55, 7, utf8_decode("Nombre"), 1, 1, 'C', 0);
+         $this->SetXY(83, 64 + $X1);
+         $this->Cell(14, 7, utf8_decode("Cod_doc"), 1, 1, 'C', 0);
+         $this->SetXY(97, 64 + $X1);
+         $this->Cell(14, 7, utf8_decode("Cod_mat"), 1, 1, 'C', 0);
+         $this->SetXY(111, 64 + $X1);
+         $this->Cell(87, 7, utf8_decode("Asignatura"), 1, 1, 'C', 0);
+         $this->SetXY(198, 64 + $X1);
+         $this->Cell(7, 7, utf8_decode("Sec"), 1, 1, 'C', 0);
+         $this->SetFont('Arial', '', 7);
+         $this->SetXY(15, 270);
+         $this->Cell(170, 5, utf8_decode("Página: ") . $X0_3, 0, 0, 'C', 0);
+     }
+
+
+
+
+     function alumnos_activos_Encabezado($X0_3) {
+         global $X1_1;
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 5 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         //$this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode("PUERTO CABELLO"), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(15, 35 + $X1);
+         $this->Cell(170, 7, "LISTADO DE ALUMNOS ACTIVOS", 0, 0, 'C', 0);
+         $X1=-15;
+
+
+         $this->SetFont('Arial', 'B', 9);
+
+
+      // esta linea controla la posicion (X,Y)     
+         $this->SetXY(15, 65 + $X1);
+      // esta linea controla la posicion en de la celda (Ancho y Alto)
+         $this->Cell(8, 5, utf8_decode("N°"), 1, 1, 'C', 0);
+         
+         $this->SetXY(23, 65 + $X1);
+     // esta linea controla la posicion en de la celda (Ancho y Alto)
+         $this->Cell(15, 5, utf8_decode("CEDULA"), 1, 1, 'C', 0);
+
+    // esta linea controla la posicion (X,Y) 
+        $this->SetXY(38, 65 + $X1);
+    // esta linea controla la posicion en de la celda (Ancho y Alto)
+        $this->Cell(70, 5, utf8_decode("NOMBRE DEL ALUMNO"), 1, 1, 'C', 0);
+
+
+// esta linea controla la posicion (X,Y) 
+         $this->SetXY(108, 65 + $X1);
+// esta linea controla la posicion en de la celda (Ancho y Alto)
+         $this->Cell(30, 5, utf8_decode("CARRERA"), 1, 1, 'C', 0);
+         
+// esta linea controla la posicion (X,Y) 
+		 $this->SetXY(138, 65 + $X1);
+// esta linea controla la posicion en de la celda (Ancho y Alto)
+         $this->Cell(20, 5, utf8_decode("ACTIVIDAD"), 1, 1, 'C', 0);
+         
+		 // PRUEBA  CAMPO SEXO 
+// esta linea controla la posicion (X,Y)  
+		 $this->SetXY(158,65 + $X1);
+// esta linea controla la posicion en de la celda (Ancho y Alto)
+         $this->Cell(10,5, utf8_decode("SEXO"), 1, 1, 'C', 0);
+         // FIN PRUEBA
+         
+         // PRUEBA  CAMPO TIPO DE INGRESO PARA SABER SI ESTA POR OPSU  -- 08-11-2023
+
+// esta linea controla la posicion (X,Y) 
+         $this->SetXY(168,65 + $X1);
+// esta linea controla la posicion en de la celda (Ancho y Alto)         
+         $this->Cell(30,5, utf8_decode("TIPO/INGRESO"), 1, 1, 'C', 0);
+         // FIN PRUEBA 
+		 
+		 $this->SetFont('Arial', '', 7);
+		 $this->SetXY(189, 5);
+         $this->Cell(170, 5, utf8_decode("Página: ") . $X0_3, 0, 0, 'C', 0);
+     
+     }      // Final function alumnos_activos_Encabezado($X0_3)
+
+
+
+     function alumno_carrera_Encabezado($X0_3, $carrera_a1) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 5 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         //$this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode("PUERTO CABELLO"), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(55, 35 + $X1);
+         $this->Cell(100, 7, "LISTADO DE ALUMNOS DEL " . utf8_decode($carrera_a1), 0, 0, 'C', 0);
+         $carrera=$_POST["carrera"];
+         $X1=-15;
+         $this->SetFont('Arial', 'B', 7);
+         $this->SetXY(15, 65 + $X1);
+         $this->Cell(180, 5, "", 1, 1, 'L', 0);
+         $this->SetXY(15, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("N°"), 0, 0, 'L', 0);
+         $this->SetXY(23, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("CEDULA"), 0, 0, 'L', 0);
+         $this->SetXY(45, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("NOMBRE DEL ALUMNO"), 0, 0, 'L', 0);
+         $this->SetXY(130, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("CARRERA"), 0, 0, 'L', 0);
+         $this->SetXY(160, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("ACTIVIDAD"), 0, 0, 'L', 0);
+         
+         $this->SetFont('Arial', '', 7);
+         $this->SetXY(15, 270);
+         $this->Cell(170, 5, utf8_decode("Página: ") . $X0_3, 0, 0, 'C', 0);
+     }
+     function alumno_carrera_Encabezado2($X0_3, $carrera_a1, $lapso) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 5 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         //$this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode("PUERTO CABELLO"), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(55, 35 + $X1);
+         $this->Cell(100, 7, "LISTADO DE ALUMNOS DEL " . utf8_decode($carrera_a1) . " " . $lapso, 0, 0, 'C', 0);
+         $carrera=$_POST["carrera"];
+         $X1=-15;
+         $this->SetFont('Arial', 'B', 7);
+         $this->SetXY(15, 65 + $X1);
+         $this->Cell(180, 5, "", 1, 1, 'L', 0);
+         $this->SetXY(15, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("N°"), 0, 0, 'L', 0);
+         $this->SetXY(23, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("CEDULA"), 0, 0, 'L', 0);
+         $this->SetXY(45, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("NOMBRE DEL ALUMNO"), 0, 0, 'L', 0);
+         $this->SetXY(130, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("CARRERA"), 0, 0, 'L', 0);
+         $this->SetXY(160, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("ACTIVIDAD"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 7);
+         $this->SetXY(15, 270);
+         $this->Cell(170, 5, utf8_decode("Página: ") . $X0_3, 0, 0, 'C', 0);
+     }
+     function alumno_telefonos_Encabezado($X0_3, $carrera_a1) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 5 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         //$this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode("PUERTO CABELLO"), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(0, 35 + $X1);
+         $this->Cell(297, 7, "LISTADO DE TELEFONOS Y CORREOS DE " . utf8_decode($carrera_a1), 0, 0, 'C', 0);
+         $carrera=$_POST["carrera"];
+         $X1=-15;
+         $this->SetFont('Arial', 'B', 7);
+         $this->SetXY(5, 65 + $X1);
+         $this->Cell(288, 5, "", 1, 1, 'L', 0);
+         $this->SetXY(5, 65 + $X1);
+         $this->Cell(8, 5, utf8_decode("N°"), 0, 0, 'L', 0);
+         $this->SetXY(13, 65 + $X1);
+         $this->Cell(15, 5, utf8_decode("CEDULA"), 0, 0, 'L', 0);
+         $this->SetXY(28, 65 + $X1);
+         $this->Cell(70, 5, utf8_decode("NOMBRE DEL ALUMNO"), 0, 0, 'L', 0);
+         $this->SetXY(98, 65 + $X1);
+         $this->Cell(20, 5, utf8_decode("TELEFONO"), 0, 0, 'L', 0);
+         $this->SetXY(118, 65 + $X1);
+         $this->Cell(20, 5, utf8_decode("TELEFONO"), 0, 0, 'L', 0);
+         $this->SetXY(138, 65 + $X1);
+         $this->Cell(20, 5, utf8_decode("TELEFONO"), 0, 0, 'L', 0);
+         $this->SetXY(158, 65 + $X1);
+         $this->Cell(60, 5, utf8_decode("CORREO"), 0, 0, 'L', 0);
+         $this->SetXY(218, 65 + $X1);
+         $this->Cell(75, 5, utf8_decode("DIRECCION"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 7);
+         $this->SetXY(0, 182);
+         $this->Cell(297, 5, utf8_decode("Página: ") . $X0_3, 0, 0, 'C', 0);
+     }
+
+     ///
+     // Encabezado del Historial Academico TSU
+     ///
+     function encabezado_historial($pensum, $cedula) {
+         global $lapso_actual;
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         $hoy=date("d-m-Y");
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if (!$resultado) {
+             exit;
+         }
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $CODIGO=$fila['codigo'];
+                 $cedula=$fila['cedula'];
+                 $carrera=$fila['carrera'];
+                 $MENCION=$fila['mencion'];
+                 $PLAN=$fila['plan'];
+                 $NOMBRE=$fila['nombre'];
+                 $SEMESTRE=$fila['semestre'];
+                 $ACTIVIDAD=$fila['actividad'];
+                 $NIVEL=$fila['nivel'];
+             }
+         }
+         $this->SetAutoPageBreak(FALSE, PDF_MARGIN_BOTTOM);
+         $carrera_a1=$this->carrera_larga($carrera);
+         $carrera_a2=$this->carrera_corta($carrera);
+         $this->SetFont('Arial', '', 8);
+         $X1=5;
+         $this->Image("LOGO.jpg", 15, 0 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(15, 0 + $X1);
+         $this->Cell(190, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'C', 0);
+         $sql="SELECT * FROM sede where id=1";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $sede=$fila['lugar'];
+             }
+         }
+         $this->SetXY(15, 4 + $X1);
+         $this->Cell(190, 5, utf8_decode($sede), 0, 0, 'C', 0);
+         $this->SetXY(15, 4 + $X1);
+         $this->Cell(185, 5, $hoy, 0, 0, 'R', 0);
+         $this->SetXY(15, 8 + $X1);
+         $this->Cell(190, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(15, 15 + $X1);
+         $this->Cell(190, 5, utf8_decode("HISTORIAL ACADEMICO"), 0, 0, 'C', 0);
+         $X1=8;
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(15, 20 + $X1);
+         $this->Cell(15, 7, "CEDULA: " . $cedula, 0, 0, 'L', 0);
+         $this->SetXY(50, 20 + $X1);
+         $this->Cell(50, 7, "NOMBRE: " . utf8_decode($NOMBRE), 0, 0, 'L', 0);
+         $this->SetXY(160, 20 + $X1);
+         $this->Cell(15, 7, "ACT.: " . $ACTIVIDAD, 0, 0, 'L', 0);
+         $X1=7;
+         $this->SetXY(160, 26 + $X1);
+         $this->Cell(15, 5, "PLAN: " . $PLAN, 0, 0, 'L', 0);
+         $this->SetXY(15, 26 + $X1);
+         $this->Cell(190, 5, "CARRERA: " . utf8_decode($carrera_a1), 0, 0, 'L', 0);
+         $X1=5;
+         $this->SetXY(15, 30 + $X1);
+         $this->Cell(190, 5, utf8_decode("ASIGNATURAS CURSADAS"), 0, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(15, 35 + $X1);
+         $this->Cell(20, 7, utf8_decode("CODIGO"), 1, 1, 'C', 0);
+         $this->SetXY(35, 35 + $X1);
+         $this->Cell(75, 7, utf8_decode("NOMBRE DE LA ASIGNATURA"), 1, 1, 'C', 0);
+         if ($pensum == "AXC" AND $pensum == "RXC" AND $pensum == "GXC") {
+             $this->SetXY(110, 35 + $X1);
+             $this->Cell(10, 7, "SEM", 1, 1, 'C', 0);
+         } else {
+             $this->SetXY(110, 35 + $X1);
+             $this->Cell(10, 7, "TRIM", 1, 1, 'C', 0);
+         }
+         $this->SetXY(120, 35 + $X1);
+         $this->Cell(10, 7, "UC", 1, 1, 'C', 0);
+         $this->SetXY(130, 35 + $X1);
+         $this->Cell(10, 7, "VC", 1, 1, 'C', 0);
+         $this->SetXY(140, 35 + $X1);
+         $this->Cell(15, 7, "NOTAS", 1, 1, 'C', 0);
+         $this->SetXY(155, 35 + $X1);
+         $this->Cell(15, 7, "LAPSO", 1, 1, 'C', 0);
+         $this->SetXY(170, 35 + $X1);
+         $this->Cell(15, 7, "TIPO", 1, 1, 'C', 0);
+         $this->SetXY(185, 35 + $X1);
+         $this->Cell(15, 7, "CUR.", 1, 1, 'C', 0);
+         $X1=5;
+     }
+     //
+     //  Fin Function encabezado_historial
+     // 
+
+
+
+     function lapso_actual($carrera) {
+         include "db.php";
+         $sql="SELECT max(lapso) as lapso,descrip FROM `lapso` WHERE carrera= '" . $carrera . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nombre_lapso=$fila['descrip'];
+                 $lapso_actual=$fila['lapso'];
+             }
+         }
+         return $lapso_actual;
+     }
+     function verficar_trayecto($cedula, $pensum, $tr, $grado) {
+         include('db.php');
+         $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' and trayecto='" . $tr . "' and grado='" . $grado . "'";
+         $result=$conn->query($sql);
+         $z=0;
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 $cod_mat[$z]=$fila['cod_mat'];
+                 $descrip2[$z]=$fila['descrip2'];
+                 $creditos[$z]=$fila['creditos'];
+                 $semestre[$z]=$fila['semestre'];
+                 $nota_cat[$z]=$fila['nota'];
+                 $divicion[$z]=$fila['divicion'];
+                 $trayecto[$z]=$fila['trayecto'];
+                 $aprobatori[$z]=$fila['aprobatori'];
+                 $grado[$z]=$fila['grado'];
+                 $electiva[$z]=$fila['electiva'];
+                 $z=$z + 1;
+             }
+         }
+         $tr0=0;
+         $aprobada=0;
+         $nota_resumida=0;
+         for ($i=0; $i < count($cod_mat); $i++) {
+             if (substr($cod_mat[$i], 1, 1) == "R") {
+                 $tr0=$tr0 + 1;
+                 $materia=$this->listado_materia($pensum, substr($cod_mat[$i], 2, 2));
+                 list($cod_mat_x, $descrip2_x, $creditos_x, $semestre_x, $nota_cat, $divicion_x, $trayecto_x, $aprobatori_x, $electiva_x) = split('[|]', $materia);
+                 $resumida=$this->calcular_resumida($pensum, $X1B, $cod_mat_x, $cedula, $X1B, $descrip2_x, $semestre_x, $creditos_x, $trayecto_x, $aprobatori_x, $divicion_x, $electiva_x, "false", "", $cant, $apro);
+                 list($nota_resumida, $lapso_resumida, $tipo_resumida) = split('[|]', $resumida);
+                 if ($nota_resumida >= $aprobatori_x) {
+                     $aprobada=$aprobada + 1;
+                 }
+             }
+         }
+         if ($tr0 == $aprobada) {
+             $t0="true";
+         } else {
+             $t0="false";
+         }
+         return $t0;
+     }
+     function verficar_trayecto_select($cedula, $pensum, $tr, $grado) {
+         include('db.php');
+         $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' and trayecto='" . $tr . "' and grado='" . $grado . "'";
+         $result=$conn->query($sql);
+         $z=0;
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 $cod_mat[$z]=$fila['cod_mat'];
+                 $descrip2[$z]=$fila['descrip2'];
+                 $creditos[$z]=$fila['creditos'];
+                 $semestre[$z]=$fila['semestre'];
+                 $nota_cat[$z]=$fila['nota'];
+                 $divicion[$z]=$fila['divicion'];
+                 $trayecto[$z]=$fila['trayecto'];
+                 $aprobatori[$z]=$fila['aprobatori'];
+                 $grado[$z]=$fila['grado'];
+                 $electiva[$z]=$fila['electiva'];
+                 $z=$z + 1;
+             }
+         }
+         $tr0=0;
+         $aprobada=0;
+         $nota_resumida=0;
+         for ($i=0; $i < count($cod_mat); $i++) {
+             if (substr($cod_mat[$i], 1, 1) == "R") {
+                 $tr0=$tr0 + 1;
+                 $materia=$this->listado_materia($pensum, substr($cod_mat[$i], 2, 2));
+                 list($cod_mat_x, $descrip2_x, $creditos_x, $semestre_x, $nota_cat, $divicion_x, $trayecto_x, $aprobatori_x, $electiva_x) = split('[|]', $materia);
+                 $resumida=$this->calcular_resumida($pensum, $X1B, $cod_mat_x, $cedula, $X1B, $descrip2_x, $semestre_x, $creditos_x, $trayecto_x, $aprobatori_x, $divicion_x, $electiva_x, "false", "", $cant, $apro);
+                 list($nota_resumida, $lapso_resumida, $tipo_resumida) = split('[|]', $resumida);
+                 if ($nota_resumida >= $aprobatori_x) {
+                     $aprobada=$aprobada + 1;
+                 }
+             }
+         }
+         if ($tr0 == $aprobada) {
+         } else {
+             echo '<option value="' . $trayecto_x . '">' . $trayecto_x . '</option>';
+         }
+     }
+     function verificar_aprobada($cedula, $cod_mat, $x) {
+         $pensum=substr($cod_mat, 0, 1) . "X" . substr($cod_mat, 4, 1);
+         $materia=$this->listado_materia($pensum, substr($cod_mat, 2, 2));
+         list($cod_mat, $descrip2, $creditos, $semestre, $nota_cat, $divicion, $trayecto, $aprobatori, $electiva) = split('[|]', $materia);
+         $resumida=$this->calcular_resumida($pensum, $X1B, $cod_mat, $cedula, $X1B, $descrip2, $semestre, $creditos, $trayecto, $aprobatori, $divicion, $cod_mat_libro_rector, $electiva, "false", "", $cant, $apro);
+         list($nota_resumida, $lapso_resumida, $tipo_resumida) = split('[|]', $resumida);
+         if ($x == 1) {
+             return $nota_resumida;
+         } else {
+             return $nota_resumida . "|" . $lapso_resumida . "|" . $tipo_resumida . "|" . $aprobatori;
+         }
+     }
+     function verificar_pre1_existe($pensum, $cod_mat) {
+         include('db.php');
+         $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' and cod_mat='" . $cod_mat . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 if ($fila['pre1'] <> "") {
+                     $dat="true";
+                 }
+                 if ($fila['pre1'] == "") {
+                     $dat="falso";
+                 }
+             }
+         }
+         return $dat;
+     }
+     function verificar_aprobada_pre_una($cedula, $cod_mat, $x, $pensum, $pre_x) {
+         include('db.php');
+         $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' and cod_mat='" . $cod_mat . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 if ($pre_x == "pre1") {
+                     $dat1=$fila['pre1'];
+                 }
+                 if ($pre_x == "pre2") {
+                     $dat1=$fila['pre2'];
+                 }
+                 if ($pre_x == "pre3") {
+                     $dat1=$fila['pre3'];
+                 }
+                 if ($pre_x == "pre4") {
+                     $dat1=$fila['pre4'];
+                 }
+             }
+         }
+         if ($dat1 <> "") {
+             $materia=$this->listado_materia($pensum, substr($dat1, 2, 2));
+             list($cod_mat, $descrip2, $creditos, $semestre, $nota_cat, $divicion, $trayecto, $aprobatori, $electiva) = split('[|]', $materia);
+             $resumida=$this->calcular_resumida($pensum, $X1B, $dat1, $cedula, $X1B, $descrip2, $semestre, $creditos, $trayecto, $aprobatori, $divicion, $cod_mat_libro_rector, $electiva, "false", "", $cant, $apro);
+             list($nota_resumida, $lapso_resumida, $tipo_resumida) = split('[|]', $resumida);
+             if ($nota_resumida <> "") {
+                 if ($nota_resumida >= $aprobatori) {
+                     $dat="true";
+                 } else {
+                     $dat="false";
+                 }
+             }
+             return $dat;
+         } else {
+             $dat="no";
+             return $dat;
+         }
+     }
+     function verificar_aprobada_pre_todas($pensum, $cod_mat, $cedula) {
+         for ($i=1; $i <= 4; $i++) {
+             $pre_x="pre" . $i;
+             $nota_resumida=$this->verificar_aprobada_pre_una($cedula, $cod_mat, 0, $pensum, $pre_x);
+             if ($nota_resumida <> "") {
+                 if ($i == 1) {
+                     $nota1=$nota_resumida;
+                 }
+                 if ($i == 2) {
+                     $nota2=$nota_resumida;
+                 }
+                 if ($i == 3) {
+                     $nota3=$nota_resumida;
+                 }
+                 if ($i == 4) {
+                     $nota4=$nota_resumida;
+                 }
+             }
+         }
+         return $nota1 . "|" . $nota2 . "|" . $nota3 . "|" . $nota4;
+     }
+     function verificar_aprobada_pre_todas_inf($pensum, $cod_mat) {
+         include('db.php');
+         $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' and cod_mat='" . $cod_mat . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 $nota1=$fila['pre1'];
+                 $nota2=$fila['pre2'];
+                 $nota3=$fila['pre3'];
+                 $nota4=$fila['pre4'];
+             }
+         }
+         return $nota1 . "|" . $nota2 . "|" . $nota3 . "|" . $nota4;
+     }
+     function verificar_inscripta($cedula, $cod_mat) {
+         include "db.php";
+         $sql="SELECT * FROM `notas` WHERE `codigo`='" . $cedula . "' AND `cod_mat`='" . $cod_mat . "' AND lapso='" . $lapso_actual . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $cod_mat=$fila['cod_mat'];
+             }
+         }
+         return $cod_mat;
+     }
+     function listado_materia($pensum, $cod_mat) {
+         include "db.php";
+         $sql="SELECT * FROM lismat WHERE SUBSTRING(`cod_mat`,3,2)='" . $cod_mat . "' AND pensum='" . $pensum . "' GROUP BY id ASC";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $cod_mat=$fila['cod_mat'];
+                 $descrip2=$fila['descrip2'];
+                 $creditos=$fila['creditos'];
+                 $semestre=$fila['semestre'];
+                 $nota_cat=$fila['nota'];
+                 $divicion=$fila['divicion'];
+                 $trayecto=$fila['trayecto'];
+                 $aprobatori=$fila['aprobatori'];
+                 $electiva=$fila['electiva'];
+                 $x1=$x1 + 1;
+             }
+         }
+         return $cod_mat . "|" . $descrip2 . "|" . $creditos . "|" . $semestre . "|" . $nota_cat . "|" . $divicion . "|" . $trayecto . "|" . $aprobatori . "|" . $electiva;
+     }
+     function pie_de_pagina_historial($X1B, $NOMBRE_USER, $ira, $APROBADOS, $FALTANTES, $MAX_A_CURSAR, $nota_sum, $cedula, $pensum, $grado) {
+         include "db.php";
+         $sql="SELECT * FROM user WHERE login='" . $_SESSION['username'] . "'";
+         $resultado=$conn->query($sql);
+         $CREDSUM=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $NOMBRE_USER=$fila['nombre'];
+             }
+         }
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(15, 37 + $X1B);
+         $this->Cell(50, 7, "RESUMEN:", 0, 0, 'L', 0);
+         $this->SetXY(120, 37 + $X1B);
+         $this->Cell(50, 7, "Emitido por: " . $NOMBRE_USER, 0, 0, 'L', 0);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira, $uc) = split('[|]', $nr);
+         $this->SetXY(15, 42 + $X1B);
+         $this->Cell(50, 7, "Indice de Rendimiento Academico: " . $ira, 0, 0, 'L', 0);
+         $this->SetXY(100, 42 + $X1B);
+         $this->Cell(50, 7, "GENERAL: ", 0, 0, 'L', 0);
+         $this->SetXY(130, 42 + $X1B);
+         $this->Cell(50, 7, "APROBADOS: " . $APROBADOS, 0, 0, 'L', 0);
+         $this->SetXY(160, 42 + $X1B);
+         $this->Cell(50, 7, "FALTANTES: " . $FALTANTES, 0, 0, 'L', 0);
+         $this->SetDrawColor(0, 0, 0);
+         $this->SetLineWidth(0.001);
+         $this->Line(15, 43 + $X1B, 200, 43 + $X1B);
+         $this->SetXY(100, 47 + $X1B);
+         $this->Cell(50, 7, "EQUIVALENTES: ", 0, 0, 'L', 0);
+         $this->SetXY(130, 47 + $X1B);
+         $this->Cell(50, 7, "MAX. A CURSAR: " . $MAX_A_CURSAR, 0, 0, 'L', 0);
+         $this->SetXY(30, 47 + $X1B);
+         $this->Cell(50, 7, $nota_sum, 0, 0, 'L', 0);
+         $this->Line(15, 53 + $X1B, 200, 53 + $X1B);
+         $this->SetXY(15, 52 + $X1B);
+         $this->Cell(50, 7, "A= Acreditado", 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 7);
+         $this->SetXY(15, 56 + $X1B);
+         $this->Cell(50, 7, utf8_decode("Institución autorizada para gestionar el Programa Nacional de Formación según Gaceta oficial de la República Bolivariana de Venezuela N° 39721"), 0, 0, 'L', 0);
+         $this->SetXY(15, 60 + $X1B);
+         $this->Cell(50, 7, utf8_decode("de fecha 26 de Julio del 2011"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(22, 68 + $X1B);
+         $this->Cell(180, 5, utf8_decode("Este Documento"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 13);
+         $this->SetXY(52, 68 + $X1B);
+         $this->Cell(180, 5, utf8_decode("NO ES VALIDO"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(86, 68 + $X1B);
+         $this->Cell(180, 5, utf8_decode("sin la firma y Sello del Departamento de Control De Estudios"), 0, 0, 'L', 0);
+     }
+     function pie_de_pagina_culminacion($X1B, $carrera_a2) {
+         $id=intval($_GET['id']);
+         if ($id == "") {
+             $id=$_SESSION['id'];
+         }
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE id='" . $id . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $CEDULA=$fila["cedula"];
+             }
+         }
+         $sql="SELECT * FROM alumno WHERE cedula='" . $CEDULA . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $CODIGO=$fila['codigo'];
+                 $carrera=$fila['carrera'];
+                 $MENCION=$fila['mencion'];
+                 $PLAN=$fila['plan'];
+             }
+         }
+         date_default_timezone_set('America/Caracas');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         $this->SetFont('Arial', '', 8);
+         $this->Line(14, 35 + $X1B, 199, 35 + $X1B);
+         $X1B=$X1B + 13;
+         $this->SetFont('Arial', '', 7);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(180, 4, utf8_decode("Observaciones: Durante el Lapso Academico 2010-2          Observaciones: Durante el Lapso Academico 2012-1 y subsiguientes, tanto para el Trayecto Inicial"), 0, 0, 'L', 0);
+         $X1B=$X1B + 3;
+         $this->SetFont('Arial', '', 7);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(180, 4, utf8_decode("(Trayecto Inicial identificado con el Numero Cero (0),          como para Los Trayectos 1 ,2, 3 y 4 correspondientes a los Programas Nacionales de Formacion (PNF)"), 0, 0, 'L', 0);
+         $X1B=$X1B + 3;
+         $this->SetFont('Arial', '', 7);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(180, 4, utf8_decode("(Trayecto Inicial identificado con el Numero Cero (0),          como para Los Trayectos 1 ,2, 3 y 4 correspondientes a los Programas Nacionales de Formacion (PNF)"), 0, 0, 'L', 0);
+         $X1B=$X1B + 3;
+         $this->SetFont('Arial', '', 7);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(180, 4, utf8_decode("La Escala de Evaluacion era de 01 al 05, siendo la          para las carreras; La Escala de Evaluacion es del 01 al 20"), 0, 0, 'L', 0);
+         $X1B=$X1B + 3;
+         $this->SetFont('Arial', '', 7);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(180, 4, utf8_decode("Nota Minima Aprobatoria 03 ptos"), 0, 0, 'L', 0);
+         $X1B=$X1B + 4;
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(180, 4, utf8_decode("Se certifica que el ciudadano(a) identificado(a) con el nombre :"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(110, 35 + $X1B);
+         $this->Cell(180, 4, utf8_decode($nombre), 0, 0, 'L', 0);
+         $X1B=$X1B + 4;
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(180, 4, utf8_decode("y titular de la cedula de identidad No."), 0, 0, 'L', 0);
+         $this->SetXY(70, 35 + $X1B);
+         $this->Cell(180, 4, $cedula, 0, 0, 'L', 0);
+         $X1B=$X1B + 4;
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(180, 4, utf8_decode("cursó y culminó todas las asignaturas para obtener el titulo de INGENIERO (A) EN:"), 0, 0, 'L', 0);
+         $X1B=$X1B + 6;
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(180, 4, utf8_decode($carrera_a2), 0, 0, 'C', 0);
+         $X1B=$X1B + 4;
+         $sql="SELECT * FROM sede where id=1";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $sede=$fila['lugar'];
+             }
+         }
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(180, 4, $sede . " a los " . strtoupper($this->num2letras($DIA)) . utf8_decode(" días del mes de ") . strtoupper($this->nombremes($m)) . " de " . strtoupper($this->num2letras($AÑO)), 0, 0, 'C', 0);
+         $X1B=60;
+         $L=20;
+         $this->Line(35 - $L, 200 + $X1B, 90 - $L, 200 + $X1B);
+         $sql="SELECT * FROM directivos where cargo='Director'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $director_nombre=$fila["nombre"];
+                 $director_cargo=$fila["cargo"];
+                 $director_lugar=$fila["lugar"];
+             }
+         }
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(35 - $L, 200 + $X1B);
+         $this->Cell(55, 5, utf8_decode($director_nombre), 0, 0, 'C', 0);
+         $this->SetXY(35 - $L, 205 + $X1B);
+         $this->Cell(55, 5, utf8_decode($director_cargo), 0, 0, 'C', 0);
+         $this->SetXY(35 - $L, 210 + $X1B);
+         $this->Cell(55, 5, utf8_decode($director_lugar), 0, 0, 'C', 0);
+         $sql="SELECT * FROM directivos where cargo='Sub Director Académico'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $Sub_a_nombre=$fila["nombre"];
+                 $Sub_a_cargo=$fila["cargo"];
+                 $Sub_a_lugar=$fila["lugar"];
+             }
+         }
+         $L2=52;
+         $this->Line(27 + $L2, 200 + $X1B, 82 + $L2, 200 + $X1B);
+         $this->SetXY(27 + $L2, 200 + $X1B);
+         $this->Cell(55, 5, utf8_decode($Sub_a_nombre), 0, 0, 'C', 0);
+         $this->SetXY(27 + $L2, 205 + $X1B);
+         $this->Cell(55, 5, utf8_decode($Sub_a_cargo), 0, 0, 'C', 0);
+         $this->SetXY(27 + $L2, 210 + $X1B);
+         $this->Cell(55, 5, utf8_decode($Sub_a_lugar), 0, 0, 'C', 0);
+         $sql="SELECT * FROM directivos where cargo='Jefa de Control de Estudios'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $jefe_nombre=$fila["nombre"];
+                 $jefe_cargo=$fila["cargo"];
+                 $jefe_lugar=$fila["lugar"];
+             }
+         }
+         $L2=115;
+         $this->Line(27 + $L2, 200 + $X1B, 82 + $L2, 200 + $X1B);
+         $this->SetXY(27 + $L2, 200 + $X1B);
+         $this->Cell(55, 5, utf8_decode($jefe_nombre), 0, 0, 'C', 0);
+         $this->SetXY(27 + $L2, 205 + $X1B);
+         $this->Cell(55, 5, utf8_decode($jefe_cargo), 0, 0, 'C', 0);
+         $this->SetXY(27 + $L2, 210 + $X1B);
+         $this->Cell(55, 5, utf8_decode($jefe_lugar), 0, 0, 'C', 0);
+     }
+     function Encabezado_general($y) {
+         $this->Image("LOGO.jpg", 5, 0 + $y, 43, 25, "jpg", "");
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(0, 0 + $y);
+         $this->Cell(210, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'C', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(0, 4 + $y);
+         $this->Cell(210, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA LA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'C', 0);
+         $this->SetXY(0, 8 + $y);
+         $this->Cell(210, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL DE PUERTO CABELLO"), 0, 0, 'C', 0);
+         $this->SetXY(0, 13 + $y);
+         $this->Cell(210, 5, utf8_decode("SECRETARÍA DEL CONSEJO DE GESTIÓN UNIVERSITARIA"), 0, 0, 'C', 0);
+     }
+     function Encabezado_datos_alumno($X1B, $pensum, $cedula, $carrera_a1, $grado) {
+         $X1=$X1B;
+         $X2=3;
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if (!$resultado) {
+             exit;
+         }
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $CODIGO=$fila['codigo'];
+                 $cedula=$fila['cedula'];
+                 $carrera=$fila['carrera'];
+                 $MENCION=$fila['mencion'];
+                 $PLAN=$fila['plan'];
+                 $nombre=$fila['nombre'];
+                 $SEMESTRE=$fila['semestre'];
+                 $ACTIVIDAD=$fila['actividad'];
+                 $NIVEL=$fila['nivel'];
+             }
+         }
+         $carrera_a1=$this->carrera_larga($carrera);
+         $carrera_a2=$this->carrera_corta($carrera);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(7 + $X2, 44 + $X1);
+         $this->Cell(90, 7, "APELLIDOS Y NOMBRES", 1, 0, 'C', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(7 + $X2, 51 + $X1);
+         $this->Cell(90, 7, utf8_decode($nombre), 1, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(97 + $X2, 44 + $X1);
+         $this->Cell(22, 7, utf8_decode("CÉDULA"), 1, 0, 'C', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(97 + $X2, 51 + $X1);
+         $this->Cell(22, 7, $cedula, 1, 0, 'C', 0);
+         if ($pensum == "RXC" || $pensum == "AXC") {
+             $this->SetFont('Arial', 'B', 10);
+             $this->SetXY(119 + $X2, 44 + $X1);
+             $this->Cell(75, 7, "PTF", 1, 0, 'C', 0);
+         } else {
+             if ($grado == "L") {
+                 $this->SetFont('Arial', 'B', 10);
+                 $this->SetXY(119 + $X2, 44 + $X1);
+                 $this->Cell(75, 7, "PNF", 1, 0, 'C', 0);
+             } else {
+                 $this->SetFont('Arial', 'B', 10);
+                 $this->SetXY(119 + $X2, 44 + $X1);
+                 $this->Cell(75, 7, "PNF", 1, 0, 'C', 0);
+             }
+         }
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(119 + $X2, 51 + $X1);
+         if ($grado == "T") {
+             switch ($pensum) {
+                 case "TXC":
+                     $nombre_carrera=$carrera_a1 . " MECÁNICO";
+                     break;
+                 case "EXC":
+                     $nombre_carrera="METALURGIA";
+                     break;
+                 case "IXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "RXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "AXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "MXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "GXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "CXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "DXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+             }
+         }
+         if ($grado == "I") {
+             switch ($pensum) {
+                 case "TXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "EXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "IXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "RXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "AXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "MXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+             }
+         }
+         if ($grado == "L") {
+             switch ($pensum) {
+                 case "GXC":
+                     $nombre_carrera=$carrera_a1 . " MENCIÓN GESTIÓN TURÍSTICA";
+                     break;
+                 case "DXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+                 case "CXC":
+                     $nombre_carrera=$carrera_a1;
+                     break;
+             }
+         }
+         $this->Cell(75, 7, utf8_decode($nombre_carrera), 1, 0, 'C', 0);
+     }
+     function Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado) {
+         $this->AddPage();
+         $this->SetAutoPageBreak(FALSE, PDF_MARGIN_BOTTOM);
+         date_default_timezone_set('America/Caracas');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         $hoy=date("d-m-Y");
+         include "db.php";
+         $sql="SELECT * FROM user WHERE login='" . $_SESSION['username'] . "'";
+         $resultado=$conn->query($sql);
+         $CREDSUM=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $NOMBRE_USER=$fila['nombre'];
+             }
+         }
+         $X1B=$X1B + 5;
+         $this->Encabezado_datos_alumno($X1B, $pensum, $cedula, $carrera_a1, $grado);
+         $sql="SELECT max(lapso) as maxlapso FROM notas WHERE codigo= '" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $lapso_actual=$fila['maxlapso'];
+             }
+         }
+         $this->Encabezado_general(8);
+         $this->SetFont('Arial', 'B', 11);
+         $this->SetXY(0, 25 + $X1);
+         $this->Cell(210, 7, utf8_decode("CERTIFICACIÓN"), 0, 0, 'C', 0);
+         $irx=1;
+         $X1B=52;
+         $t=0;
+         $x1=0;
+         $APROBADOS=0;
+         $FALTANTES=0;
+         $pensum=$carrera . $MENCION . $PLAN;
+         $X1B=36.5;
+         $X0=0;
+         $this->SetXY(14 - $X3, 35 + $X1B);
+         $this->Cell(21, 4, $lismat_libro_rector[$i], 0, 0, 'C', 0);
+         $this->SetXY(42 - $X3, 35 + $X1B);
+         $this->Cell(74.1, 4, substr(utf8_decode($descrip2[$i]), 0, 39), 0, 0, 'C', 0);
+         $this->SetXY(119 - $X3, 35 + $X1B);
+         $this->Cell(15, 4, $semestre[$i], 0, 0, 'C', 0);
+         $this->SetXY(134 - $X3, 35 + $X1B);
+         $this->Cell(10, 4, $creditos[$i], 0, 0, 'C', 0);
+         $X1=5;
+         include "db.php";
+         $sql="SELECT * FROM directivos where id='2'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $Sub_a_nombre=$fila["nombre"];
+                 $Sub_a_cargo=$fila["cargo"];
+                 $Sub_a_cedula=$fila["cedula"];
+                 $Sub_a_lugar=$fila["lugar"];
+             }
+         }
+         $X1B=0;
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(10, 4, utf8_decode("Quien suscribe,                                            ") . utf8_decode(", titular de la cédula de identidad ") . $Sub_a_cedula . utf8_decode(", Secretario"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 11);
+         $this->SetXY(43, 35 + $X1B);
+         $this->Cell(10, 4, $Sub_a_nombre, 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 39 + $X1B);
+         $this->Cell(10, 4, utf8_decode("del Consejo de Gestión Universitaria de la Universidad Politécnica Territorial de Puerto Cabello"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 11);
+         $this->SetXY(15, 43 + $X1B);
+         $this->Cell(10, 4, utf8_decode("certifica"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 43 + $X1B);
+         $this->Cell(10, 4, utf8_decode("               al Ciudadano (a):"), 0, 0, 'L', 0);
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nombre=utf8_decode($fila['nombre']);
+                 $codigo=$cedula;
+                 $carrera=$fila['carrera'];
+                 $MENCION=$fila['mencion'];
+                 $PLAN=$fila['plan'];
+             }
+         }
+         $carrera_a1=$this->carrera_larga($carrera);
+         if ($grado == "T") {
+             if ($pensum == "AXC" OR $pensum == "RXC") {
+                 $carreras="Programa Tradicional de Formación";
+                 $X1B=22;
+                 $this->SetFont('Arial', '', 11);
+                 $this->SetXY(15, 43 + $X1B);
+                 $this->Cell(10, 4, utf8_decode("quien cursó  y aprobó todas las unidades curriculares del Plan de Estudios del ") . utf8_decode(substr($carreras, 0, 23)), 0, 0, 'L', 0);
+                 $titulo_nombre=utf8_decode("Técnico Superior Universitario");
+                 $this->SetXY(15, 47 + $X1B);
+                 $this->Cell(10, 4, utf8_decode(substr($carreras, 24, 27)) . " " . utf8_decode("para obtener el Título de ") . $titulo_nombre . ", logrando las siguientes calificaciones:", 0, 0, 'L', 0);
+             } else {
+                 $carreras="Programa Nacional de Formación";
+                 $X1B=22;
+                 $this->SetFont('Arial', '', 11);
+                 $this->SetXY(15, 43 + $X1B);
+                 $this->Cell(10, 4, utf8_decode("quien cursó  y aprobó todas las unidades curriculares del Plan de Estudios del ") . utf8_decode(substr($carreras, 0, 20)), 0, 0, 'L', 0);
+                 $titulo_nombre=utf8_decode("Técnico Superior Universitario");
+                 $this->SetXY(15, 47 + $X1B);
+                 $this->Cell(10, 4, utf8_decode(substr($carreras, 21, 25)) . " " . utf8_decode("para obtener el Título de ") . $titulo_nombre . ", logrando las siguientes calificaciones:", 0, 0, 'L', 0);
+             }
+         }
+         if ($pensum || "AXC" AND $pensum || "RXC" AND $grado == "I" OR $grado == "L") {
+             $carreras="Programa Nacional de Formación";
+             $X1B=22;
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(15, 43 + $X1B);
+             $this->Cell(10, 4, utf8_decode("quien cursó  y aprobó todas las unidades curriculares del Plan de Estudios del ") . utf8_decode(substr($carreras, 0, 17)), 0, 0, 'L', 0);
+             if ($grado == "I") {
+                 $titulo_nombre="INGENIERO";
+             }
+             if ($grado == "L") {
+                 $titulo_nombre="LICENCIADO";
+             }
+             $this->SetXY(15, 47 + $X1B);
+             $this->Cell(10, 4, utf8_decode(substr($carreras, 18, 25)) . " " . utf8_decode("para obtener el Título de ") . $titulo_nombre . ", logrando las siguientes calificaciones:", 0, 0, 'L', 0);
+         }
+         $X1B=$X1B + 25;
+         return $X1B . "|" . $carrera_a1 . "|" . $nombre . "|" . $pensum;
+     }
+     function Encabezado_certificacion2($pensum, $cedula, $carrera_a1, $grado, $titulos_unidades) {
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d/m/Y');
+         $d=date("d");
+         $m=date("m");
+         $y=date("Y");
+         $DIA=$this->num2letras($d);
+         $AÑO=$this->num2letras($y);
+         $X1=5;
+         include "db.php";
+         $sql="SELECT * FROM directivos where id='2'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $Sub_a_nombre=$fila["nombre"];
+                 $Sub_a_cargo=$fila["cargo"];
+                 $Sub_a_cedula=$fila["cedula"];
+                 $Sub_a_lugar=$fila["lugar"];
+             }
+         }
+         $X1B=0;
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(10, 4, utf8_decode("Quien suscribe,                                            ") . utf8_decode(", titular de la cédula de identidad ") . $Sub_a_cedula . utf8_decode(", Secretario"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 11);
+         $this->SetXY(43, 35 + $X1B);
+         $this->Cell(10, 4, $Sub_a_nombre, 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 39 + $X1B);
+         $this->Cell(10, 4, utf8_decode("del Consejo de Gestión Universitaria de la Universidad Politécnica Territorial de Puerto Cabello"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 11);
+         $this->SetXY(15, 43 + $X1B);
+         $this->Cell(10, 4, utf8_decode("certifica"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 43 + $X1B);
+         $this->Cell(10, 4, utf8_decode("               al Ciudadano (a):"), 0, 0, 'L', 0);
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nombre=utf8_decode($fila['nombre']);
+                 $codigo=$cedula;
+                 $carrera=$fila['carrera'];
+                 $MENCION=$fila['mencion'];
+                 $PLAN=$fila['plan'];
+             }
+         }
+         if ($pensum == "AXC" OR $pensum == "RXC") {
+             $carreras="Programa Tradicional de Formación";
+             $X1B=22;
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(15, 43 + $X1B);
+             $this->Cell(10, 4, utf8_decode("quien cursó  y aprobó todas las unidades curriculares del Plan de Estudios del ") . utf8_decode(substr($carreras, 0, 23)), 0, 0, 'L', 0);
+             if ($grado == "T") {
+                 $titulo_nombre=utf8_decode("Técnico Superior Universitario");
+             }
+             $this->SetXY(15, 47 + $X1B);
+             $this->Cell(10, 4, utf8_decode(substr($carreras, 24, 27)) . " " . utf8_decode("para obtener el Título de ") . $titulo_nombre . ", logrando las siguientes calificaciones:", 0, 0, 'L', 0);
+         } else {
+             $carreras="Programa Nacional de Formación";
+             $X1B=22;
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(15, 43 + $X1B);
+             $this->Cell(10, 4, utf8_decode($grado . " " . "quien cursó  y aprobó todas las unidades curriculares del Plan de Estudios del ") . utf8_decode(substr($carreras, 0, 20)), 0, 0, 'L', 0);
+             if ($grado == "T") {
+                 $titulo_nombre=utf8_decode("Técnico Superior Universitario");
+             }
+             $this->SetXY(15, 47 + $X1B);
+             $this->Cell(10, 4, utf8_decode(substr($carreras, 21, 25)) . " " . utf8_decode("para obtener el Título de ") . $titulo_nombre . ", logrando las siguientes calificaciones:", 0, 0, 'L', 0);
+         }
+         if ($pensum || "AXC" AND $pensum || "RXC" AND $grado == "I" OR $grado == "L") {
+             $carreras="Programa Nacional de Formación";
+             $X1B=22;
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(15, 43 + $X1B);
+             $this->Cell(10, 4, utf8_decode("quien cursó  y aprobó todas las unidades curriculares del Plan de Estudios del ") . utf8_decode(substr($carreras, 0, 17)), 0, 0, 'L', 0);
+             if ($grado == "I") {
+                 $titulo_nombre="INGENIERO";
+             }
+             if ($grado == "L") {
+                 $titulo_nombre="LICENCIADO";
+             }
+             $this->SetXY(15, 47 + $X1B);
+             $this->Cell(10, 4, utf8_decode(substr($carreras, 18, 25)) . " " . utf8_decode("para obtener el Título de ") . $titulo_nombre . ", logrando las siguientes calificaciones:", 0, 0, 'L', 0);
+         }
+     }
+     function materia_aprobada($cedula, $cod_mat) {
+         require('db.php');
+         $sql="SELECT aprobatori FROM lismat WHERE cod_mat='" . $cod_mat . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $aprobatori=$fila['aprobatori'];
+             }
+         }
+         $sql="SELECT * FROM `notas` WHERE `codigo` = '" . $cedula . "' AND `cod_mat` = '" . $cod_mat . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nota=$fila['nota'] . "<BR>";
+             }
+         }
+         if ($nota < $aprobatori) {
+             $dat="false";
+         } else {
+             $dat="true";
+         }
+         $conn->close();
+         return $dat;
+     }
+     function guarda_seccion($alumno, $cod_mat1, $electiva, $cod_doc1, $lapso1, $seccion1, $cod_usu1) {
+         session_start();
+         if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true && $_SESSION['notas_guardar'] == 1) {
+         } else {
+             header("Location: index.html");
+             exit;
+         }
+         $now=time();
+         if ($now > $_SESSION['expire']) {
+             session_destroy();
+             echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+             exit;
+         }
+         require('db.php');
+         date_default_timezone_set('America/Caracas');
+         $fecha=date('d-m-Y');
+         $hora=strftime("%I:%M:%S %p\n");
+         $cod=$_SESSION['id'];
+         $cod_mat=$cod_mat1;
+         $nota="0";
+         $acu=0;
+         $lapso=$lapso1;
+         if (substr($cod_mat, 1, 1) == "P" OR substr($cod_mat, 1, 1) == "T" OR substr($cod_mat, 1, 1) == "E") {
+             $tiplap=substr($cod_mat, 1, 1);
+         } else {
+             $tiplap="";
+         }
+         $codigo=$alumno;
+         $cod_doc=$cod_doc1;
+         $cod_usu=$cod_usu1;
+         $seccion=$seccion1;
+         $carrera=substr($cod_mat, 0, 1);
+         $sql="SELECT * FROM notas WHERE codigo='" . $codigo . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             echo "Ya la materia esta cargada";
+         } else {
+             $accion="Guardar_incv";
+             $cod=$_SESSION['id'];
+             $usuario=$_SESSION['username'];
+             $lapso_r=$lapso;
+             $sql="INSERT INTO notas_auditoria (accion,cod,hora,fecha,usuario,codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu) VALUES ('$accion','$cod','$hora','$fecha','$usuario','$codigo','$cod_mat','$nota','$lapso_r','$tiplap','$cod_doc','$cod_usu','$acu')";
+             $conn->query($sql);
+             $sql="INSERT INTO notas(codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu,seccion,carrera,fecha,electiva)VALUES ('$codigo','$cod_mat','$nota','$lapso_r','$tiplap','$cod_doc','$cod_usu','$acu','$seccion','$carrera','$fecha','$electiva')";
+             $conn->query($sql);
+             echo "Se agrego la materia";
+             $sql="SELECT * FROM `lapso` WHERE carrera= '" . $carrera . "' ORDER BY `lapso` ASC";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $lapso_actual=$fila['lapso'];
+                 }
+             }
+             if ($lapso == $lapso_actual) {
+                 $sql="UPDATE alumno SET  actividad = '1' WHERE cedula ='" . $codigo . "'";
+                 $conn->query($sql);
+             }
+             $conn->close();
+         }
+     }
+     function guarda_seccion_2B($pensum, $cedula, $cod_mat, $cod_doc, $lapso, $seccion, $cod_usu1) {
+         if ($this->verificar_pre1_existe($pensum, $cod_mat) == "false") {
+             $this->guarda_seccion_2($pensum, $cedula, $cod_mat, $cod_doc, $lapso, $seccion, $cod_usu1);
+         } else {
+             $t=$this->verificar_aprobada_pre_todas($pensum, $cod_mat, $cedula);
+             list($nota1, $nota2, $nota3, $nota4) = split('[|]', $t);
+             if ($nota1 <> "false" and $nota2 <> "false" and $nota3 <> "false" and $nota4 <> "false") {
+                 $this->guarda_seccion_2($pensum, $cedula, $cod_mat, $cod_doc, $lapso, $seccion, $cod_usu1);
+             } else {
+                 $t=$this->verificar_aprobada_pre_todas_inf($pensum, $cod_mat, $cedula);
+                 list($nota1, $nota2, $nota3, $nota4) = split('[|]', $t);
+             }
+         }
+     }
+     function guarda_seccion_2C($pensum, $cedula, $cod_mat, $electiva, $cod_doc, $lapso, $seccion, $usuarios) {
+         if ($this->verificar_pre1_existe($pensum, $cod_mat) == "false") {
+             $this->guarda_seccion($cedula, $cod_mat, $electiva, $cod_doc, $lapso, $seccion, $usuarios);
+         } else {
+             $t=$this->verificar_aprobada_pre_todas($pensum, $cod_mat, $cedula);
+             list($nota1, $nota2, $nota3, $nota4) = split('[|]', $t);
+             if ($nota1 <> "false" and $nota2 <> "false" and $nota3 <> "false" and $nota4 <> "false") {
+                 $this->guarda_seccion($cedula, $cod_mat, $electiva, $cod_doc, $lapso, $seccion, $usuarios);
+             } else {
+                 echo "Tiene materias prelates reprobadas";
+             }
+         }
+     }
+     function guarda_seccion_2($pensum, $cedula, $cod_mat, $cod_doc, $lapso, $seccion, $cod_usu1) {
+         session_start();
+         if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true && $_SESSION['notas_guardar'] == 1) {
+         } else {
+             header("Location: index.html");
+             exit;
+         }
+         $now=time();
+         if ($now > $_SESSION['expire']) {
+             session_destroy();
+             echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+             exit;
+         }
+         require('db.php');
+         date_default_timezone_set('America/Caracas');
+         $fecha=date('d-m-Y');
+         $hora=strftime("%I:%M:%S %p\n");
+         $cod=$_SESSION['id'];
+         $nota="0";
+         $acu=0;
+         $tiplap="";
+         $codigo=$cedula;
+         $cod_usu=$cod_usu1;
+         $carrera=substr($cod_mat, 0, 1);
+         $sql="SELECT * FROM notas WHERE codigo='" . $codigo . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 $cod_mat=$fila['cod_mat'];
+                 $lapso=$fila['lapso'];
+                 $cod_doc=$fila['cod_doc'];
+                 $seccion=$fila['seccion'];
+                 echo "Ya " . $cod_mat . " esta cargada.  ";
+             }
+         } else {
+             $usuario=$_SESSION['username'];
+             $sql="INSERT INTO notas(codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu,seccion,carrera,fecha,electiva)VALUES ('$codigo','$cod_mat','$nota','$lapso','$tiplap','$cod_doc','$cod_usu','$acu','$seccion','$carrera','$fecha','$electiva')";
+             $conn->query($sql);
+             echo "Se cargo: " . $cod_mat . " - ";
+             $sql="SELECT * FROM agregarseccion WHERE pensum='" . $pensum . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "' AND seccion='" . $seccion . "' AND cod_doc='" . $cod_doc . "'";
+             $result=$conn->query($sql);
+             if ($result->num_rows > 0) {
+             } else {
+                 $sql="INSERT INTO agregarseccion(`pensum`, `cod_mat`, `seccion`, `cod_doc`, `lapso`)VALUES ('$pensum','$cod_mat','$seccion','$cod_doc','$lapso')";
+                 $conn->query($sql);
+             }
+             $sql="SELECT * FROM `lapso` WHERE carrera= '" . $carrera . "' ORDER BY `lapso` ASC";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $lapso_actual=$fila['lapso'];
+                 }
+             }
+             if ($lapso == $lapso_actual) {
+                 $sql="UPDATE alumno SET  actividad = '1' WHERE cedula ='" . $codigo . "'";
+                 $conn->query($sql);
+             }
+             $conn->close();
+         }
+     }
+     function guarda_seccion_copiar_0($pensum, $cod_mat, $cod_mat2, $cod_doc, $cod_doc2, $lapso, $lapso2, $seccion, $seccion2, $cod_usu1) {
+         require('db.php');
+         $sql="SELECT DISTINCT codigo FROM `notas` where cod_doc='" . $cod_doc . "' and cod_mat='" . $cod_mat . "' and lapso='" . $lapso . "' and seccion='" . $seccion . "'";
+         $resultado=$conn->query($sql);
+         $x1=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $this->guarda_seccion_copiar($pensum, $fila['codigo'], $cod_mat2, $cod_doc2, $lapso2, $seccion2, $cod_usu1);
+                 $x1=$x1 + 1;
+             }
+         }
+         $conn->close();
+     }
+     function guarda_seccion_copiar($pensum, $cedula, $cod_mat, $cod_doc, $lapso, $seccion, $cod_usu1) {
+         require('db.php');
+         $sql="SELECT * FROM notas WHERE codigo='" . $codigo . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+         } else {
+             $usuario=$_SESSION['username'];
+             $nota="0";
+             $acu="0";
+             date_default_timezone_set('America/Caracas');
+             $fecha=date('d-m-Y');
+             $carrera=substr($cod_mat, 0, 1);
+             $sql="INSERT INTO notas(codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu,seccion,carrera,fecha,electiva)VALUES ('$cedula','$cod_mat','$nota','$lapso','$tiplap','$cod_doc','$cod_usu1','$acu','$seccion','$carrera','$fecha','$electiva')";
+             $conn->query($sql);
+         }
+         $conn->close();
+     }
+     function guarda_seccion_2_mensaje($pensum, $cedula, $cod_mat, $cod_doc, $lapso, $seccion, $cod_usu1, $mensaje) {
+         session_start();
+         if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true && $_SESSION['notas_guardar'] == 1) {
+         } else {
+             header("Location: index.html");
+             exit;
+         }
+         $now=time();
+         if ($now > $_SESSION['expire']) {
+             session_destroy();
+             echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+             exit;
+         }
+         require('db.php');
+         date_default_timezone_set('America/Caracas');
+         $fecha=date('d-m-Y');
+         $hora=strftime("%I:%M:%S %p\n");
+         $cod=$_SESSION['id'];
+         $nota="0";
+         $acu=0;
+         $tiplap="";
+         $codigo=$cedula;
+         $cod_usu=$cod_usu1;
+         $carrera=substr($cod_mat, 0, 1);
+         $sql="SELECT * FROM notas WHERE codigo='" . $codigo . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 $cod_mat=$fila['cod_mat'];
+                 $lapso=$fila['lapso'];
+                 $cod_doc=$fila['cod_doc'];
+                 $seccion=$fila['seccion'];
+             }
+         } else {
+             $usuario=$_SESSION['username'];
+             $sql="INSERT INTO notas(codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu,seccion,carrera,fecha,electiva)VALUES ('$codigo','$cod_mat','$nota','$lapso','$tiplap','$cod_doc','$cod_usu','$acu','$seccion','$carrera','$fecha','$electiva')";
+             $conn->query($sql);
+             $sql="SELECT * FROM agregarseccion WHERE pensum='" . $pensum . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "' AND seccion='" . $seccion . "' AND cod_doc='" . $cod_doc . "'";
+             $result=$conn->query($sql);
+             if ($result->num_rows > 0) {
+             } else {
+                 $sql="INSERT INTO agregarseccion(`pensum`, `cod_mat`, `seccion`, `cod_doc`, `lapso`)VALUES ('$pensum','$cod_mat','$seccion','$cod_doc','$lapso')";
+                 $conn->query($sql);
+             }
+             $sql="SELECT * FROM `lapso` WHERE carrera= '" . $carrera . "' ORDER BY `lapso` ASC";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $lapso_actual=$fila['lapso'];
+                 }
+             }
+             if ($lapso == $lapso_actual) {
+                 $sql="UPDATE alumno SET  actividad = '1' WHERE cedula ='" . $codigo . "'";
+                 $conn->query($sql);
+             }
+             $conn->close();
+         }
+     }
+     function guarda_seccion_2_mensaje2($pensum, $cedula, $cod_mat, $cod_doc, $lapso, $seccion, $cod_usu1, $mensaje) {
+         session_start();
+         if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true && $_SESSION['notas_guardar'] == 1) {
+         } else {
+             header("Location: index.html");
+             exit;
+         }
+         $now=time();
+         if ($now > $_SESSION['expire']) {
+             session_destroy();
+             echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+             exit;
+         }
+         require('db.php');
+         date_default_timezone_set('America/Caracas');
+         $fecha=date('d-m-Y');
+         $hora=strftime("%I:%M:%S %p\n");
+         $cod=$_SESSION['id'];
+         $nota="0";
+         $acu=0;
+         $tiplap="";
+         $codigo=$cedula;
+         $cod_usu=$cod_usu1;
+         $carrera=substr($cod_mat, 0, 1);
+         $sql="SELECT * FROM notas WHERE codigo='" . $codigo . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 $cod_mat=$fila['cod_mat'];
+                 $lapso=$fila['lapso'];
+                 $cod_doc=$fila['cod_doc'];
+                 $seccion=$fila['seccion'];
+                 if ($mensaje == 1) {
+                     $this->mensaje_color("nominasb.php", "principal.php", "Ya la materia esta cargada " . $cod_mat . " - " . $lapso . " - " . $cod_doc . " - " . $seccion, 1, 1);
+                 }
+                 if ($mensaje == 0) {
+                 }
+             }
+         } else {
+             $usuario=$_SESSION['username'];
+             $sql="INSERT INTO notas(codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu,seccion,carrera,fecha,electiva)VALUES ('$codigo','$cod_mat','$nota','$lapso','$tiplap','$cod_doc','$cod_usu','$acu','$seccion','$carrera','$fecha','$electiva')";
+             $conn->query($sql);
+             if ($mensaje == 1) {
+                 $this->mensaje_color("nominasb.php", "principal.php", "Se cargo la materia", 0, 0);
+             }
+             if ($mensaje == 0) {
+             }
+             $sql="SELECT * FROM agregarseccion WHERE pensum='" . $pensum . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "' AND seccion='" . $seccion . "' AND cod_doc='" . $cod_doc . "'";
+             $result=$conn->query($sql);
+             if ($result->num_rows > 0) {
+             } else {
+                 $sql="INSERT INTO agregarseccion(`pensum`, `cod_mat`, `seccion`, `cod_doc`, `lapso`)VALUES ('$pensum','$cod_mat','$seccion','$cod_doc','$lapso')";
+                 $conn->query($sql);
+             }
+             $sql="SELECT * FROM `lapso` WHERE carrera= '" . $carrera . "' ORDER BY `lapso` ASC";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $lapso_actual=$fila['lapso'];
+                 }
+             }
+             if ($lapso == $lapso_actual) {
+                 $sql="UPDATE alumno SET  actividad = '1' WHERE cedula ='" . $codigo . "'";
+                 $conn->query($sql);
+             }
+             $conn->close();
+         }
+     }
+     function guarda_seccion_2_mensaje3($pensum, $cedula, $cod_mat, $cod_doc, $lapso, $seccion, $cod_usu1, $mensaje) {
+         session_start();
+         if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true && $_SESSION['notas_guardar'] == 1) {
+         } else {
+             header("Location: index.html");
+             exit;
+         }
+         $now=time();
+         if ($now > $_SESSION['expire']) {
+             session_destroy();
+             echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+             exit;
+         }
+         require('db.php');
+         date_default_timezone_set('America/Caracas');
+         $fecha=date('d-m-Y');
+         $hora=strftime("%I:%M:%S %p\n");
+         $cod=$_SESSION['id'];
+         $nota="0";
+         $acu=0;
+         $tiplap="";
+         $codigo=$cedula;
+         $cod_usu=$cod_usu1;
+         $carrera=substr($cod_mat, 0, 1);
+         $sql="SELECT * FROM notas WHERE codigo='" . $codigo . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "' AND seccion='" . $seccion . "' AND cod_doc='" . $cod_doc . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 $cod_mat=$fila['cod_mat'];
+                 $lapso=$fila['lapso'];
+                 $cod_doc=$fila['cod_doc'];
+                 $seccion=$fila['seccion'];
+                 $this->mensaje_color("SERVICIOS2b.php", "principal.php", "Ya la materia esta cargada " . $cod_mat . " - " . $lapso . " - " . $cod_doc . " - " . $seccion, 1, 1);
+             }
+         } else {
+             $usuario=$_SESSION['username'];
+             $sql="INSERT INTO notas(codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu,seccion,carrera,fecha,electiva)VALUES ('$codigo','$cod_mat','$nota','$lapso','$tiplap','$cod_doc','$cod_usu','$acu','$seccion','$carrera','$fecha','$electiva')";
+             if ($conn->query($sql) === TRUE) {
+             $this->mensaje_color("SERVICIOS2b.php", "principal.php", "Se cargo la materia, se creo la seccion y se activo el alumno", 0, 0);
+             
+             $sql="SELECT * FROM agregarseccion WHERE pensum='" . $pensum . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "' AND seccion='" . $seccion . "' AND cod_doc='" . $cod_doc . "'";
+             $result=$conn->query($sql);
+             if ($result->num_rows > 0) {
+             } else {
+                 $sql="INSERT INTO agregarseccion(`pensum`, `cod_mat`, `seccion`, `cod_doc`, `lapso`)VALUES ('$pensum','$cod_mat','$seccion','$cod_doc','$lapso')";
+                 $conn->query($sql);
+             }
+             
+              
+             $sql="SELECT * FROM `lapso` WHERE carrera= '" . $carrera . "' ORDER BY `lapso` ASC";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $lapso_actual=$fila['lapso'];
+                 }
+             }
+             if ($lapso == $lapso_actual) {
+                 $sql="UPDATE alumno SET  actividad = '1' WHERE cedula ='" . $codigo . "'";
+                 $conn->query($sql);
+             }
+             }
+             $conn->close();
+         }
+     }
+     function guarda_seccion_3($pensum, $cedula, $cod_mat, $cod_doc, $lapso, $tiplap, $seccion, $nota, $acu, $cod_usu1, $electiva) {
+         session_start();
+         if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true && $_SESSION['notas_guardar'] == 1) {
+         } else {
+             header("Location: index.html");
+             exit;
+         }
+         $now=time();
+         if ($now > $_SESSION['expire']) {
+             session_destroy();
+             echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+             exit;
+         }
+         require('db.php');
+         date_default_timezone_set('America/Caracas');
+         $fecha=date('d-m-Y');
+         $hora=strftime("%I:%M:%S %p\n");
+         $cod=$_SESSION['id'];
+         $cod_usu=$cod_usu1;
+         $carrera=substr($cod_mat, 0, 1);
+         $sql="SELECT * FROM notas WHERE codigo='" . $cedula . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+         } else {
+             $accion="Guardar_nota";
+             $cod=$_SESSION['id'];
+             $usuario=$_SESSION['username'];
+             $sql="INSERT INTO notas_auditoria (accion,cod,hora,fecha,usuario,codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu) VALUES ('$accion','$cod','$hora','$fecha','$usuario','$cedula','$cod_mat','$nota','$lapso','$tiplap','$cod_doc','$cod_usu','$acu')";
+             $conn->query($sql);
+             $sql="INSERT INTO notas(codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu,seccion,carrera,fecha,electiva)VALUES ('$cedula','$cod_mat','$nota','$lapso','$tiplap','$cod_doc','$cod_usu','$acu','$seccion','$carrera','$fecha','$electiva')";
+             $conn->query($sql);
+             $sql="SELECT * FROM agregarseccion WHERE pensum='" . $pensum . "' AND cod_mat='" . $cod_mat . "' AND lapso='" . $lapso . "' AND seccion='" . $seccion . "' AND cod_doc='" . $cod_doc . "'";
+             $result=$conn->query($sql);
+             if ($result->num_rows > 0) {
+             } else {
+                 $sql="INSERT INTO agregarseccion(`pensum`, `cod_mat`, `seccion`, `cod_doc`, `lapso`,`aula`, `descrip`, `hora`, `tipo`, `electiva`)VALUES ('$pensum','$cod_mat','$seccion','$cod_doc','$lapso', '', '', '', '$tiplap', '$electiva')";
+                 $conn->query($sql);
+             }
+             $sql="SELECT * FROM `lapso` WHERE carrera= '" . $carrera . "' ORDER BY `lapso` ASC";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $lapso_actual=$fila['lapso'];
+                 }
+             }
+             if ($lapso == $lapso_actual) {
+                 $sql="UPDATE alumno SET  actividad = '1' WHERE cedula ='" . $cedula . "'";
+                 $conn->query($sql);
+             }
+             $conn->close();
+         }
+     }
+     function descripcion_materia($pensum, $cod_mat, $cod_doc) {
+         include "db.php";
+         $sql="SELECT * FROM `lismat` WHERE `pensum`='" . $pensum . "' and `cod_mat`='" . $cod_mat . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 $descrip2=$fila['descrip2'];
+                 $creditos=$fila['creditos'];
+                 $aprobatori=$fila['aprobatori'];
+             }
+         }
+         $sql="SELECT * FROM `docente` WHERE `cod_doc`='" . $cod_doc . "'";
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             while ($fila=$result->fetch_assoc()) {
+                 $nombre=$fila['nombre'];
+             }
+         }
+         return $descrip2 . "|" . $creditos . "|" . $aprobatori . "|" . $nombre;
+     }
+     function calcular_resumida($pensum, $X1B, $lismat_cod_mat, $cedula, $X1B, $descrip2, $semestre, $creditos, $trayecto, $aprobatori, $divicion, $cod_mat_libro_rector, $electiva, $texto, $tipo_doc, $cant, $apro) {
+         include "db.php";
+         if ($texto == "false") {
+             global $nota_r, $X1B, $X0, $esta, $FALTANTES, $APROBADOS, $lapso_actual, $paginas;
+         }
+         $sql="SELECT * FROM `notas` WHERE `codigo`='" . $cedula . "' ORDER BY lapso ASC";
+         $result=$conn->query($sql);
+         $i=0;
+         if ($result->num_rows > 0) {
+             while ($row=$result->fetch_assoc()) {
+                 $id_a[$i]=$row['id'];
+                 $codigo_a[$i]=$row['codigo'];
+                 $cod_mat_a[$i]=$row['cod_mat'];
+                 $carrera_a[$i]=$row['carrera'];
+                 $nota_a[$i]=$row['nota'];
+                 $lapso_a[$i]=$row['lapso'];
+                 $tiplap_a[$i]=$row['tiplap'];
+                 $cod_doc_a[$i]=$row['cod_doc'];
+                 $cod_usu_a[$i]=$row['cod_usu'];
+                 $acu_a[$i]=$row['acu'];
+                 $seccion_a[$i]=$row['seccion'];
+                 $electiva_a[$i]=$row['electiva'];
+                 $fecha_a[$i]=$row['fecha'];
+                 $i++;
+             }
+         }
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if (substr($cod_mat_a[$i], 2, 2) == $materia) {
+                 if ($lapso_a[$i] > $max_lapso) {
+                     $max_lapso=$lapso_a[$i];
+                 }
+             }
+         }
+         if ($texto == "false") {
+             $this->SetFont('Arial', '', 8);
+         }
+         if ($lapso_a <> "") {
+             $lapso_actual=max($lapso_a);
+         }
+         $materia=substr($lismat_cod_mat, 2, 2);
+         $mate=substr($lismat_cod_mat, 1, 1);
+         $carrera=substr($lismat_cod_mat, 0, 1);
+         $plan=substr($lismat_cod_mat, 4, 1);
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if (substr($cod_mat_a[$i], 2, 2) == $materia) {
+                 $temp_lapso[$i]=$lapso_a[$i];
+             }
+         }
+         if ($temp_lapso <> "") {
+             $max_lapso=max($temp_lapso);
+         }
+         $materiaT=$carrera . "T" . $materia . $plan;
+         $materiaE=$carrera . "E" . $materia . $plan;
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if ($cod_mat_a[$i] == "$materiaT" AND $max_lapso == $lapso_a[$i]) {
+                 $notaT="true";
+                 $nota_r=$nota_a[$i];
+                 $lapso=$lapso_a[$i];
+                 $tiplap=$tiplap_a[$i];
+                 if ($texto == "true") {
+                     if ($tipo_doc == "C") {
+                         $this->SetXY(142, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_a[$i], 0, 0, 'C', 0);
+                         $this->SetXY(155.5, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso_a[$i], 0, 4), 0, 0, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "T", 0, 0, 'C', 0);
+                     } else {
+                         $this->SetXY(140, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_a[$i], 1, 1, 'C', 0);
+                         $this->SetXY(155, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso_a[$i], 0, 4), 1, 1, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "T", 1, 1, 'C', 0);
+                     }
+                 } else {
+                     $tiplap="T";
+                 }
+                 $esta="SI";
+             }
+             if ($cod_mat_a[$i] == "$materiaE" AND $max_lapso == $lapso_a[$i]) {
+                 $notaE="true";
+                 $nota_r=$nota_a[$i];
+                 $lapso=$lapso_a[$i];
+                 $tiplap=$tiplap_a[$i];
+                 if ($texto == "true") {
+                     if ($tipo_doc == "C") {
+                         $this->SetXY(142, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_a[$i], 0, 0, 'C', 0);
+                         $this->SetXY(155.5, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso_a[$i], 0, 4), 0, 0, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "E", 0, 0, 'C', 0);
+                     } else {
+                         $this->SetXY(140, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_a[$i], 1, 1, 'C', 0);
+                         $this->SetXY(155, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso_a[$i], 0, 4), 1, 1, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "E", 1, 1, 'C', 0);
+                     }
+                 } else {
+                     $tiplap="E";
+                 }
+                 $esta="SI";
+             }
+             if (substr($cod_mat_a[$i], 2, 2) == substr($lismat_cod_mat, 2, 2)) {
+                 $numero_veses=$numero_veses + 1;
+             }
+         }
+         if ($notaT <> "true") {
+             $notaT="false";
+             $esta="NO";
+         }
+         if ($notaE <> "true") {
+             $notaE="false";
+             $esta="NO";
+         }
+         if ($notaT == "false" AND $notaE == "false") {
+             $materia0=$carrera . "0" . $materia . $plan;
+             $materia1=$carrera . "1" . $materia . $plan;
+             $materia2=$carrera . "2" . $materia . $plan;
+             $materia3=$carrera . "3" . $materia . $plan;
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia0" AND $nota_a[$x] <> "0") {
+                     $nota0=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia1" AND $nota_a[$x] <> "0") {
+                     $nota1=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia2" AND $nota_a[$x] <> "0") {
+                     $nota2=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia3" AND $nota_a[$x] <> "0") {
+                     $nota3=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             if ($trayecto == 0) {
+                 $nota_r=$nota0;
+             } else {
+                 if ($divicion == 1) {
+                     $nota_r=$nota1;
+                 }
+                 if ($divicion == 2) {
+                     $nota_r=($nota1 + $nota2) / 2;
+                 }
+                 if ($divicion == 3) {
+                     $nota_r=($nota1 + $nota2 + $nota3) / 3;
+                 }
+             }
+             if ($texto == "true") {
+                 if ($nota_r == "IN" and strlen($nota_r) == 2) {
+                     $this->SetXY(140, 35 + $X1B);
+                     if ($tipo_doc == "C") {
+                         $this->Cell(15, 4, $nota_r, 0, 0, 'C', 0);
+                         $this->SetXY(155.5, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso, 0, 4), 0, 0, 'C', 0);
+                     } else {
+                         $this->Cell(15, 4, $nota_r, 1, 1, 'C', 0);
+                         $this->SetXY(155, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso, 0, 4), 1, 1, 'C', 0);
+                     }
+                 }
+             }
+             if ($nota_r <> "IN") {
+                 $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+             }
+             if (strlen($nota_r) == 1) {
+                 $nota_r=sprintf("%2d" . $nota_r, "");
+             }
+             if ($nota_r == 00) {
+                 $nota_r=0;
+             }
+         }
+         if ($nota_r <> "") {
+             $materiaP=$carrera . "P" . $materia . $plan;
+             for ($i=0; $i < count($cod_mat_a); $i++) {
+                 if ($cod_mat_a[$i] == "$materiaP") {
+                     if ($nota_r > 5 and $nota_r < $aprobatori and $aprobatori <> 16) {
+                         $per="true";
+                         $nota_p=$nota_a[$i];
+                         $lapso=$lapso_a[$i];
+                         $tiplap=$tiplap_a[$i];
+                         $t30=($nota_r * 100) / 20;
+                         $t70=100 - $t30;
+                         $t70_2=$nota_p * ($t70 / 100);
+                         $nota_r=$nota_r + $t70_2;
+                         $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+                         if ($texto == "true") {
+                             if ($notaT == "false" and $notaE == "false") {
+                                 $this->SetXY(170, 35 + $X1B);
+                                 if ($tipo_doc == "C") {
+                                     $this->Cell(15, 4, "P", 0, 0, 'C', 0);
+                                 } else {
+                                     $this->Cell(15, 4, "P", 1, 1, 'C', 0);
+                                 }
+                             }
+                         } else {
+                             $tiplap="P";
+                         }
+                     }
+                 }
+             }
+             if ($texto == "true") {
+                 if ($tipo_doc == "C") {
+                     $this->SetXY(12, 35 + $X1B);
+                     $this->Cell(20, 4, $cod_mat_libro_rector, 0, 0, 'L', 0);
+                     $this->SetXY(28, 35 + $X1B);
+                     $this->Cell(20, 4, $lismat_cod_mat, 0, 0, 'C', 0);
+                 } else {
+                     $this->SetXY(15, 35 + $X1B);
+                     $this->Cell(20, 4, $lismat_cod_mat, 1, 1, 'C', 0);
+                 }
+                 if ($electiva == 1) {
+                     $sql="SELECT * FROM electivas WHERE cod_ele= '" . $cod_ele . "' and pensum='" . $pensum . "'";
+                     $result=$conn->query($sql);
+                     if ($result->num_rows > 0) {
+                         while ($row=$result->fetch_assoc()) {
+                             $descrip3=$row['descrip2'];
+                         }
+                     }
+                     if ($tipo_doc == "C") {
+                         $this->SetXY(43, 35 + $X1B);
+                         $this->Cell(75, 4, substr(utf8_decode($descrip2 . " - " . $descrip3), 0, 39), 0, 0, 'C', 0);
+                     } else {
+                         $this->SetXY(35, 35 + $X1B);
+                         $this->Cell(75, 4, substr(utf8_decode($descrip2 . " - " . $descrip3), 0, 39), 1, 1, 'C', 0);
+                     }
+                 } else {
+                     if ($tipo_doc == "C") {
+                         $this->SetXY(43, 35 + $X1B);
+                         $this->Cell(75, 4, substr(utf8_decode($descrip2), 0, 39), 0, 0, 'C', 0);
+                     } else {
+                         $this->SetXY(35, 35 + $X1B);
+                         $this->Cell(75, 4, substr(utf8_decode($descrip2), 0, 39), 1, 1, 'C', 0);
+                     }
+                 }
+                 if ($tipo_doc == "C") {
+                     $this->SetXY(110, 35 + $X1B);
+                     $this->Cell(25, 4, $trayecto, 0, 0, 'C', 0);
+                     $this->SetXY(133, 35 + $X1B);
+                     $this->Cell(10, 4, $creditos, 0, 0, 'C', 0);
+                 } else {
+                     $this->SetXY(110, 35 + $X1B);
+                     $this->Cell(10, 4, $semestre, 1, 1, 'C', 0);
+                     $this->SetXY(120, 35 + $X1B);
+                     $this->Cell(10, 4, $creditos, 1, 1, 'C', 0);
+                 }
+             }
+             if ($tipo_doc <> "C") {
+                 if ($texto == "true") {
+                     $this->SetXY(130, 35 + $X1B);
+                 } else {
+                     if ($veses < 0) {
+                         $veses=0;
+                     }
+                 }
+             }
+             if (strlen($nota_r) == 1) {
+                 $nota_r=sprintf("%2d" . $nota_r, "");
+             }
+             if ($texto == "true") {
+                 if ($notaT == "false" and $notaE == "false") {
+                     if ($tipo_doc == "C") {
+                         $this->SetXY(142, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_r, 0, 0, 'C', 0);
+                         $this->SetXY(155.5, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso, 0, 4), 0, 0, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, $tiplap, 0, 0, 'C', 0);
+                     } else {
+                         $this->SetXY(140, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_r, 1, 1, 'C', 0);
+                         $this->SetXY(155, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso, 0, 4), 1, 1, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, $tiplap, 1, 1, 'C', 0);
+                     }
+                 }
+             }
+             if ($tipo_doc <> "C" AND $texto == "true") {
+                 if ($pensum == "GXC" and $lismat_cod_mat == "GRBSC" OR $lismat_cod_mat == "GRAYC") {
+                     $this->SetXY(185, 35 + $X1B);
+                     if ($cant <> $apro) {
+                         $cursar="SI";
+                         $this->Cell(15, 4, "SI", 1, 1, 'C', 0);
+                         $FALTANTES=$FALTANTES + 1;
+                     } elseif ($cant == $apro) {
+                         $cursar="";
+                         $this->Cell(15, 4, "", 1, 1, 'C', 0);
+                         $APROBADOS=$APROBADOS + 1;
+                     }
+                 } else {
+                     $this->SetXY(185, 35 + $X1B);
+                     if ($nota_r < $aprobatori) {
+                         $cursar="SI";
+                         $this->Cell(15, 4, "SI", 1, 1, 'C', 0);
+                         $FALTANTES=$FALTANTES + 1;
+                     } elseif ($nota_r >= $aprobatori) {
+                         $cursar="";
+                         $this->Cell(15, 4, "", 1, 1, 'C', 0);
+                         $APROBADOS=$APROBADOS + 1;
+                     }
+                 }
+             } else {
+                 if ($pensum == "GXC" and $lismat_cod_mat == "GRBSC" OR $lismat_cod_mat == "GRAYC") {
+                     if ($cant <> $apro) {
+                         $cursar="SI";
+                         $FALTANTES=$FALTANTES + 1;
+                     } elseif ($cant == $apro) {
+                         $cursar="";
+                         $APROBADOS=$APROBADOS + 1;
+                     }
+                 } else {
+                     if ($nota_r < $aprobatori) {
+                         $cursar="SI";
+                         $FALTANTES=$FALTANTES + 1;
+                     } elseif ($nota_r >= $aprobatori) {
+                         $cursar="";
+                         $APROBADOS=$APROBADOS + 1;
+                     }
+                 }
+             }
+             $entre_lineado=4;
+             if ($texto == "true") {
+                 $X1B=$X1B + $entre_lineado;
+             }
+             $X0=$X0 + 1;
+             if ($texto == "true") {
+                 if ($tipo_doc == "C") {
+                     $cant_p=34;
+                 } else {
+                     $cant_p=42;
+                 }
+                 $carrera_a1=$this->carrera_larga(substr($lismat_cod_mat, 0, 1));
+                 if ($X0 > $cant_p) {
+                     if ($tipo_doc == "C") {
+                         $this->Line(13, 35 + $X1B, 199, 35 + $X1B);
+                         $X1B=38;
+                         $paginas=$paginas + 1;
+                         $this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+                     } else {
+                         $X1B=12;
+                         $this->encabezado_historial($pensum, $cedula);
+                     }
+                     $X0=0;
+                 }
+             }
+             $esta="SI";
+         } else {
+             $esta="NO";
+         }
+         return $nota_r . "|" . $lapso . "|" . $tiplap . "|" . $cursar . "|" . $veses;
+     }
+     function calcular_resumida_datos($pensum, $X1B, $lismat_cod_mat, $cedula, $X1B, $descrip2, $semestre, $creditos, $trayecto, $aprobatori, $divicion, $cod_mat_libro_rector, $electiva, $cant, $apro) {
+         include "db.php";
+         $sql="SELECT * FROM `notas` WHERE `codigo`='" . $cedula . "' ORDER BY lapso ASC";
+         $result=$conn->query($sql);
+         $i=0;
+         if ($result->num_rows > 0) {
+             while ($row=$result->fetch_assoc()) {
+                 $id_a[$i]=$row['id'];
+                 $codigo_a[$i]=$row['codigo'];
+                 $cod_mat_a[$i]=$row['cod_mat'];
+                 $carrera_a[$i]=$row['carrera'];
+                 $nota_a[$i]=$row['nota'];
+                 $lapso_a[$i]=$row['lapso'];
+                 $tiplap_a[$i]=$row['tiplap'];
+                 $cod_doc_a[$i]=$row['cod_doc'];
+                 $cod_usu_a[$i]=$row['cod_usu'];
+                 $acu_a[$i]=$row['acu'];
+                 $seccion_a[$i]=$row['seccion'];
+                 $electiva_a[$i]=$row['electiva'];
+                 $fecha_a[$i]=$row['fecha'];
+                 $i++;
+             }
+         }
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if (substr($cod_mat_a[$i], 2, 2) == $materia) {
+                 if ($lapso_a[$i] > $max_lapso) {
+                     $max_lapso=$lapso_a[$i];
+                 }
+             }
+         }
+         if ($lapso_a <> "") {
+             $lapso_actual=max($lapso_a);
+         }
+         $materia=substr($lismat_cod_mat, 2, 2);
+         $mate=substr($lismat_cod_mat, 1, 1);
+         $carrera=substr($lismat_cod_mat, 0, 1);
+         $plan=substr($lismat_cod_mat, 4, 1);
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if (substr($cod_mat_a[$i], 2, 2) == $materia) {
+                 $temp_lapso[$i]=$lapso_a[$i];
+             }
+         }
+         if ($temp_lapso <> "") {
+             $max_lapso=max($temp_lapso);
+         }
+         $materiaT=$carrera . "T" . $materia . $plan;
+         $materiaE=$carrera . "E" . $materia . $plan;
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if ($cod_mat_a[$i] == "$materiaT" AND $max_lapso == $lapso_a[$i]) {
+                 $notaT="true";
+                 $nota_r=$nota_a[$i];
+                 $lapso=$lapso_a[$i];
+                 $tiplap=$tiplap_a[$i];
+                 $tiplap="T";
+                 $esta="SI";
+             }
+             if ($cod_mat_a[$i] == "$materiaE" AND $max_lapso == $lapso_a[$i]) {
+                 $notaE="true";
+                 $nota_r=$nota_a[$i];
+                 $lapso=$lapso_a[$i];
+                 $tiplap=$tiplap_a[$i];
+                 $tiplap="E";
+                 $esta="SI";
+             }
+             if (substr($cod_mat_a[$i], 2, 2) == substr($lismat_cod_mat, 2, 2)) {
+                 $numero_veses=$numero_veses + 1;
+             }
+         }
+         if ($notaT <> "true") {
+             $notaT="false";
+             $esta="NO";
+         }
+         if ($notaE <> "true") {
+             $notaE="false";
+             $esta="NO";
+         }
+         if ($notaT == "false" AND $notaE == "false") {
+             $materia0=$carrera . "0" . $materia . $plan;
+             $materia1=$carrera . "1" . $materia . $plan;
+             $materia2=$carrera . "2" . $materia . $plan;
+             $materia3=$carrera . "3" . $materia . $plan;
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia0" AND $nota_a[$x] <> "0") {
+                     $nota0=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia1" AND $nota_a[$x] <> "0") {
+                     $nota1=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia2" AND $nota_a[$x] <> "0") {
+                     $nota2=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia3" AND $nota_a[$x] <> "0") {
+                     $nota3=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             if ($trayecto == 0) {
+                 $nota_r=$nota0;
+             } else {
+                 if ($divicion == 1) {
+                     $nota_r=$nota1;
+                 }
+                 if ($divicion == 2) {
+                     $nota_r=($nota1 + $nota2) / 2;
+                 }
+                 if ($divicion == 3) {
+                     $nota_r=($nota1 + $nota2 + $nota3) / 3;
+                 }
+             }
+             if ($nota_r <> "IN") {
+                 $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+             }
+             if (strlen($nota_r) == 1) {
+                 $nota_r=sprintf("%2d" . $nota_r, "");
+             }
+             if ($nota_r == 00) {
+                 $nota_r=0;
+             }
+         }
+         if ($nota_r <> "") {
+             $materiaP=$carrera . "P" . $materia . $plan;
+             for ($i=0; $i < count($cod_mat_a); $i++) {
+                 if ($cod_mat_a[$i] == "$materiaP") {
+                     if ($nota_r > 5 and $nota_r < $aprobatori and $aprobatori <> 16) {
+                         $per="true";
+                         $nota_p=$nota_a[$i];
+                         $lapso=$lapso_a[$i];
+                         $tiplap=$tiplap_a[$i];
+                         $t30=($nota_r * 100) / 20;
+                         $t70=100 - $t30;
+                         $t70_2=$nota_p * ($t70 / 100);
+                         $nota_r=$nota_r + $t70_2;
+                         $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+                         $tiplap="P";
+                     }
+                 }
+             }
+             if (strlen($nota_r) == 1) {
+                 $nota_r=sprintf("%2d" . $nota_r, "");
+             }
+             $X0=$X0 + 1;
+             $esta="SI";
+         } else {
+             $esta="NO";
+         }
+         $conn->close();
+         return $nota_r . "|" . $lapso . "|" . $tiplap;
+     }
+     function calcular_resumida_datos_s($pensum, $lismat_cod_mat, $cedula, $grado) {
+         include "db.php";
+
+         $sql = "SELECT * FROM lismat WHERE cod_mat='" . $lismat_cod_mat . "' AND pensum='" . $pensum . "' AND SUBSTRING(cod_mat,2,1)='R' AND grado='" . $grado . "' GROUP BY id ASC";
+         $resultado = $conn->query( $sql );
+         if ( !$resultado ) {
+             exit;
+         }
+        
+         if ( $resultado->num_rows > 0 ) {
+             while ( $fila = $resultado->fetch_assoc() ) {
+                 $lismat_cod_mat = $fila[ 'cod_mat' ];               
+                 $descrip = $fila[ 'descrip2' ];
+                 $creditos = $fila[ 'creditos' ];
+                 $semestre = $fila[ 'semestre' ];
+                 $nota_cat = $fila[ 'nota' ];
+                 $divicion = $fila[ 'divicion' ];
+                 $trayecto = $fila[ 'trayecto' ];
+                 $aprobatori = $fila[ 'aprobatori' ];
+                 $cod_mat_libro_rector = $fila[ 'cod_mat_libro_rector' ];
+                
+             }
+         }
+
+         $sql="SELECT * FROM `notas` WHERE `codigo`='" . $cedula . "' ORDER BY lapso ASC";
+         $result=$conn->query($sql);
+         $i=0;
+         if ($result->num_rows > 0) {
+             while ($row=$result->fetch_assoc()) {
+                 $id_a[$i]=$row['id'];
+                 $codigo_a[$i]=$row['codigo'];
+                 $cod_mat_a[$i]=$row['cod_mat'];
+                 $carrera_a[$i]=$row['carrera'];
+                 $nota_a[$i]=$row['nota'];
+                 $lapso_a[$i]=$row['lapso'];
+                 $tiplap_a[$i]=$row['tiplap'];
+                 $cod_doc_a[$i]=$row['cod_doc'];
+                 $cod_usu_a[$i]=$row['cod_usu'];
+                 $acu_a[$i]=$row['acu'];
+                 $seccion_a[$i]=$row['seccion'];
+                 $electiva_a[$i]=$row['electiva'];
+                 $fecha_a[$i]=$row['fecha'];
+                 $i++;
+             }
+         }
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if (substr($cod_mat_a[$i], 2, 2) == $materia) {
+                 if ($lapso_a[$i] > $max_lapso) {
+                     $max_lapso=$lapso_a[$i];
+                 }
+             }
+         }
+         if ($lapso_a <> "") {
+             $lapso_actual=max($lapso_a);
+         }
+         $materia=substr($lismat_cod_mat, 2, 2);
+         $mate=substr($lismat_cod_mat, 1, 1);
+         $carrera=substr($lismat_cod_mat, 0, 1);
+         $plan=substr($lismat_cod_mat, 4, 1);
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if (substr($cod_mat_a[$i], 2, 2) == $materia) {
+                 $temp_lapso[$i]=$lapso_a[$i];
+             }
+         }
+         if ($temp_lapso <> "") {
+             $max_lapso=max($temp_lapso);
+         }
+         $materiaT=$carrera . "T" . $materia . $plan;
+         $materiaE=$carrera . "E" . $materia . $plan;
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if ($cod_mat_a[$i] == "$materiaT" AND $max_lapso == $lapso_a[$i]) {
+                 $notaT="true";
+                 $nota_r=$nota_a[$i];
+                 $lapso=$lapso_a[$i];
+                 $tiplap=$tiplap_a[$i];
+                 $tiplap="T";
+                 $esta="SI";
+             }
+             if ($cod_mat_a[$i] == "$materiaE" AND $max_lapso == $lapso_a[$i]) {
+                 $notaE="true";
+                 $nota_r=$nota_a[$i];
+                 $lapso=$lapso_a[$i];
+                 $tiplap=$tiplap_a[$i];
+                 $tiplap="E";
+                 $esta="SI";
+             }
+             if (substr($cod_mat_a[$i], 2, 2) == substr($lismat_cod_mat, 2, 2)) {
+                 $numero_veses=$numero_veses + 1;
+             }
+         }
+         if ($notaT <> "true") {
+             $notaT="false";
+             $esta="NO";
+         }
+         if ($notaE <> "true") {
+             $notaE="false";
+             $esta="NO";
+         }
+         if ($notaT == "false" AND $notaE == "false") {
+             $materia0=$carrera . "0" . $materia . $plan;
+             $materia1=$carrera . "1" . $materia . $plan;
+             $materia2=$carrera . "2" . $materia . $plan;
+             $materia3=$carrera . "3" . $materia . $plan;
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia0" AND $nota_a[$x] <> "0") {
+                     $nota0=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia1" AND $nota_a[$x] <> "0") {
+                     $nota1=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia2" AND $nota_a[$x] <> "0") {
+                     $nota2=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia3" AND $nota_a[$x] <> "0") {
+                     $nota3=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             if ($trayecto == 0) {
+                 $nota_r=$nota0;
+             } else {
+                 if ($divicion == 1) {
+                     $nota_r=$nota1;
+                 }
+                 if ($divicion == 2) {
+                     $nota_r=($nota1 + $nota2) / 2;
+                 }
+                 if ($divicion == 3) {
+                     $nota_r=($nota1 + $nota2 + $nota3) / 3;
+                 }
+             }
+             if ($nota_r <> "IN") {
+                 $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+             }
+             if (strlen($nota_r) == 1) {
+                 $nota_r=sprintf("%2d" . $nota_r, "");
+             }
+             if ($nota_r == 00) {
+                 $nota_r=0;
+             }
+         }
+         if ($nota_r <> "") {
+             $materiaP=$carrera . "P" . $materia . $plan;
+             for ($i=0; $i < count($cod_mat_a); $i++) {
+                 if ($cod_mat_a[$i] == "$materiaP") {
+                     if ($nota_r > 5 and $nota_r < $aprobatori and $aprobatori <> 16) {
+                         $per="true";
+                         $nota_p=$nota_a[$i];
+                         $lapso=$lapso_a[$i];
+                         $tiplap=$tiplap_a[$i];
+                         $t30=($nota_r * 100) / 20;
+                         $t70=100 - $t30;
+                         $t70_2=$nota_p * ($t70 / 100);
+                         $nota_r=$nota_r + $t70_2;
+                         $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+                         $tiplap="P";
+                     }
+                 }
+             }
+             if (strlen($nota_r) == 1) {
+                 $nota_r=sprintf("%2d" . $nota_r, "");
+             }
+             $X0=$X0 + 1;
+             $esta="SI";
+         } else {
+             $esta="NO";
+         }
+         $conn->close();                
+                         
+         return $nota_r. "|" .$lapso. "|" .$tipla. "|" .$lismat_cod_mat. "|" .$descrip. "|" .$creditos. "|" .$aprobatori. "|" .$trayecto. "|" .$semestre. "|" .$divicion. "|" .$cod_mat_libro_rector;
+     }
+     function materias_no_aprobada($pensum, $cedula, $cod_mat, $grado) {
+     
+         include( 'db.php' );  
+
+         $cod_mat_buscar= substr($cod_mat, 0, 1)."R".substr($cod_mat, 2, 1).substr($cod_mat, 3, 3);
+   
+         $sql = "SELECT * FROM lismat WHERE cod_mat='" . $cod_mat_buscar . "' AND pensum='" . $pensum . "' AND SUBSTRING(cod_mat,2,1)='R' AND grado='" . $grado . "' GROUP BY id ASC";
+       
+         $resultado = $conn->query( $sql );
+         if ( !$resultado ) {
+             exit;
+         }
+         $x1 = 0;
+         if ( $resultado->num_rows > 0 ) {
+             while ( $fila = $resultado->fetch_assoc() ) {
+                 $cod_mat2 = $fila['cod_mat'];                 
+             }
+         }
+         
+         // echo "<br>";
+         // echo "pensum: ".$pensum."<br>"; 
+         // echo "cod_mat: ".$cod_mat."<br>";
+         // echo "cod_mat_buscar: ".$cod_mat_buscar."<br>";
+         // echo "cedula: ".$cedula."<br>";
+         // echo "grado: ".$grado."<br>";
+                      
+        
+         $nr = $this->calcular_resumida_datos_s( $pensum, $cod_mat2, $cedula, $grado);
+         list( $nota,$lapso,$tipla,$cod_mat1,$descrip,$creditos,$aprobatori,$trayecto,$semestre,$divicion,$cod_mat_libro_rector) = split( '[|]', $nr );
+         
+         // echo "nota: ".$nota."<br>";
+         // echo "aprobatori: ".$aprobatori."<br>";
+       
+         if ($nota<$aprobatori){
+           $dat="false"; 
+         }else{
+           $dat="true"; 
+         }
+
+         return $dat. "|" .$nota. "|" .$aprobatori;
+
+     }
+     function INSERT_INTO_notas($codigo, $cod_mat, $carrera, $nota, $lapso, $tiplap, $cod_doc, $cod_usu, $acu, $seccion) {
+         include "db.php";
+         $sql="INSERT INTO notas_auditoria(accion,cod,usuario,codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu,hora,fecha) VALUES ('$accion','$cod','$usuario','$codigo','$cod_mat','$nota','$lapso','$tiplap','$cod_doc','$cod_usu','$acu','$hora','$fecha');";
+         $result=mysqli_query($conn, $sql);
+         $sql="INSERT INTO notas(codigo,cod_mat,carrera,nota,lapso,tiplap,cod_doc,cod_usu,acu,seccion) VALUES ('$codigo','$cod_mat','$carrera','$nota','$lapso','$tiplap','$cod_doc','$cod_usu','$acu','$seccion');";
+         if ($conn->query($sql) === TRUE) {
+             include 'menu.php';
+             $this->mensaje_color("Formulario_notas_lista.php", "principal.php", "Se agrego el registro", 0, 0);
+         } else {
+             include 'menu.php';
+             $this->mensaje_color("Formulario_notas_lista.php", "principal.php", "No se pudo agregar el registro", 1, 1);
+         }
+         $conn->close();
+     }
+     function calcular_resumida_datos_comprobacion($pensum, $lismat_cod_mat, $cedula, $trayecto, $aprobatori, $divicion) {
+         include "db.php";
+         $sql="SELECT * FROM `notas` WHERE `codigo`='" . $cedula . "' ORDER BY lapso ASC";
+         $result=$conn->query($sql);
+         $i=0;
+         if ($result->num_rows > 0) {
+             while ($row=$result->fetch_assoc()) {
+                 $id_a[$i]=$row['id'];
+                 $codigo_a[$i]=$row['codigo'];
+                 $cod_mat_a[$i]=$row['cod_mat'];
+                 $carrera_a[$i]=$row['carrera'];
+                 $nota_a[$i]=$row['nota'];
+                 $lapso_a[$i]=$row['lapso'];
+                 $tiplap_a[$i]=$row['tiplap'];
+                 $cod_doc_a[$i]=$row['cod_doc'];
+                 $cod_usu_a[$i]=$row['cod_usu'];
+                 $acu_a[$i]=$row['acu'];
+                 $seccion_a[$i]=$row['seccion'];
+                 $electiva_a[$i]=$row['electiva'];
+                 $fecha_a[$i]=$row['fecha'];
+                 $i++;
+             }
+         }
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if (substr($cod_mat_a[$i], 2, 2) == $materia) {
+                 if ($lapso_a[$i] > $max_lapso) {
+                     $max_lapso=$lapso_a[$i];
+                 }
+             }
+         }
+         if ($lapso_a <> "") {
+             $lapso_actual=max($lapso_a);
+         }
+         $materia=substr($lismat_cod_mat, 2, 2);
+         $mate=substr($lismat_cod_mat, 1, 1);
+         $carrera=substr($lismat_cod_mat, 0, 1);
+         $plan=substr($lismat_cod_mat, 4, 1);
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if (substr($cod_mat_a[$i], 2, 2) == $materia) {
+                 $temp_lapso[$i]=$lapso_a[$i];
+             }
+         }
+         if ($temp_lapso <> "") {
+             $max_lapso=max($temp_lapso);
+         }
+         $materiaT=$carrera . "T" . $materia . $plan;
+         $materiaE=$carrera . "E" . $materia . $plan;
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if ($cod_mat_a[$i] == "$materiaT" AND $max_lapso == $lapso_a[$i]) {
+                 $notaT="true";
+                 $nota_r=$nota_a[$i];
+                 $lapso=$lapso_a[$i];
+                 $tiplap=$tiplap_a[$i];
+                 $tiplap="T";
+                 $esta="SI";
+             }
+             if ($cod_mat_a[$i] == "$materiaE" AND $max_lapso == $lapso_a[$i]) {
+                 $notaE="true";
+                 $nota_r=$nota_a[$i];
+                 $lapso=$lapso_a[$i];
+                 $tiplap=$tiplap_a[$i];
+                 $tiplap="E";
+                 $esta="SI";
+             }
+             if (substr($cod_mat_a[$i], 2, 2) == substr($lismat_cod_mat, 2, 2)) {
+                 $numero_veses=$numero_veses + 1;
+             }
+         }
+         if ($notaT <> "true") {
+             $notaT="false";
+             $esta="NO";
+         }
+         if ($notaE <> "true") {
+             $notaE="false";
+             $esta="NO";
+         }
+         if ($notaT == "false" AND $notaE == "false") {
+             $materia0=$carrera . "0" . $materia . $plan;
+             $materia1=$carrera . "1" . $materia . $plan;
+             $materia2=$carrera . "2" . $materia . $plan;
+             $materia3=$carrera . "3" . $materia . $plan;
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia0" AND $nota_a[$x] <> "0") {
+                     $nota0=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia1" AND $nota_a[$x] <> "0") {
+                     $nota1=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia2" AND $nota_a[$x] <> "0") {
+                     $nota2=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia3" AND $nota_a[$x] <> "0") {
+                     $nota3=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             if ($trayecto == 0) {
+                 $nota_r=$nota0;
+             } else {
+                 if ($divicion == 1) {
+                     $nota_r=$nota1;
+                 }
+                 if ($divicion == 2) {
+                     $nota_r=($nota1 + $nota2) / 2;
+                 }
+                 if ($divicion == 3) {
+                     $nota_r=($nota1 + $nota2 + $nota3) / 3;
+                 }
+             }
+             if ($nota_r <> "IN") {
+                 $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+             }
+             if (strlen($nota_r) == 1) {
+                 $nota_r=sprintf("%2d" . $nota_r, "");
+             }
+             if ($nota_r == 00) {
+                 $nota_r=0;
+             }
+         }
+         if ($nota_r <> "") {
+             $materiaP=$carrera . "P" . $materia . $plan;
+             for ($i=0; $i < count($cod_mat_a); $i++) {
+                 if ($cod_mat_a[$i] == "$materiaP") {
+                     if ($nota_r > 5 and $nota_r < $aprobatori and $aprobatori <> 16) {
+                         $per="true";
+                         $nota_p=$nota_a[$i];
+                         $lapso=$lapso_a[$i];
+                         $tiplap=$tiplap_a[$i];
+                         $t30=($nota_r * 100) / 20;
+                         $t70=100 - $t30;
+                         $t70_2=$nota_p * ($t70 / 100);
+                         $nota_r=$nota_r + $t70_2;
+                         $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+                         $tiplap="P";
+                     }
+                 }
+             }
+             $X0=$X0 + 1;
+             $esta="SI";
+         } else {
+             $esta="NO";
+         }
+         $conn->close();
+         return $nota_r . "|" . $lapso . "|" . $tiplap;
+     }
+     function calcular_resumida2($pensum, $X1B, $lismat_cod_mat, $cedula, $X1B, $descrip2, $semestre, $creditos, $trayecto, $aprobatori, $divicion, $cod_mat_libro_rector, $electiva, $texto, $tipo_doc, $cant, $apro) {
+         include "db.php";
+         $sql="SELECT * FROM `notas` WHERE `codigo`='" . $cedula . "' ORDER BY lapso ASC";
+         $result=$conn->query($sql);
+         $i=0;
+         if ($result->num_rows > 0) {
+             while ($row=$result->fetch_assoc()) {
+                 $id_a[$i]=$row['id'];
+                 $codigo_a[$i]=$row['codigo'];
+                 $cod_mat_a[$i]=$row['cod_mat'];
+                 $carrera_a[$i]=$row['carrera'];
+                 $nota_a[$i]=$row['nota'];
+                 $lapso_a[$i]=$row['lapso'];
+                 $tiplap_a[$i]=$row['tiplap'];
+                 $cod_doc_a[$i]=$row['cod_doc'];
+                 $cod_usu_a[$i]=$row['cod_usu'];
+                 $acu_a[$i]=$row['acu'];
+                 $seccion_a[$i]=$row['seccion'];
+                 $electiva_a[$i]=$row['electiva'];
+                 $fecha_a[$i]=$row['fecha'];
+                 $i++;
+             }
+         }
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if (substr($cod_mat_a[$i], 2, 2) == $materia) {
+                 if ($lapso_a[$i] > $max_lapso) {
+                     $max_lapso=$lapso_a[$i];
+                 }
+             }
+         }
+         if ($pensum == "EXC" AND $pensum == "MXC") {
+             $this->SetFont('Arial', '', 7);
+         } else {
+             $this->SetFont('Arial', '', 8);
+         }
+         if ($lapso_a <> "") {
+             $lapso_actual=max($lapso_a);
+         }
+         $materia=substr($lismat_cod_mat, 2, 2);
+         $mate=substr($lismat_cod_mat, 1, 1);
+         $carrera=substr($lismat_cod_mat, 0, 1);
+         $plan=substr($lismat_cod_mat, 4, 1);
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if (substr($cod_mat_a[$i], 2, 2) == $materia) {
+                 $temp_lapso[$i]=$lapso_a[$i];
+             }
+         }
+         if ($temp_lapso <> "") {
+             $max_lapso=max($temp_lapso);
+         }
+         $materiaT=$carrera . "T" . $materia . $plan;
+         $materiaE=$carrera . "E" . $materia . $plan;
+         for ($i=0; $i < count($cod_mat_a); $i++) {
+             if ($cod_mat_a[$i] == "$materiaT" AND $max_lapso == $lapso_a[$i]) {
+                 $notaT="true";
+                 $nota_r=$nota_a[$i];
+                 $lapso=$lapso_a[$i];
+                 $tiplap=$tiplap_a[$i];
+                 if ($texto == "true") {
+                     if ($tipo_doc == "C") {
+                         $this->SetXY(142, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_a[$i], 0, 0, 'C', 0);
+                         $this->SetXY(155.5, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso_a[$i], 0, 4), 0, 0, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "T", 0, 0, 'C', 0);
+                     } else {
+                         $this->SetXY(140, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_a[$i], 1, 1, 'C', 0);
+                         $this->SetXY(155, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso_a[$i], 0, 4), 1, 1, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "T", 1, 1, 'C', 0);
+                     }
+                 }
+                 $esta="SI";
+             }
+             if ($cod_mat_a[$i] == "$materiaE" AND $max_lapso == $lapso_a[$i]) {
+                 $notaE="true";
+                 $nota_r=$nota_a[$i];
+                 $lapso=$lapso_a[$i];
+                 $tiplap=$tiplap_a[$i];
+                 if ($texto == "true") {
+                     if ($tipo_doc == "C") {
+                         $this->SetXY(142, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_a[$i], 0, 0, 'C', 0);
+                         $this->SetXY(155.5, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso_a[$i], 0, 4), 0, 0, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "E", 0, 0, 'C', 0);
+                     } else {
+                         $this->SetXY(140, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_a[$i], 1, 1, 'C', 0);
+                         $this->SetXY(155, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso_a[$i], 0, 4), 1, 1, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "E", 1, 1, 'C', 0);
+                     }
+                 }
+                 $esta="SI";
+             }
+             if (substr($cod_mat_a[$i], 2, 2) == substr($lismat_cod_mat, 2, 2)) {
+                 $numero_veses=$numero_veses + 1;
+             }
+         }
+         if ($notaT <> "true") {
+             $notaT="false";
+             $esta="NO";
+         }
+         if ($notaE <> "true") {
+             $notaE="false";
+             $esta="NO";
+         }
+         if ($notaT == "false" AND $notaE == "false") {
+             $materia0=$carrera . "0" . $materia . $plan;
+             $materia1=$carrera . "1" . $materia . $plan;
+             $materia2=$carrera . "2" . $materia . $plan;
+             $materia3=$carrera . "3" . $materia . $plan;
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia0" AND $nota_a[$x] <> "0") {
+                     $nota0=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia1" AND $nota_a[$x] <> "0") {
+                     $nota1=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia2" AND $nota_a[$x] <> "0") {
+                     $nota2=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             for ($x=0; $x < count($cod_mat_a); $x++) {
+                 if ($cod_mat_a[$x] == "$materia3" AND $nota_a[$x] <> "0") {
+                     $nota3=$nota_a[$x];
+                     $lapso=$lapso_a[$x];
+                 }
+             }
+             if ($trayecto == 0) {
+                 $nota_r=$nota0;
+             } else {
+                 if ($divicion == 1) {
+                     $nota_r=$nota1;
+                 }
+                 if ($divicion == 2) {
+                     $nota_r=($nota1 + $nota2) / 2;
+                 }
+                 if ($divicion == 3) {
+                     $nota_r=($nota1 + $nota2 + $nota3) / 3;
+                 }
+             }
+             if ($texto == "true") {
+                 if ($nota_r == "IN" and strlen($nota_r) == 2) {
+                     $this->SetXY(140, 35 + $X1B);
+                     if ($tipo_doc == "C") {
+                         $this->Cell(15, 4, $nota_r, 0, 0, 'C', 0);
+                         $this->SetXY(155.5, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso, 0, 4), 0, 0, 'C', 0);
+                     } else {
+                         $this->Cell(15, 4, $nota_r, 1, 1, 'C', 0);
+                         $this->SetXY(155, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso, 0, 4), 1, 1, 'C', 0);
+                     }
+                 }
+             }
+             if ($nota_r <> "IN") {
+                 $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+             }
+             if (strlen($nota_r) == 1) {
+                 $nota_r=sprintf("%2d" . $nota_r, "");
+             }
+             if ($nota_r == 00) {
+                 $nota_r=0;
+             }
+         }
+         if ($nota_r <> "") {
+             $materiaP=$carrera . "P" . $materia . $plan;
+             for ($i=0; $i < count($cod_mat_a); $i++) {
+                 if ($cod_mat_a[$i] == "$materiaP") {
+                     if ($nota_r > 5 and $nota_r < $aprobatori and $aprobatori <> 16) {
+                         $per="true";
+                         $nota_p=$nota_a[$i];
+                         $lapso=$lapso_a[$i];
+                         $tiplap=$tiplap_a[$i];
+                         $t30=($nota_r * 100) / 20;
+                         $t70=100 - $t30;
+                         $t70_2=$nota_p * ($t70 / 100);
+                         $nota_r=$nota_r + $t70_2;
+                         $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+                         if ($texto == "true") {
+                             if ($notaT == "false" and $notaE == "false") {
+                                 $this->SetXY(170, 35 + $X1B);
+                                 if ($tipo_doc == "C") {
+                                     $this->Cell(15, 4, "P", 0, 0, 'C', 0);
+                                 } else {
+                                     $this->Cell(15, 4, "P", 1, 1, 'C', 0);
+                                 }
+                             }
+                         }
+                     }
+                 }
+             }
+             if ($texto == "true") {
+                 if ($tipo_doc == "C") {
+                     $this->SetXY(12, 35 + $X1B);
+                     $this->Cell(20, 4, $cod_mat_libro_rector, 0, 0, 'L', 0);
+                     $this->SetXY(28, 35 + $X1B);
+                     $this->Cell(20, 4, $lismat_cod_mat, 0, 0, 'C', 0);
+                 } else {
+                     $this->SetXY(15, 35 + $X1B);
+                     $this->Cell(20, 4, $lismat_cod_mat, 1, 1, 'C', 0);
+                 }
+                 if ($electiva == 1) {
+                     $sql="SELECT * FROM electivas WHERE cod_ele= '" . $cod_ele . "' and pensum='" . $pensum . "'";
+                     $result=$conn->query($sql);
+                     if ($result->num_rows > 0) {
+                         while ($row=$result->fetch_assoc()) {
+                             $descrip3=$row['descrip2'];
+                         }
+                     }
+                     if ($tipo_doc == "C") {
+                         $this->SetXY(43, 35 + $X1B);
+                         $this->Cell(75, 4, substr(utf8_decode($descrip2 . " - " . $descrip3), 0, 39), 0, 0, 'C', 0);
+                     } else {
+                         $this->SetXY(35, 35 + $X1B);
+                         $this->Cell(75, 4, substr(utf8_decode($descrip2 . " - " . $descrip3), 0, 39), 1, 1, 'C', 0);
+                     }
+                 } else {
+                     if ($tipo_doc == "C") {
+                         $this->SetXY(43, 35 + $X1B);
+                         $this->Cell(75, 4, substr(utf8_decode($descrip2), 0, 39), 0, 0, 'C', 0);
+                     } else {
+                         $this->SetXY(35, 35 + $X1B);
+                         $this->Cell(75, 4, substr(utf8_decode($descrip2), 0, 39), 1, 1, 'C', 0);
+                     }
+                 }
+                 if ($tipo_doc == "C") {
+                     $this->SetXY(110, 35 + $X1B);
+                     $this->Cell(25, 4, $trayecto, 0, 0, 'C', 0);
+                     $this->SetXY(133, 35 + $X1B);
+                     $this->Cell(10, 4, $creditos, 0, 0, 'C', 0);
+                 } else {
+                     $this->SetXY(110, 35 + $X1B);
+                     $this->Cell(10, 4, $semestre, 1, 1, 'C', 0);
+                     $this->SetXY(120, 35 + $X1B);
+                     $this->Cell(10, 4, $creditos, 1, 1, 'C', 0);
+                 }
+             }
+             if ($tipo_doc <> "C") {
+                 if ($texto == "true") {
+                     $this->SetXY(130, 35 + $X1B);
+                     $this->Cell(10, 4, $this->cantidad_de_veses($cedula, $lismat_cod_mat, $divicion), 1, 1, 'C', 0);
+                 }
+             }
+             if (strlen($nota_r) == 1) {
+                 $nota_r=sprintf("%2d" . $nota_r, "");
+             }
+             if ($texto == "true") {
+                 if ($notaT == "false" and $notaE == "false") {
+                     if ($tipo_doc == "C") {
+                         $this->SetXY(142, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_r, 0, 0, 'C', 0);
+                         $this->SetXY(155.5, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso, 0, 4), 0, 0, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "", 0, 0, 'C', 0);
+                     } else {
+                         $this->SetXY(140, 35 + $X1B);
+                         $this->Cell(15, 4, $nota_r, 1, 1, 'C', 0);
+                         $this->SetXY(155, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso, 0, 4), 1, 1, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "", 1, 1, 'C', 0);
+                     }
+                 }
+             }
+             if ($tipo_doc <> "C" AND $texto == "true") {
+                 if ($pensum == "GXC" and $lismat_cod_mat == "GRBSC" OR $lismat_cod_mat == "GRAYC") {
+                     $this->SetXY(185, 35 + $X1B);
+                     if ($cant <> $apro) {
+                         $this->Cell(15, 4, "SI", 1, 1, 'C', 0);
+                         $FALTANTES=$FALTANTES + 1;
+                     } elseif ($cant == $apro) {
+                         $this->Cell(15, 4, "", 1, 1, 'C', 0);
+                         $APROBADOS=$APROBADOS + 1;
+                     }
+                 } else {
+                     $this->SetXY(185, 35 + $X1B);
+                     if ($nota_r < $aprobatori) {
+                         $this->Cell(15, 4, "SI", 1, 1, 'C', 0);
+                         $FALTANTES=$FALTANTES + 1;
+                     } elseif ($nota_r >= $aprobatori) {
+                         $this->Cell(15, 4, "", 1, 1, 'C', 0);
+                         $APROBADOS=$APROBADOS + 1;
+                     }
+                 }
+             }
+             $entre_lineado=4;
+             $X1B=$X1B + $entre_lineado;
+             $X0=$X0 + 1;
+             if ($texto == "true") {
+                 if ($tipo_doc == "C") {
+                     $cant_p=30;
+                 } else {
+                     $cant_p=42;
+                 }
+                 $carrera_a1=$this->carrera_larga(substr($lismat_cod_mat, 0, 1));
+                 if ($X0 > $cant_p) {
+                     if ($tipo_doc == "C") {
+                         $X1B=38;
+                         $this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+                     } else {
+                         $X1B=12;
+                         $this->encabezado_historial($pensum, $cedula);
+                     }
+                     $X0=0;
+                 }
+             }
+             $esta="SI";
+         } else {
+             $esta="NO";
+         }
+         return $nota_r . "|" . $max_lapso . "|" . $tiplap;
+     }
+     function calcular_resumida_per($pensum, $X1B, $lismat_cod_mat, $cedula, $X1B, $descrip2, $semestre, $creditos, $trayecto, $aprobatori, $divicion, $cod_mat_libro_rector, $electiva, $texto, $tipo_doc, $cant, $apro, $lapso) {
+         include "db.php";
+         $sql="SELECT * FROM `notas` WHERE `codigo`='" . $cedula . "' ORDER BY lapso ASC";
+         $result=$conn->query($sql);
+         $i=0;
+         if ($result->num_rows > 0) {
+             while ($row=$result->fetch_assoc()) {
+                 $id_a[$i]=$row['id'];
+                 $codigo_a[$i]=$row['codigo'];
+                 $cod_mat_a[$i]=$row['cod_mat'];
+                 $carrera_a[$i]=$row['carrera'];
+                 $nota_a[$i]=$row['nota'];
+                 $lapso_a[$i]=$row['lapso'];
+                 $tiplap_a[$i]=$row['tiplap'];
+                 $cod_doc_a[$i]=$row['cod_doc'];
+                 $cod_usu_a[$i]=$row['cod_usu'];
+                 $acu_a[$i]=$row['acu'];
+                 $seccion_a[$i]=$row['seccion'];
+                 $electiva_a[$i]=$row['electiva'];
+                 $fecha_a[$i]=$row['fecha'];
+                 $i++;
+             }
+         }
+         $materia=substr($lismat_cod_mat, 2, 2);
+         $mate=substr($lismat_cod_mat, 1, 1);
+         $carrera=substr($lismat_cod_mat, 0, 1);
+         $plan=substr($lismat_cod_mat, 4, 1);
+         if (substr($cod_mat_a[$i], 2, 2) == substr($lismat_cod_mat, 2, 2)) {
+             $numero_veses=$numero_veses + 1;
+         }
+         $materia0=$carrera . "0" . $materia . $plan;
+         $materia1=$carrera . "1" . $materia . $plan;
+         $materia2=$carrera . "2" . $materia . $plan;
+         $materia3=$carrera . "3" . $materia . $plan;
+         for ($x=0; $x < count($cod_mat_a); $x++) {
+             if ($cod_mat_a[$x] == "$materia0" AND $nota_a[$x] <> "0") {
+                 $nota0=$nota_a[$x];
+             }
+         }
+         for ($x=0; $x < count($cod_mat_a); $x++) {
+             if ($cod_mat_a[$x] == "$materia1" AND $nota_a[$x] <> "0") {
+                 $nota1=$nota_a[$x];
+                 $lapso=$lapso_a[$x];
+             }
+         }
+         for ($x=0; $x < count($cod_mat_a); $x++) {
+             if ($cod_mat_a[$x] == "$materia2" AND $nota_a[$x] <> "0") {
+                 $nota2=$nota_a[$x];
+                 $lapso=$lapso_a[$x];
+             }
+         }
+         for ($x=0; $x < count($cod_mat_a); $x++) {
+             if ($cod_mat_a[$x] == "$materia3" AND $nota_a[$x] <> "0") {
+                 $nota3=$nota_a[$x];
+                 $lapso=$lapso_a[$x];
+             }
+         }
+         if ($trayecto == 0) {
+             $nota_r=$nota0;
+         } else {
+             if ($divicion == 1) {
+                 $nota_r=$nota1;
+             }
+             if ($divicion == 2) {
+                 $nota_r=($nota1 + $nota2) / 2;
+             }
+             if ($divicion == 3) {
+                 $nota_r=($nota1 + $nota2 + $nota3) / 3;
+             }
+         }
+         if ($nota_r <> "IN") {
+             $nota_r=round($nota_r, 0, PHP_ROUND_HALF_UP);
+         }
+         if (strlen($nota_r) == 1) {
+             $nota_r=sprintf("%2d" . $nota_r, "");
+         }
+         if ($nota_r == 00) {
+             $nota_r=0;
+         }
+         if ($nota_r <> "") {
+             if ($tipo_doc <> "C") {
+                 if ($divicion == $numero_veses) {
+                     $numero_veses=1;
+                 }
+                 if ($numero_veses > $divicion) {
+                     if ($numero_veses == $divicion) {
+                         $numero_veses=1;
+                     } else {
+                         $numero_veses=$numero_veses - $divicion;
+                     }
+                 }
+             }
+             if (strlen($nota_r) == 1) {
+                 $nota_r=sprintf("%2d" . $nota_r, "");
+             }
+             $X1B=$X1B + $entre_lineado;
+             $X0=$X0 + 1;
+             $esta="SI";
+         } else {
+             $esta="NO";
+         }
+         return $nota_r . "|" . substr($lapso, 0, 4) . "3" . "|" . substr($lismat_cod_mat, 1, 1);
+     }
+     function select_cod_mat_libro_rector($tabla, $where) {
+         include "db.php";
+         $sql="SELECT * FROM " . $tabla . " WHERE " . $where;
+         $result=$conn->query($sql);
+         if ($result->num_rows > 0) {
+             while ($row=$result->fetch_assoc()) {
+                 $dat=$row['cod_mat_libro_rector'];
+                 return $dat;
+             }
+         }
+     }
+     function actualizar_ira($cedula, $pensum, $grado) {
+         include "db.php";
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira, $uc) = split('[|]', $nr);
+         $sql="UPDATE `alumno` SET ira='" . $ira . "' WHERE cedula='" . $cedula . "'";
+         $result=$conn->query($sql);
+     }
+     function cantidad_materias_residente($pensum, $cedula, $grado) {
+         include "db.php";
+         if ($grado == "T") {
+             $sql="SELECT * FROM `lismat` WHERE `pensum` LIKE '" . $pensum . "' AND SUBSTRING(`cod_mat`,2,1)='R' AND grado='" . $grado . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 $dat=$resultado->num_rows;
+             }
+             if ($pensum == "GXC" and $dat > 0) {
+                 $dat=$dat - 1;
+             }
+         }
+         if ($grado == "I" OR $grado == "L") {
+             $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+             $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+             if ($materias_aprobadas == $cantidad_materias) {
+                 $sql="SELECT * FROM `lismat` WHERE `pensum` LIKE '" . $pensum . "' AND trayecto<>'0' AND SUBSTRING(`cod_mat`,2,1)='R' AND grado='" . $grado . "'";
+                 $resultado=$conn->query($sql);
+                 if ($resultado->num_rows > 0) {
+                     $dat=$resultado->num_rows;
+                 }
+                 if ($pensum == "GXC" and $dat > 0) {
+                     $dat=$dat - 1;
+                 }
+             } else {
+                 $sql="SELECT * FROM `lismat` WHERE `pensum` LIKE '" . $pensum . "' AND SUBSTRING(`cod_mat`,2,1)='R' AND grado='" . $grado . "'";
+                 $resultado=$conn->query($sql);
+                 if ($resultado->num_rows > 0) {
+                     $dat=$resultado->num_rows;
+                 }
+                 if ($pensum == "GXC" and $dat > 0) {
+                     $dat=$dat - 1;
+                 }
+             }
+         }
+         return $dat;
+     }
+     function cantidad_materias_pensum($pensum, $grado) {
+         if ($grado == "T") {
+             include "db.php";
+             $sql="SELECT * FROM `lismat` WHERE `pensum` LIKE '" . $pensum . "' AND SUBSTRING(`cod_mat`,2,1)='R' AND grado='" . $grado . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 $dat=$resultado->num_rows;
+             }
+         }
+         return $dat;
+     }
+     function cantidad_materias_GXC($pensum, $cedula, $grado) {
+         include "db.php";
+         $sql="SELECT pnf FROM `alumno` WHERE `cedula` LIKE '" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $dat=$resultado->num_rows;
+             while ($fila=$resultado->fetch_assoc()) {
+                 $pnf=$fila['pnf'];
+             }
+         }
+         if ($grado == "T") {
+             $sql="SELECT * FROM `lismat` WHERE `pensum` LIKE '" . $pensum . "' AND SUBSTRING(`cod_mat`,2,1)='R' AND grado='" . $grado . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 $dat=$resultado->num_rows - 1;
+             }
+         }
+         if ($pnf == "0" OR $pnf == "1") {
+             if ($grado == "L") {
+                 $sql="SELECT * FROM `lismat` WHERE `pensum` LIKE '" . $pensum . "' AND trayecto<>'0' AND SUBSTRING(`cod_mat`,2,1)='R' AND grado='" . $grado . "'";
+                 $resultado=$conn->query($sql);
+                 if ($resultado->num_rows > 0) {
+                     $dat=$resultado->num_rows - 1;
+                 }
+             }
+         }
+         if ($pnf == "2") {
+             if ($grado == "L") {
+                 $sql="SELECT * FROM `lismat` WHERE `pensum` LIKE '" . $pensum . "' AND SUBSTRING(`cod_mat`,2,1)='R' AND grado='" . $grado . "'";
+                 $resultado=$conn->query($sql);
+                 if ($resultado->num_rows > 0) {
+                     $dat=$resultado->num_rows - 1;
+                 }
+             }
+         }
+         return $dat;
+     }
+     function cantidad_materias($pensum, $cedula, $grado) {
+         include "db.php";
+         if ($grado == "T") {
+             $sql="SELECT pnf FROM `alumno` WHERE `cedula` LIKE '" . $cedula . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 $dat=$resultado->num_rows;
+             }
+         }
+         if ($grado == "I" OR $grado == "L") {
+             $sql="SELECT pnf FROM `alumno` WHERE `cedula` LIKE '" . $cedula . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 $dat=$resultado->num_rows;
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $pnf=$fila['pnf'];
+                 }
+             }
+             if ($pnf == "0" OR $pnf == "1") {
+                 $cantidad_materias=$this->cantidad_materias_pensum($pensum, "T");
+                 $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+                 if ($materias_aprobadas == $cantidad_materias) {
+                     $sql="SELECT * FROM `lismat` WHERE `pensum` LIKE '" . $pensum . "' AND trayecto<>'0' AND SUBSTRING(`cod_mat`,2,1)='R' AND grado='" . $grado . "'";
+                     $resultado=$conn->query($sql);
+                     if ($resultado->num_rows > 0) {
+                         $dat=$resultado->num_rows;
+                     }
+                 }
+             } else {
+                 $sql="SELECT * FROM `lismat` WHERE `pensum` LIKE '" . $pensum . "' AND SUBSTRING(`cod_mat`,2,1)='R' AND grado='" . $grado . "'";
+                 $resultado=$conn->query($sql);
+                 if ($resultado->num_rows > 0) {
+                     $dat=$resultado->num_rows;
+                 }
+             }
+         }
+         if ($pensum == "GXC" and $dat > 0) {
+             $dat=$dat - 1;
+         }
+         return $dat;
+     }
+     function cantidad_de_veses($codigo, $cod_mat, $divicion) {
+         include "db.php";
+         $cod_mat=substr($cod_mat, 2, 2);
+         $sql="SELECT * FROM notas WHERE codigo='" . $codigo . "' and SUBSTRING(`cod_mat`,3,2)='" . $cod_mat . "'";
+         $resultado=$conn->query($sql);
+         $dat=$resultado->num_rows - $divicion;
+         if ($resultado->num_rows == 1 AND $dat == 0) {
+             $dat=1;
+         }
+         if ($resultado->num_rows == 0) {
+             $dat=0;
+         }
+         if ($resultado->num_rows == 3 AND $dat == 0) {
+             $dat=1;
+         }
+         if ($resultado->num_rows == 2 AND $dat == 0) {
+             $dat=1;
+         }
+         if ($resultado->num_rows == 1 AND $dat == 0) {
+             $dat=1;
+         }
+         if ($resultado->num_rows == 1 AND $dat < 0) {
+             $dat=1;
+         }
+         if ($resultado->num_rows == 0 AND $dat < 0) {
+             $dat=0;
+         }
+         return $dat;
+     }
+     function materias_aprobadas($pensum, $cedula, $grado) {
+         global $X1B, $X0;
+         include "db.php";
+         $sql="SELECT * FROM `lismat` WHERE `pensum` LIKE '" . $pensum . "' AND SUBSTRING(`cod_mat`,2,1)='R' AND grado='" . $grado . "'";
+         $resultado=$conn->query($sql);
+         $i=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $lismat_cod_mat[$i]=$fila['cod_mat'];
+                 $descrip2[$i]=$fila['descrip2'];
+                 $creditos[$i]=$fila['creditos'];
+                 $semestre[$i]=$fila['semestre'];
+                 $nota_cat[$i]=$fila['nota'];
+                 $divicion[$i]=$fila['divicion'];
+                 $trayecto[$i]=$fila['trayecto'];
+                 $aprobatori[$i]=$fila['aprobatori'];
+                 $electiva[$i]=$fila['electiva'];
+                 $nr=$this->calcular_resumida_datos($pensum, $X1B, $lismat_cod_mat[$i], $cedula, $X1B, $descrip2[$i], $semestre[$i], $creditos[$i], $trayecto[$i], $aprobatori[$i], $divicion[$i], $cod_mat_libro_rector[$i], $electiva[$i], $cant, $apro);
+                 list($nota_resumida, $lapso_resumida, $tipo_resumida) = split('[|]', $nr);
+                 if ($nota_resumida >= $aprobatori[$i]) {
+                     $dat++;
+                 }
+                 $i=$i + 1;
+             }
+         }
+         $X1B=37;
+         $X0=0;
+         return $dat;
+     }
+     function carrera_larga($carrera) {
+         include "db.php";
+         $pensum=substr($carrera, 0, 1) . "XC";
+         $sql="SELECT DISTINCT * FROM pensum where pensum='" . $pensum . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $descripcion=$fila["descripcion"];
+             }
+         }
+         return $descripcion;
+     }
+     function pensum($carrera) {
+         include "db.php";
+         $pensum=substr($carrera, 0, 1) . "XC";
+         $sql="SELECT DISTINCT * FROM pensum where pensum='" . $pensum . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $dat=$fila["pensum"];
+             }
+         }
+         return $dat;
+     }
+     function pensum_combo($carrera) {
+         include "db.php";
+         $pensum=substr($carrera, 0, 1) . "XC";
+         $sql="SELECT DISTINCT * FROM pensum where pensum='" . $pensum . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                echo '<option value="'.substr($fila["pensum"], 0, 1).'">'.$fila["pensum"]." - ".$fila["descripcion2"].'</option>';
+                 // $dat='<option value='.$fila["pensum.pensum"].'>'.$fila["pensum.descripcion2"].'</option>';       
+             }
+         }
+         //return $dat;
+     }
+     function carrera_corta($carrera) {
+         include "db.php";
+         $pensum=$carrera . "XC";
+         $sql="SELECT DISTINCT * FROM pensum where pensum='" . $pensum . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $descripcion2=$fila["descripcion2"];
+             }
+         }
+         return $descripcion2;
+     }
+     function actualizar_irapromo($cedula, $fe_gr_alu, $marca, $grado) {
+         include "db.php";
+         $x1=0;
+         $num_est=0;
+         $sql="SELECT * FROM `alumno` WHERE marca='" . $marca . "' and fe_gr_alu='" . $fe_gr_alu . "' ORDER BY `ira` DESC";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $ira[$x1]=$fila['ira'];
+                 $num_est++;
+                 $sql="UPDATE `alumno` SET ubicacion='" . $num_est . "' WHERE cedula='" . $fila['cedula'] . "'";
+                 $conn->query($sql);
+             }
+         }
+         for ($i=0; $i < count($ira); $i++) {
+             $IRA_1=$IRA_1 + $ira[$i];
+             $IRA_1B=$IRA_1 / count($ira) - 1;
+             $ira=number_format($IRA_1B, 3);
+         }
+         $pensum=$this->pensum_alumno($cedula);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($irapromo, $uc) = split('[|]', $nr);
+         $nr2=$this->calculo_ira_total($cedula, $pensum, $grado, $tr, 0);
+         list($ira, $uc) = split('[|]', $nr2);
+         include "db.php";
+         $sql="UPDATE `alumno` SET fe_gr_alu='" . $fe_gr_alu . "',marca='" . $marca . "',ira='" . $irapromo . "',irapromo='" . $ira . "',num_est='" . $num_est . "' WHERE cedula='" . $cedula . "'";
+         $conn->query($sql);
+     }
+     function lista_de_materias($pensum, $grado, $cod_mat, $i) {
+         include "db.php";
+         if ($grado <> "") {
+             $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' AND grado='" . $grado . "' AND SUBSTRING(cod_mat,2,1)='R' GROUP BY id ASC";
+         } else {
+             $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' AND SUBSTRING(cod_mat,2,1)='R' GROUP BY id ASC";
+         }
+         $resultado=$conn->query($sql);
+         $x1=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $lismat_cod_mat[$x1]=$fila['cod_mat'];
+                 $descrip2[$x1]=$fila['descrip2'];
+                 $creditos[$x1]=$fila['creditos'];
+                 $semestre[$x1]=$fila['semestre'];
+                 $nota_cat[$x1]=$fila['nota'];
+                 $divicion[$x1]=$fila['divicion'];
+                 $trayecto[$x1]=$fila['trayecto'];
+                 $aprobatori[$x1]=$fila['aprobatori'];
+                 $electiva[$x1]=$fila['electiva'];
+                 if ($fila['cod_mat'] == $cod_mat) {
+                     $i=$x1;
+                 }
+                 $x1=$x1 + 1;
+             }
+         }
+         return $lismat_cod_mat[$i] . "|" . $descrip2[$i] . "|" . $aprobatori[$i] . "|" . $semestre[$i] . "|" . $trayecto[$i] . "|" . $divicion[$i];
+     }
+     function verificar_carga_de_nota($cedula, $cod_mat, $lapso, $divicion) {
+         $materia=substr($cod_mat, 2, 2);
+         $mate=substr($cod_mat, 1, 1);
+         $carrera=substr($cod_mat, 0, 1);
+         $plan=substr($cod_mat, 4, 1);
+         $materia0=$carrera . "0" . $materia . $plan;
+         $materia1=$carrera . "1" . $materia . $plan;
+         $materia2=$carrera . "2" . $materia . $plan;
+         $materia3=$carrera . "3" . $materia . $plan;
+         include "db.php";
+         $sql="SELECT * FROM notas WHERE codigo='" . $cedula . "' and cod_mat='" . $materia0 . "' and SUBSTRING(`lapso`,1,4)='" . $lapso . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nota_0=abs($fila['nota']);
+             }
+         }
+         $sql="SELECT * FROM notas WHERE codigo='" . $cedula . "' and cod_mat='" . $materia1 . "' and SUBSTRING(`lapso`,1,4)='" . $lapso . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nota_1=abs($fila['nota']);
+             }
+         }
+         $sql="SELECT * FROM notas WHERE codigo='" . $cedula . "' and cod_mat='" . $materia2 . "' and SUBSTRING(`lapso`,1,4)='" . $lapso . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nota_2=abs($fila['nota']);
+             }
+         }
+         $sql="SELECT * FROM notas WHERE codigo='" . $cedula . "' and cod_mat='" . $materia3 . "' and SUBSTRING(`lapso`,1,4)='" . $lapso . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nota_3=abs($fila['nota']);
+             }
+         }
+         if ($divicion == 1 and $nota_0 > 0) {
+             $cantidad_de_notas=$cantidad_de_notas + 1;
+         }
+         if ($divicion == 1 and $nota_1 > 0) {
+             $cantidad_de_notas=$cantidad_de_notas + 1;
+         }
+         if ($divicion == 2) {
+             if ($nota_1 > 0) {
+                 $cantidad_de_notas=$cantidad_de_notas + 1;
+             }
+             if ($nota_2 > 0) {
+                 $cantidad_de_notas=$cantidad_de_notas + 1;
+             }
+         }
+         if ($divicion == 3) {
+             if ($nota_1 > 0) {
+                 $cantidad_de_notas=$cantidad_de_notas + 1;
+             }
+             if ($nota_2 > 0) {
+                 $cantidad_de_notas=$cantidad_de_notas + 1;
+             }
+             if ($nota_3 > 0) {
+                 $cantidad_de_notas=$cantidad_de_notas + 1;
+             }
+         }
+         return $cantidad_de_notas;
+     }
+     function listado_per_todos($pensum, $grado, $cod_mat, $i, $lapso) {
+         $datos_de_materias=$this->lista_de_materias($pensum, $grado, $cod_mat, $i);
+         list($cod_mat, $descrip2, $aprobatoria, $semestre, $trayecto, $divicion) = split('[|]', $datos_de_materias);
+         include "db.php";
+         $carrera=substr($cod_mat, 0, 1);
+         $cod_mat2="LIKE '%" . substr($cod_mat, 2, 3) . "%'";
+         $sql="SELECT DISTINCT alumno.cedula,alumno.nombre,notas.seccion FROM alumno,notas WHERE alumno.carrera='" . $carrera . "' and notas.`cod_mat` " . $cod_mat2 . " and SUBSTRING(notas.lapso,1,4)='" . $lapso . "' and notas.codigo=alumno.cedula ORDER BY alumno.nombre";
+         $resultado=$conn->query($sql);
+         $X1A=-11;
+         $X0_2=0;
+         $X0=0;
+         $cantidad_de_notas=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $resumida=$this->calcular_resumida_per($pensum, $X1B, $cod_mat, $fila['cedula'], $X1B, $descrip2, $semestre, $creditos, $trayecto, $aprobatori, $divicion, $cod_mat_libro_rector, $electiva, "false", "", $cant, $apro, $lapso);
+                 list($nota_resumida, $lapso_resumida, $tipo_resumida, $aprobatori) = split('[|]', $resumida);
+                 if (abs($nota_resumida) >= 6 and abs($nota_resumida) < $aprobatoria) {
+                     $n=$n + 1;
+                     $X0_2=$X0_2 + 1;
+                     $X1A=$X1A + 4;
+                     if ($n == 1) {
+                         $this->listado_per_Encabezado($lapso, $cod_mat, $descrip2, $cod_doc, $trayecto);
+                     }
+                     $this->SetFont('Arial', '', 8);
+                     $this->SetXY(15, 67 + $X1A);
+                     $this->Cell(9, 5, $n, 0, 0, 'C', 0);
+                     $this->SetXY(24, 67 + $X1A);
+                     $this->Cell(22, 5, strtoupper($fila['cedula']), 0, 0, 'L', 0);
+                     $this->SetXY(46, 67 + $X1A);
+                     $this->Cell(80, 5, strtoupper(substr(utf8_decode($fila['nombre']), 0, 50)), 0, 0, 'L', 0);
+                     $this->SetXY(146, 67 + $X1A);
+                     $this->Cell(5, 5, $nota_resumida, 0, 0, 'C', 0);
+                     $this->SetXY(158, 67 + $X1A);
+                     $this->Cell(5, 5, $fila['seccion'], 0, 0, 'C', 0);
+                     $this->SetXY(172, 67 + $X1A);
+                     $this->Cell(5, 5, $divicion, 0, 0, 'C', 0);
+                     $nota_0=$this->verificar_carga_de_nota($fila['cedula'], $cod_mat, $lapso, $divicion);
+                     $this->SetXY(187, 67 + $X1A);
+                     $this->Cell(5, 5, $nota_0, 0, 0, 'C', 0);
+                 }
+                 if ($X0_2 > 40) {
+                     $this->listado_per_Encabezado($lapso, $cod_mat, $descrip2, $cod_doc, $trayecto);
+                     $X1A=-11;
+                     $X0_2=0;
+                 }
+             }
+         }
+     }
+     function listado_per_una($pensum, $grado, $lapso, $i) {
+         $datos_de_materias=$this->lista_de_materias($pensum, $grado, $cod_mat, $i);
+         list($cod_mat, $descrip2, $aprobatoria, $semestre, $trayecto, $divicion) = split('[|]', $datos_de_materias);
+         include "db.php";
+         $carrera=substr($cod_mat, 0, 1);
+         $cod_mat2="LIKE '%" . substr($cod_mat, 2, 3) . "%'";
+         $sql="SELECT DISTINCT alumno.cedula,alumno.nombre,notas.seccion FROM alumno,notas WHERE alumno.carrera='" . $carrera . "' and notas.`cod_mat` " . $cod_mat2 . " and SUBSTRING(notas.lapso,1,4)='" . $lapso . "' and notas.codigo=alumno.cedula ORDER BY alumno.nombre";
+         $resultado=$conn->query($sql);
+         $X1A=-11;
+         $X0_2=0;
+         $X0=0;
+         $cantidad_de_notas=0;
+         $n=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $resumida=$this->calcular_resumida_per($pensum, $X1B, $cod_mat, $fila['cedula'], $X1B, $descrip2, $semestre, $creditos, $trayecto, $aprobatori, $divicion, $cod_mat_libro_rector, $electiva, "false", "", $cant, $apro, $lapso);
+                 list($nota_resumida, $lapso_resumida, $tipo_resumida, $aprobatori) = split('[|]', $resumida);
+                 if (abs($nota_resumida) >= 6 and abs($nota_resumida) < $aprobatoria and $aprobatoria <> 16) {
+                     $n=$n + 1;
+                 }
+             }
+         }
+         return $n;
+     }
+     function listado_de_secciones($pensum) {
+         if ($pensum == "MXC") {
+             echo '<option value="10">10 Mañana</option>';
+             echo '<option value="11">11 Mañana</option>';
+             echo '<option value="12">12 Mañana</option>';
+             echo '<option value="13">13 Mañana</option>';
+             echo '<option value="14">14 Mañana</option>';
+             echo '<option value="15">15 Mañana</option>';
+             echo '<option value="16">16 Noche</option>';
+             echo '<option value="17">17 Noche</option>';
+             echo '<option value="18">18 Noche</option>';
+             echo '<option value="19">19 Noche</option>';
+         }
+         if ($pensum == "IXC") {
+             echo '<option value="70">70 Mañana</option>';
+             echo '<option value="71">71 Mañana</option>';
+             echo '<option value="72">72 Mañana</option>';
+             echo '<option value="73">73 Mañana</option>';
+             echo '<option value="74">74 Mañana</option>';
+             echo '<option value="75">75 Mañana</option>';
+             echo '<option value="76">76 Noche</option>';
+             echo '<option value="77">77 Noche</option>';
+             echo '<option value="78">78 Noche</option>';
+             echo '<option value="79">79 Noche</option>';
+         }
+         if ($pensum == "GXC") {
+             echo '<option value="60">60 Mañana</option>';
+             echo '<option value="61">61 Mañana</option>';
+             echo '<option value="62">62 Mañana</option>';
+             echo '<option value="63">63 Mañana</option>';
+             echo '<option value="64">64 Mañana</option>';
+             echo '<option value="65">65 Mañana</option>';
+             echo '<option value="66">66 Noche</option>';
+             echo '<option value="67">67 Noche</option>';
+             echo '<option value="68">68 Noche</option>';
+             echo '<option value="69">69 Noche</option>';
+         }
+         if ($pensum == "TXC") {
+             echo '<option value="50">50 Mañana</option>';
+             echo '<option value="51">51 Mañana</option>';
+             echo '<option value="52">52 Mañana</option>';
+             echo '<option value="53">53 Mañana</option>';
+             echo '<option value="54">54 Mañana</option>';
+             echo '<option value="55">55 Mañana</option>';
+             echo '<option value="56">56 Noche</option>';
+             echo '<option value="57">57 Noche</option>';
+             echo '<option value="58">58 Noche</option>';
+             echo '<option value="59">59 Noche</option>';
+         }
+         if ($pensum == "CXC") {
+             echo '<option value="80">80 Mañana</option>';
+             echo '<option value="81">81 Mañana</option>';
+             echo '<option value="82">82 Mañana</option>';
+             echo '<option value="83">83 Mañana</option>';
+             echo '<option value="84">84 Mañana</option>';
+             echo '<option value="85">85 Mañana</option>';
+             echo '<option value="86">86 Noche</option>';
+             echo '<option value="87">87 Noche</option>';
+             echo '<option value="88">88 Noche</option>';
+             echo '<option value="89">89 Noche</option>';
+         }
+         if ($pensum == "EXC") {
+             echo '<option value="20">20 Mañana</option>';
+             echo '<option value="21">21 Mañana</option>';
+             echo '<option value="22">22 Mañana</option>';
+             echo '<option value="23">23 Mañana</option>';
+             echo '<option value="24">24 Mañana</option>';
+             echo '<option value="25">25 Mañana</option>';
+             echo '<option value="26">26 Noche</option>';
+             echo '<option value="27">27 Noche</option>';
+             echo '<option value="28">28 Noche</option>';
+             echo '<option value="29">29 Noche</option>';
+         }
+         if ($pensum == "RXC") {
+             echo '<option value="30">30 Mañana</option>';
+             echo '<option value="31">31 Mañana</option>';
+             echo '<option value="32">32 Mañana</option>';
+             echo '<option value="33">33 Mañana</option>';
+             echo '<option value="34">34 Mañana</option>';
+             echo '<option value="35">35 Mañana</option>';
+             echo '<option value="36">36 Noche</option>';
+             echo '<option value="37">37 Noche</option>';
+             echo '<option value="38">38 Noche</option>';
+             echo '<option value="39">39 Noche</option>';
+         }
+         if ($pensum == "AXC") {
+             echo '<option value="40">40 Mañana</option>';
+             echo '<option value="41">41 Mañana</option>';
+             echo '<option value="44">42 Mañana</option>';
+             echo '<option value="43">43 Mañana</option>';
+             echo '<option value="44">44 Mañana</option>';
+             echo '<option value="45">45 Mañana</option>';
+             echo '<option value="46">46 Noche</option>';
+             echo '<option value="47">47 Noche</option>';
+             echo '<option value="48">48 Noche</option>';
+             echo '<option value="49">49 Noche</option>';
+         }
+         if ($pensum == "DXC") {
+             echo '<option value="90">90 Mañana</option>';
+             echo '<option value="91">91 Mañana</option>';
+             echo '<option value="92">92 Mañana</option>';
+             echo '<option value="93">93 Mañana</option>';
+             echo '<option value="94">94 Mañana</option>';
+             echo '<option value="95">95 Mañana</option>';
+             echo '<option value="96">96 Mañana</option>';
+             echo '<option value="97">97 Mañana</option>';
+             echo '<option value="98">98 Noche</option>';
+             echo '<option value="99">99 Noche</option>';
+             echo '<option value="100">100 Mañana</option>';
+             echo '<option value="101">101 Mañana</option>';
+             echo '<option value="102">102 Mañana</option>';
+             echo '<option value="103">103 Mañana</option>';
+             echo '<option value="104">104 Mañana</option>';
+			 echo '<option value="105">105 Mañana</option>';
+			 echo '<option value="106">106 Noche</option>';
+			 echo '<option value="107">107 Noche</option>';
+			 echo '<option value="108">108 Noche</option>';
+			 echo '<option value="109">109 Noche</option>';
+			 echo '<option value="110">110 Noche</option>';
+
+
+
+			 
+			 
+         }
+     }
+     function listado_seccion_Encabezado($X0_3, $carrera_a1, $carrera, $SECCION, $LAPSO, $trayecto) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 5 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         $this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode("PUERTO CABELLO"), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(55, 33 + $X1);
+         $this->Cell(100, 7, "LISTADO DE ALUMNOS DEL " . utf8_decode($carrera_a1) . " " . $LAPSO, 0, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 7);
+         $this->SetXY(15, 39 + $X1);
+         $this->Cell(100, 7, "SECCION: " . $SECCION, 0, 0, 'L', 0);
+         $X1=-15;
+         $this->SetFont('Arial', 'B', 7);
+         $this->SetXY(15, 65 + $X1);
+         $this->Cell(180, 5, "", 1, 1, 'L', 0);
+         $this->SetXY(15, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("N°"), 0, 0, 'L', 0);
+         $this->SetXY(23, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("CEDULA"), 0, 0, 'L', 0);
+         $this->SetXY(45, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("NOMBRE DEL ALUMNO"), 0, 0, 'L', 0);
+         $this->SetXY(120, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("CARRERA"), 0, 0, 'L', 0);
+         $this->SetXY(150, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("SECCION"), 0, 0, 'L', 0);
+         $this->SetXY(170, 65 + $X1);
+         $this->Cell(136, 5, utf8_decode("ACTIVIDAD"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 7);
+         $this->SetXY(15, 270);
+         $this->Cell(170, 5, utf8_decode("Página: ") . $X0_3, 0, 0, 'C', 0);
+     }
+     function verificar_secciones_por_carrera($L, $R, $total_carrera, $X1B, $carrera_a2, $carrera, $seccion) {
+         $this->SetFont('Arial', '', 10);
+         include('db.php');
+         for ($i=0; $i <= 4; $i++) {
+             $sql="SELECT DISTINCT `codigo` FROM `notas`,lismat WHERE `carrera` = '" . $carrera . "' AND `lapso` LIKE '2020-1' AND seccion='" . $seccion . "' and lismat.cod_mat=notas.cod_mat and lismat.trayecto='" . $i . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 $sumatoria=$sumatoria + $resultado->num_rows;
+                 $cantidad=$resultado->num_rows;
+             }
+             $this->SetXY($L, $R);
+             $this->Cell(136, 5, $i . "-" . $seccion . " cantidad: " . $resultado->num_rows, 0, 0, 'L', 0);
+             $R=$R + 4;
+         }
+         return $sumatoria . "|" . $cantidad;
+     }
+     function verificar_secciones_por_carrera_2($carrera, $seccion, $lapso) {
+         include('db.php');
+         for ($i=0; $i <= 4; $i++) {
+             $sql="SELECT DISTINCT `codigo` FROM `notas`,lismat WHERE `carrera` = '" . $carrera . "' AND `lapso`='" . $lapso . "' AND seccion='" . $seccion . "' and lismat.cod_mat=notas.cod_mat and lismat.trayecto='" . $i . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 $sumatoria=$sumatoria + $resultado->num_rows;
+                 $cantidad=$resultado->num_rows;
+             }
+         }
+         return $sumatoria . "|" . $cantidad;
+     }
+     function verificar_secciones_por_carrera_3($pensum, $L, $R, $seccion, $lapso) {
+         $carrera=substr($pensum, 0, 1);
+         $pensum=$this->pensum($carrera);
+         $carrera_a1=$this->carrera_larga($carrera);
+         $carrera_a2=$this->carrera_corta($carrera);
+         $primera_seccion=substr($seccion, 0, 1);
+         $seccion=$primera_seccion . "0";
+         $dat=$this->verificar_secciones_por_carrera_2($carrera, $seccion, $lapso);
+         list($sumatoria, $cantidad) = split('[|]', $dat);
+         if ($sumatoria > 0) {
+             $cantidad_secciones=$cantidad_secciones + 1;
+         }
+         $total=$total + $sumatoria;
+         $seccion=$primera_seccion . "1";
+         $dat=$this->verificar_secciones_por_carrera_2($carrera, $seccion, $lapso);
+         list($sumatoria, $cantidad) = split('[|]', $dat);
+         if ($sumatoria > 0) {
+             $cantidad_secciones=$cantidad_secciones + 1;
+         }
+         $total=$total + $sumatoria;
+         $seccion=$primera_seccion . "2";
+         $dat=$this->verificar_secciones_por_carrera_2($carrera, $seccion, $lapso);
+         list($sumatoria, $cantidad) = split('[|]', $dat);
+         if ($sumatoria > 0) {
+             $cantidad_secciones=$cantidad_secciones + 1;
+         }
+         $total=$total + $sumatoria;
+         $seccion=$primera_seccion . "3";
+         $dat=$this->verificar_secciones_por_carrera_2($carrera, $seccion, $lapso);
+         list($sumatoria, $cantidad) = split('[|]', $dat);
+         if ($sumatoria > 0) {
+             $cantidad_secciones=$cantidad_secciones + 1;
+         }
+         $total=$total + $sumatoria;
+         $seccion=$primera_seccion . "4";
+         $dat=$this->verificar_secciones_por_carrera_2($carrera, $seccion, $lapso);
+         list($sumatoria, $cantidad) = split('[|]', $dat);
+         if ($sumatoria > 0) {
+             $cantidad_secciones=$cantidad_secciones + 1;
+         }
+         $total=$total + $sumatoria;
+         $seccion=$primera_seccion . "5";
+         $dat=$this->verificar_secciones_por_carrera_2($carrera, $seccion, $lapso);
+         list($sumatoria, $cantidad) = split('[|]', $dat);
+         if ($sumatoria > 0) {
+             $cantidad_secciones=$cantidad_secciones + 1;
+         }
+         $total=$total + $sumatoria;
+         $seccion=$primera_seccion . "6";
+         $dat=$this->verificar_secciones_por_carrera_2($carrera, $seccion, $lapso);
+         list($sumatoria, $cantidad) = split('[|]', $dat);
+         if ($sumatoria > 0) {
+             $cantidad_secciones=$cantidad_secciones + 1;
+         }
+         $total=$total + $sumatoria;
+         $seccion=$primera_seccion . "7";
+         $dat=$this->verificar_secciones_por_carrera_2($carrera, $seccion, $lapso);
+         list($sumatoria, $cantidad) = split('[|]', $dat);
+         if ($sumatoria > 0) {
+             $cantidad_secciones=$cantidad_secciones + 1;
+         }
+         $total=$total + $sumatoria;
+         $seccion=$primera_seccion . "8";
+         $dat=$this->verificar_secciones_por_carrera_2($carrera, $seccion, $lapso);
+         list($sumatoria, $cantidad) = split('[|]', $dat);
+         if ($sumatoria > 0) {
+             $cantidad_secciones=$cantidad_secciones + 1;
+         }
+         $total=$total + $sumatoria;
+         $seccion=$primera_seccion . "9";
+         $dat=$this->verificar_secciones_por_carrera_2($carrera, $seccion, $lapso);
+         list($sumatoria, $cantidad) = split('[|]', $dat);
+         if ($sumatoria > 0) {
+             $cantidad_secciones=$cantidad_secciones + 1;
+         }
+         $total=$total + $sumatoria;
+         return $carrera_a2 . "|" . $cantidad_secciones . "|" . $total;
+     }
+     function cantida_de_docente($pensum, $lapso) {
+         include('db.php');
+         $carrera=substr($pensum, 0, 1);
+         $sql="SELECT DISTINCT `cod_doc` FROM notas WHERE carrera='" . $carrera . "' AND lapso='" . $lapso . "' AND cod_doc<>'0'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $cantida=$resultado->num_rows;
+         }
+         return $cantida;
+     }
+     function cantida_de_docente_total($lapso) {
+         include('db.php');
+         $sql="SELECT DISTINCT `cod_doc` FROM notas WHERE lapso='" . $lapso . "' AND cod_doc<>'0'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $cantida=$resultado->num_rows;
+         }
+         return $cantida;
+     }
+     function conducta($pensum, $cedula, $grado) {
+         if ($grado == "T") {
+             $cantidad_materias=$this->cantidad_materias_pensum($pensum, $grado);
+             $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, $grado);
+         }
+         if ($grado == "I" OR $grado == "L") {
+             $cantidad_materias=$this->cantidad_materias($pensum, $cedula, $grado);
+             $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, $grado);
+         }
+         if ($materias_aprobadas == $cantidad_materias AND $grado == "T" OR $materias_aprobadas == $cantidad_materias AND $grado == "I" OR $materias_aprobadas == $cantidad_materias AND $grado == "L") {
+             $this->AddPage();
+             date_default_timezone_set('America/Caracas');
+             $fechaActual=date('d-m-Y');
+             $d=date("d");
+             $m=date("m");
+             $y=date("Y");
+             $DIA=$this->num2letras($d);
+             $AÑO=$this->num2letras($y);
+             include "db.php";
+             $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $nombre=utf8_decode($fila['nombre']);
+                     $carrera=$fila['carrera'];
+                     $codigo=$fila['codigo'];
+                     $carrera=$fila['carrera'];
+                     $MENCION=$fila['mencion'];
+                     $PLAN=$fila['plan'];
+                 }
+             }
+             $pensum=$carrera . $MENCION . $PLAN;
+             if ($pensum == "TXC" OR $pensum == "GXC") {
+                 if ($pensum == "GXC" AND $grado == "L") {
+                     $carrera_a1=utf8_decode($this->carrera_larga($carrera) . " MENCIÓN GESTIÓN TURÍSTICA");
+                 }
+                 if ($pensum == "GXC" AND $grado == "T") {
+                     $carrera_a1=utf8_decode($this->carrera_larga($carrera));
+                 }
+                 if ($pensum == "TXC" AND $grado == "I") {
+                     $carrera_a1=utf8_decode($this->carrera_larga($carrera));
+                 }
+                 if ($pensum == "TXC" AND $grado == "T") {
+                     $carrera_a1=utf8_decode($this->carrera_larga($carrera) . " MECÁNICO");
+                 }
+             } else {
+                 $carrera_a1=utf8_decode($this->carrera_larga($carrera));
+             }
+             $carrera_a2=$this->carrera_corta($carrera);
+             $this->Encabezado_general(8);
+             include "db.php";
+             $sql="SELECT * FROM sede where id=2";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $sede=$fila['lugar'];
+                 }
+             }
+             $this->SetFont('Arial', 'B', 14);
+             $this->SetXY(0, 35 + $X1);
+             $this->Cell(210, 5, utf8_decode("CONSTANCIA"), 0, 0, 'C', 0);
+             $this->Quien_suscribe_Secretario(13, 5);
+             $this->SetFont('Arial', 'B', 12);
+             $this->SetXY(20, 77 + $X1);
+             $this->Cell(180, 5, $nombre, 0, 0, 'C', 0);
+             $this->SetXY(35, 75 + $X1);
+             $this->Cell(140, 10, "", 1, 0, 'C', 0);
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(17, 95 + $X1);
+             $this->Cell(180, 5, utf8_decode("Titular   de   la   cédula   de   identidad   ") . $cedula . utf8_decode("   cursó   estudios,   obteniendo") . utf8_decode("  el   título   de"), 0, 0, 'L', 0);
+             if ($grado == "T") {
+                 $titulo_nombre=utf8_decode("TÉCNICO SUPERIOR UNIVERSITARIO");
+             }
+             if ($grado == "I") {
+                 $titulo_nombre="INGENIERO";
+             }
+             if ($grado == "L") {
+                 $titulo_nombre="LICENCIADO";
+             }
+             $this->SetXY(17, 105 + $X1);
+             $this->Cell(180, 5, $titulo_nombre . utf8_decode(", en el Programa Nacional de Formación en:"), 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 12);
+             $this->SetXY(17, 123 + $X1);
+             $this->Cell(180, 5, $carrera_a1, 0, 0, 'C', 0);
+             $this->SetXY(35, 120 + $X1);
+             $this->Cell(140, 10, "", 1, 0, 'C', 0);
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(17, 140 + $X1);
+             $this->Cell(210, 5, utf8_decode("En la cual durante su permanencia, observó "), 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 11);
+             $this->SetXY(95, 140 + $X1);
+             $this->Cell(100, 5, utf8_decode("BUENA CONDUCTA."), 0, 0, 'L', 0);
+             $this->SetFont('Arial', '', 11);
+             $DIA=ucfirst($this->num2letras($d));
+             $AÑO=ucfirst($this->num2letras($y));
+             $this->Constancia_que_se_expide(55);
+             $this->SetFont('Arial', 'B', 11);
+             $R=110;
+             $R2=22;
+             $this->firmas(2, 75, 170, "true");
+             $this->firmas(3, 20, 215, "true");
+             $this->Output();
+         } else {
+             header("Location: msg_no_graduado.php");
+         }
+     }
+     function certificacion_prosecucion($pensum, $cedula, $grado) {
+         // $cantidad_materias = $this->cantidad_materias( $pensum, $cedula, $grado );
+         // $materias_aprobadas = $this->materias_aprobadas( $pensum, $cedula, $grado );
+         // if ( $materias_aprobadas == $cantidad_materias AND $grado == "T" OR $materias_aprobadas == $cantidad_materias AND $grado == "I" OR $materias_aprobadas == $cantidad_materias AND $grado == "L" ) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $d=date("d");
+         $m=date("m");
+         $y=date("Y");
+         $DIA=$this->num2letras($d);
+         $AÑO=$this->num2letras($y);
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nombre=utf8_decode($fila['nombre']);
+                 $carrera=$fila['carrera'];
+                 $codigo=$fila['codigo'];
+                 $carrera=$fila['carrera'];
+                 $MENCION=$fila['mencion'];
+                 $PLAN=$fila['plan'];
+             }
+         }
+         $this->Encabezado_general(8);
+         $this->Quien_suscribe_Secretario_prosecucion(13, 5, $cedula);
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(17, 95 + $X1);
+         $this->SetFont('Arial', '', 11);
+         $DIA=ucfirst($this->num2letras($d));
+         $AÑO=ucfirst($this->num2letras($y));
+         $this->Constancia_que_se_expide(70);
+         $this->SetFont('Arial', 'B', 11);
+         $R=110;
+         $R2=22;
+         //firmas( $id, $w, $y, $negrita )
+         $this->firmas(2, 75, 175, "true");
+         $this->Image("LOGOPIES.jpg", 57, 230, 100, 15, "jpg", "");
+         $this->SetFont('Arial', '', 9);
+         $this->SetXY(17, 245 + $X1);
+         $this->Cell(180, 5, utf8_decode("Urbanización la Elvira, Zona Industrial Santa Rosa, Galpón Nº 8, Puerto Cabello Rif:G-20005608-8"), 0, 0, 'C', 0);
+         $this->SetXY(17, 250 + $X1);
+         $this->Cell(180, 5, utf8_decode("Número Telefónico: (0242) 3700494. Correo Electrónico: uptpccontroldeestudios03@gmail.com"), 0, 0, 'C', 0);
+         $this->SetXY(17, 255 + $X1);
+         $this->Cell(180, 5, utf8_decode("uptpcsecretariacgu@gmail.com"), 0, 0, 'C', 0);
+         $this->SetXY(17, 260 + $X1);
+         $this->Cell(180, 5, utf8_decode("Universidad Politécnica Territorial de Puerto Cabello                                                                                                     "), 0, 0, 'C', 0);
+         $this->Output();
+         // } else {
+         //     header( "Location: msg_no_graduado.php" );
+         // }
+     }
+     function Encabezado_horario_de_clase($pensum, $cedula, $lapso, $seccion, $usuario1) {
+         $this->AddPage();
+         $this->SetFont('Arial', '', 10);
+         $this->SetAutoPageBreak(FALSE, PDF_MARGIN_BOTTOM);
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nombre=utf8_decode($fila['nombre']);
+                 $carrera=$fila['carrera'];
+             }
+         }
+         $carrera_a1=$this->carrera_larga($carrera);
+         $carrera_a2=$this->carrera_corta($carrera);
+         $X1B=5;
+         $this->SetFont('Arial', '', 10);
+         $this->Image("LOGO.jpg", 10, 5 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1B);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 4 + $X1B);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1B);
+         $this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1B);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         $this->SetXY(54, 19 + $X1B);
+         $this->Cell(136, 5, utf8_decode("PUERTO CABELLO"), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1B);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 12);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(270, 7, "HORARIO DE CLASES " . $lapso, 0, 0, 'C', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(15, 50);
+         $this->Cell(136, 5, "CEDULA: " . $cedula, 0, 0, 'L', 0);
+         $this->SetXY(60, 50);
+         $this->Cell(136, 5, "NOMBRE: " . $nombre, 0, 0, 'L', 0);
+         $this->SetXY(15, 55);
+         $this->Cell(136, 5, "CARRERA: " . utf8_decode($carrera_a1), 0, 0, 'L', 0);
+         $this->SetXY(85, 55);
+         $this->Cell(270, 5, "SECCION: " . $seccion, 0, 0, 'C', 0);
+         $this->SetXY(130, 55);
+         $this->Cell(270, 5, "FECHA: " . $fechaActual, 0, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $X1B=-8;
+         $this->SetXY(9, 69 + $X1B);
+         $this->Cell(20, 7, "COD_MAT", 1, 0, 'C', 0);
+         $this->SetXY(29, 69 + $X1B);
+         $this->Cell(80, 7, "NOMBRE DE LA ASIGNATURA", 1, 1, 'C', 0);
+         $this->SetXY(109, 69 + $X1B);
+         $this->Cell(7, 7, "UC", 1, 0, 'C', 0);
+         $this->SetXY(116, 69 + $X1B);
+         $this->Cell(60, 7, "DOCENTE", 1, 1, 'C', 0);
+         $this->SetXY(176, 69 + $X1B);
+         $this->Cell(17, 7, "HORA I.", 1, 1, 'C', 0);
+         $this->SetXY(193, 69 + $X1B);
+         $this->Cell(17, 7, "HORA F.", 1, 1, 'C', 0);
+         $this->SetXY(210, 69 + $X1B);
+         $this->Cell(25, 7, "DIA", 1, 1, 'C', 0);
+         $this->SetXY(235, 69 + $X1B);
+         $this->Cell(40, 7, "LUGAR", 1, 0, 'C', 0);
+         $this->SetXY(275, 69 + $X1B);
+         $this->Cell(12, 7, "AULA", 1, 0, 'C', 0);
+         $sql="SELECT docente.nombre AS cod_doc,notas.cod_mat,notas.codigo,alumno.nombre,lismat.descrip2,notas.seccion,lismat.creditos,horarios.hora_de_inicio,horarios.hora_final,horarios.dia,horarios.descrip,horarios.aula,notas.lapso FROM notas,lismat,alumno,horarios,docente WHERE docente.cod_doc=horarios.cod_doc and lismat.cod_mat=notas.cod_mat and alumno.cedula=notas.codigo and horarios.cod_mat=notas.cod_mat and notas.`codigo`= '" . $cedula . "' and notas.`lapso`='" . $lapso . "' and notas.`seccion`='" . $seccion . "'";
+         $resultado=$conn->query($sql);
+         $this->SetLineWidth(0.2);
+         $X1B=-2;
+         $n=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $this->SetFont('Arial', '', 10);
+                 $this->SetXY(9, 70 + $X1B);
+                 $this->Cell(20, 13, $fila['cod_mat'], 1, 1, 'C', 0);
+                 $this->SetXY(29, 70 + $X1B);
+                 $this->Cell(80, 13, substr(utf8_decode($fila['descrip2']), 0, 45), 1, 1, 'C', 0);
+                 $this->SetXY(109, 70 + $X1B);
+                 $this->Cell(7, 13, $fila['creditos'], 1, 1, 'C', 0);
+                 $this->SetXY(116, 70 + $X1B);
+                 $this->Cell(60, 13, substr(utf8_decode($fila['cod_doc']), 0, 27), 1, 1, 'C', 0);
+                 $this->SetXY(176, 70 + $X1B);
+                 $this->Cell(17, 13, $fila['hora_de_inicio'], 1, 1, 'C', 0);
+                 $this->SetXY(193, 70 + $X1B);
+                 $this->Cell(17, 13, $fila['hora_final'], 1, 1, 'C', 0);
+                 $this->SetXY(210, 70 + $X1B);
+                 $this->Cell(25, 13, $fila['dia'], 1, 1, 'C', 0);
+                 $this->SetXY(235, 70 + $X1B);
+                 $this->Cell(40, 13, utf8_decode($fila['descrip']), 1, 1, 'C', 0);
+                 $this->SetXY(275, 70 + $X1B);
+                 $this->Cell(12, 13, $fila['aula'], 1, 1, 'C', 0);
+                 $X1B=$X1B + 13;
+                 $n++;
+                 $creditossum=$creditossum + $fila['creditos'];
+                 $X0_2=$X0_2 + 1;
+                 if ($X0_2 > 9) {
+                     $this->Encabezado_horario_de_clase($pensum, $cedula, $lapso, $seccion, $usuario1);
+                     $X1B=-2;
+                     $X0_2=0;
+                 }
+             }
+         }
+         if ($X1B < -2) {
+             $X1B=-2;
+         }
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(9, 70 + $X1B);
+         $this->Cell(278, 7, "TOTAL UNIDADES DE CREDITO:", 1, 1, 'L', 0);
+         $this->SetXY(109, 70 + $X1B);
+         $this->Cell(7, 7, $creditossum, 0, 0, 'C', 0);
+         $this->SetXY(15, 77 + $X1B);
+         $this->Cell(270, 7, "Emitido por:", 0, 0, 'L', 0);
+         $this->SetXY(38, 77 + $X1B);
+         $this->Cell(270, 7, $usuario1, 0, 0, 'L', 0);
+         $this->SetXY(13, 195);
+         $this->Cell(270, 13, "ESTE DOCUMENTO ES VALIDO COMO CONSTANCIA DE INSCRIPCION", 0, 0, 'C', 0);
+         $this->Output();
+     }
+     function calcular_hora($hora, $cantidad) {
+         date_default_timezone_set('America/Caracas');
+         $date=new DateTime($hora);
+         switch ($hora) {
+             case ($cantidad == 1);
+                 $date->modify('+45 minute');
+                 break;
+             case ($cantidad == 2);
+                 $date->modify('+95 minute');
+                 break;
+             case ($cantidad == 3);
+                 $date->modify('+145 minute');
+                 break;
+             case ($cantidad == 4);
+                 $date->modify('+195 minute');
+                 break;
+             case ($cantidad == 5);
+                 $date->modify('+225 minute');
+                 break;
+         }
+         $hora_final=$date->format('h:i');
+         return $hora_final;
+     }
+     function buscar_cedula($db, $cedula, $tabla) {
+         require('configuracion.php');
+         $base_datos=$db;
+         $conn=new mysqli($servidor, $usuario, $clave, $base_datos);
+         $sql="SELECT * FROM " . $tabla . " where cedula='" . trim($cedula) . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $dat='true';
+         } else {
+             $dat='false';
+         }
+         $conn->close();
+         return $dat;
+     }
+     function borrar_cedula($db, $cedula, $tabla) {
+         echo "Cedula:" . $cedula . " borrarndo de " . $db . "<br>";
+         require('configuracion.php');
+         $base_datos=$db;
+         $conn=new mysqli($servidor, $usuario, $clave, $base_datos);
+         $sql="DELETE FROM " . $tabla . " where cedula='" . trim($cedula) . "'";
+         $resultado=$conn->query($sql);
+         $conn->close();
+     }
+     function Encabezado_pensa($pensum) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         $hoy=date("d-m-Y");
+         $carrera=substr($pensum, 0, 1);
+         $carrera_a1=$this->carrera_larga($carrera);
+         $carrera_a2=$this->carrera_corta($carrera);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(15, 5);
+         $this->Cell(190, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'C', 0);
+         $this->SetXY(15, 9);
+         $this->Cell(190, 5, utf8_decode("PUERTO CABELLO"), 0, 0, 'C', 0);
+         $this->SetXY(15, 9);
+         $this->Cell(185, 5, $hoy, 0, 0, 'R', 0);
+         $this->SetXY(15, 13);
+         $this->Cell(190, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'C', 0);
+         $this->SetFont('Arial', '', 12);
+         $this->SetXY(15, 20);
+         $this->Cell(190, 5, utf8_decode("PENSUM DE ESTUDIOS"), 0, 0, 'C', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(15, 34);
+         $this->Cell(190, 5, utf8_decode("CARRERA: " . $carrera_a1), 0, 0, 'L', 0);
+         $this->SetXY(15, 40);
+         $this->Cell(15, 7, utf8_decode("CODIGO"), 1, 1, 'C', 0);
+         $this->SetXY(30, 40);
+         $this->Cell(92, 7, utf8_decode("NOMBRE DE LA ASIGNATURA"), 1, 1, 'C', 0);
+         $this->SetXY(122, 40);
+         $this->Cell(7, 7, utf8_decode("UC"), 1, 1, 'C', 0);
+         $this->SetXY(129, 40);
+         $this->Cell(14, 7, utf8_decode("PRE.1"), 1, 1, 'C', 0);
+         $this->SetXY(143, 40);
+         $this->Cell(14, 7, utf8_decode("PRE.2"), 1, 1, 'C', 0);
+         $this->SetXY(157, 40);
+         $this->Cell(14, 7, utf8_decode("PRE.3"), 1, 1, 'C', 0);
+         $this->SetXY(171, 40);
+         $this->Cell(14, 7, utf8_decode("PRE.4"), 1, 1, 'C', 0);
+         $this->SetXY(185, 40);
+         $this->Cell(9, 7, utf8_decode("MIN."), 1, 1, 'C', 0);
+     }
+     function buscar_nota($cedula) {
+         include "db.php";
+         $sql="SELECT * FROM notas WHERE codigo='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $dat="true";
+         } else {
+             $dat="false";
+         }
+         $conn->close();
+         return $dat;
+     }
+     function buscar_cedula_lapso($cedula, $cod_mat, $lapso, $seccion) {
+         include "db.php";
+         $sql="SELECT * FROM notas WHERE codigo='" . $cedula . "' and cod_mat='" . $cod_mat . "' and lapso='" . $lapso . "' and seccion='" . $seccion . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $dat="true";
+         } else {
+             $dat="false";
+         }
+         $conn->close();
+         return $dat;
+     }
+     function buscar_cedula_lapso_modificar($cedula, $cod_mat, $lapso, $id) {
+         include "db.php";
+         $sql="SELECT * FROM notas WHERE codigo='" . $cedula . "' and cod_mat='" . $cod_mat . "' and lapso='" . $lapso . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $dat="true";
+         } else {
+             $dat="false";
+         }
+         $conn->close();
+         return $dat;
+     }
+     function buscar_cod_mat_lapso_cod_doc_seccion($cod_mat, $lapso, $cod_doc, $seccion) {
+         include "db.php";
+         $sql="SELECT * FROM agregarseccion WHERE cod_mat='" . $cod_mat . "' and lapso='" . $lapso . "' and cod_doc='" . $cod_doc . "' and seccion='" . $seccion . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $dat="true";
+         } else {
+             $dat="false";
+         }
+         $conn->close();
+         return $dat;
+     }
+     function buscar_cod_mat_lapso($cedula, $cod_mat, $lapso) {
+         include "db.php";
+         $sql="SELECT * FROM notas WHERE codigo='" . $cedula . "' and cod_mat='" . $cod_mat . "' and lapso='" . $lapso . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $dat="true";
+         } else {
+             $dat="false";
+         }
+         return $dat;
+     }
+     function notas_auditoria($accion, $usuario, $cedula, $cod_mat, $cod_mat_ant, $carrera_ant, $nota, $nota_ant, $lapso, $lapso_ant, $tiplap, $tiplap_ant, $cod_doc, $cod_doc_ant, $cod_usu, $acu, $acu_ant, $seccion, $seccion_ant, $electiva, $electiva_ant) {
+         session_start();
+         if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true && $_SESSION['notas_modificar'] == 1) {
+         } else {
+             header("Location: index.html");
+             exit;
+         }
+         $now=time();
+         if ($now > $_SESSION['expire']) {
+             session_destroy();
+             echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+             exit;
+         }
+         date_default_timezone_set('America/Caracas');
+         $hora=strftime("%I:%M:%S %p\n");
+         $fecha=date('d-m-Y');
+         $carrera=substr($cod_mat, 0, 1);
+         $usuario1=$_SESSION['username'];
+         if ($nota == "") {
+             $nota="0";
+         }
+         if (substr($cod_mat, 1, 1) == "P" OR substr($cod_mat, 1, 1) == "T" OR substr($cod_mat, 1, 1) == "E") {
+             $tiplap=substr($cod_mat, 1, 1);
+         } else {
+             $tiplap="";
+         }
+         if ($accion == "Guardar_nota" or $accion == "Borrar_nota" or $accion == "Inscribir_varias" or $accion == "Borrar_nota_sec" or $accion == "Modificar_nota_sec") {
+             $cod_mat_ant="XXXXX";
+             $nota_ant="XX";
+             $lapso_ant="XXXXXX";
+             $tiplap_ant="X";
+             $cod_doc_ant="XXXX";
+             $acu_ant="XX";
+             $seccion_ant="XX";
+             $electiva_ant="XX";
+             $carrera_ant="X";
+         }
+         if ($accion == "Guardar_nota" or $accion == "Inscribir_varias" or $accion == "Inscribir_una") {
+             $cod_usu="XXXXXX";
+         }
+         include "db.php";
+         $sql="INSERT INTO `notas_auditoria` (`accion`, `usuario`, `cedula`, `cod_mat`, `cod_mat_ant`, `carrera`, `carrera_ant`, `nota`, `nota_ant`, `lapso`, `lapso_ant`, `tiplap`, `tiplap_ant`, `cod_doc`, `cod_doc_ant`, `cod_usu`, `acu`, `acu_ant`, `seccion`, `seccion_ant`, `electiva`, `electiva_ant`, `hora`, `fecha`) VALUES ('$accion','$usuario1','$cedula','$cod_mat','$cod_mat_ant','$carrera','$carrera_ant','$nota','$nota_ant','$lapso','$lapso_ant','$tiplap','$tiplap_ant','$cod_doc','$cod_doc_ant','$cod_usu','$acu','$acu_ant','$seccion','$seccion_ant','$electiva','$electiva_ant','$hora','$fecha')";
+         $conn->query($sql);
+         $conn->close();
+     }
+     function agregarseccion_insertar($cod_usu, $cod_mat, $seccion, $cod_doc, $lapso, $electiva) {
+         $esta=$this->buscar_cod_mat_lapso_cod_doc_seccion($cod_mat, $lapso, $cod_doc, $seccion);
+         if ($esta == "false") {
+             if (substr($cod_mat, 1, 1) == "P" OR substr($cod_mat, 1, 1) == "T" OR substr($cod_mat, 1, 1) == "E") {
+                 $tiplap=substr($cod_mat, 1, 1);
+             } else {
+                 $tiplap="";
+             }
+             $pensum=substr($cod_mat, 0, 1) . "XC";
+             include "db.php";
+             $sql="INSERT INTO `agregarseccion` (`pensum`, `cod_mat`, `seccion`, `cod_doc`, `lapso`, `electiva`) VALUES ('$pensum', '$cod_mat', '$seccion', '$cod_doc', '$lapso', '$electiva')";
+             $conn->query($sql);
+             $conn->close();
+             $this->mensaje_color("Formulario_agregarseccion_form_agregar.php", "principal.php", "Seccion creada", 0, 0);
+         } else {
+             $this->mensaje_color("Formulario_agregarseccion_form_agregar.php", "principal.php", "La Seccion ya Existe", 1, 1);
+         }
+     }
+     function notas_insertar($cedula, $cod_mat, $nota, $lapso, $cod_doc, $acu, $seccion, $electiva,$id) {
+         $esta=$this->buscar_cedula_lapso($cedula, $cod_mat, $lapso, $seccion);
+         if ($esta == "false") {
+             session_start();
+             if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true && $_SESSION['notas_guardar'] == 1) {
+             } else {
+                 header("Location: index.html");
+                 exit;
+             }
+             $now=time();
+             if ($now > $_SESSION['expire']) {
+                 session_destroy();
+                 echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+                 exit;
+             }
+             date_default_timezone_set('America/Caracas');
+             $hora=strftime("%I:%M:%S %p\n");
+             $fecha=date('d-m-Y');
+             $carrera=substr($cod_mat, 0, 1);
+             $cod_usu=$_SESSION['username'];
+             if ($nota == "") {
+                 $nota="0";
+             }
+             if (substr($cod_mat, 1, 1) == "P" OR substr($cod_mat, 1, 1) == "T" OR substr($cod_mat, 1, 1) == "E") {
+                 $tiplap=substr($cod_mat, 1, 1);
+             } else {
+                 $tiplap="";
+             }
+             include "db.php";
+             $sql="INSERT INTO notas(codigo,cod_mat,nota,lapso,tiplap,cod_doc,cod_usu,acu,seccion,carrera,electiva,fecha)VALUES ('$cedula','$cod_mat','$nota','$lapso','$tiplap','$cod_doc','$cod_usu','$acu','$seccion','$carrera','$electiva','$fecha')";
+             $conn->query($sql);
+             header("Location: Formulario_notas_tabla_index.php?id=$id");
+             $conn->close();
+             $this->notas_auditoria("Guardar_nota", $usuario, $cedula, $cod_mat, $cod_mat_ant, $carrera, $nota, $nota_ant, $lapso, $lapso_ant, $tiplap, $tiplap_ant, $cod_doc, $cod_doc_ant, $cod_usu, $acu, $acu_ant, $seccion, $seccion_ant, $electiva, $electiva_ant);
+         } else {
+             $this->mensaje_color("Formulario_notas_tabla_index.php", "principal.php", "Materia ya cargada", 1, 1);
+         }
+     }
+     function notas_modificar($cedula, $cod_mat, $nota, $lapso, $cod_doc, $cod_usu, $acu, $seccion, $electiva, $id) {
+         session_start();
+         if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == true && $_SESSION['notas_borrar'] == 1) {
+         } else {
+             header("Location: index.html");
+             exit;
+         }
+         $now=time();
+         if ($now > $_SESSION['expire']) {
+             session_destroy();
+             echo "Su sesion a terminado,<a href='index.html'>Necesita Hacer Login</a>";
+             exit;
+         }
+         $cod_usu=$_SESSION['username'];
+         require("db.php");
+         if (substr($cod_mat, 1, 1) == "P" OR substr($cod_mat, 1, 1) == "T" OR substr($cod_mat, 1, 1) == "E") {
+             $tiplap=substr($cod_mat, 1, 1);
+         } else {
+             $tiplap="";
+         }
+         $sql="UPDATE notas SET  codigo = '$cedula' , cod_mat = '$cod_mat' , nota = '$nota' , lapso = '$lapso' , tiplap = '$tiplap' , cod_doc = '$cod_doc' , cod_usu = '$cod_usu' ,acu = '$acu',seccion = '$seccion',electiva = '$electiva' WHERE id ='" . $id . "'";
+         if ($conn->query($sql) === TRUE) {
+             echo "Registro Modificado";
+         } else {
+             echo "Error al Modificado la nota";
+         }
+         $conn->close();
+         header("Location: Formulario_notas_tabla_index.php");
+         $this->notas_auditoria("Modificar_nota", $usuario, $cedula, $cod_mat, $cod_mat_ant, $carrera, $nota, $nota_ant, $lapso, $lapso_ant, $tiplap, $tiplap_ant, $cod_doc, $cod_doc_ant, $cod_usu, $acu, $acu_ant, $seccion, $seccion_ant, $electiva, $electiva_ant);
+     }
+     function notas_borrar($id) {
+         include "db.php";
+         $sql="DELETE FROM notas WHERE id ='" . $id . "'";
+         if ($conn->query($sql) === TRUE) {
+             echo "registro Borrado";
+         } else {
+             echo "Error al Borrar el registro: " . $conn->error;
+         }
+         $conn->close();
+     }
+     function activar_alumno_lapso_actual($cedula, $carrera, $lapso) {
+         include "db.php";
+         $sql="SELECT * FROM `lapso` WHERE carrera= '" . $carrera . "' ORDER BY `lapso` ASC";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $lapso_actual=$fila['lapso'];
+             }
+         }
+         if ($lapso == $lapso_actual) {
+             $sql="UPDATE alumno SET  actividad = '1' WHERE cedula ='" . $codigo . "'";
+             $conn->query($sql);
+         }
+     }
+     function mensaje($accion, $salir, $titulo) {
+         include 'menu.php';
+         echo '<html>
+                        <head>
+
+                            <style>
+                             #marco
+                                {
+                                    width:400px;
+                                    min-width:400px;
+                                }
+
+                            </style>
+                        </head>
+                        <body>
+                            <div class="container" id="marco">
+                                <form class="form-horizontal" id="effect2" method="post" action="' . $accion . '">
+                                    <fieldset>
+
+                                        <div class="form-group" id="titulo_formulario"> 
+                                            <label id="titulo_formulario"><span class="glyphicon glyphicon-remove"></span> ' . $titulo . '</label>
+
+                                        </div>
+                                        <center><table>
+                                            <tr>
+                                                <td width="100">
+                                                    <div class="form-group">
+                                                        <div class="col-md-12" style="width: 150px;margin-left: 0;margin-top:23px">
+                                                            <input type="submit" class="btn btn-primary" name="submit" value="Volver" style="background: #0C4783;width:120px"/> 
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td width="10"></td>
+                                                <td width="100">
+                                                    <div class="form-group">
+                                                        <div class="col-md-12" style="width: 150px;margin-left:0;margin-top:23px">
+                                                            <a href="' . $salir . '" class="btn btn-primary" style="background: #0C4783;width:120px"><span class="glyphicon glyphicon-log-out"></span> Salir</a>  
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </table></center>
+                                    </fieldset>
+                                </form>
+                            </div>
+                        </form>
+                    </body>
+                    </html>';
+     }
+     function mensaje_color($accion, $salir, $titulo, $color, $icono) {
+         if ($color == 0) {
+             $color="12, 71, 131";
+             $color2="#0C4783";
+         } else {
+             $color="230, 28, 34";
+             $color2="#E61C22";
+         }
+         if ($icono == 0) {
+             $icono="glyphicon glyphicon-ok";
+         } else {
+             $icono="glyphicon glyphicon-remove";
+         }
+         include 'menu.php';
+         echo '<html>
+                    <head>
+
+                        <style>
+                             #marco
+                            {
+                                width:400px;
+                                min-width:400px;
+                                border: 10px solid rgba(' . $color . ',1);
+                            }
+                        #titulo_formulario{
+                            background:' . $color2 . ';
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container" id="marco">
+                        <form class="form-horizontal" id="effect2" method="post" action="' . $accion . '">
+                            <fieldset>
+
+                                <div class="form-group" id="titulo_formulario"> 
+                                    <label id="titulo_formulario"><span class="' . $icono . '"></span> ' . $titulo . '</label>
+
+                                </div>
+                                <center><table>
+                                    <tr>
+                                        <td width="100">
+                                            <div class="form-group">
+                                                <div class="col-md-12" style="width: 150px;margin-left: 0;margin-top:23px">
+                                                    <input type="submit" class="btn btn-primary" name="submit" value="Volver" style="background:' . $color2 . ';width:120px"/> 
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td width="10"></td>
+                                        <td width="100">
+                                            <div class="form-group">
+                                                <div class="col-md-12" style="width: 150px;margin-left:0;margin-top:23px">
+                                                    <a href="' . $salir . '" class="btn btn-primary" style="background:' . $color2 . ';width:120px"><span class="glyphicon glyphicon-log-out"></span> Salir</a>  
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table></center>
+                            </fieldset>
+                        </form>
+                    </div>
+                </form>
+                </body>
+                </html>';
+     }
+     function titulo_tabla_notas($id) {
+         echo '<!--inicio de la Tabla-->
+            <table class="responstable">
+                <thead>
+                <tr>
+                    <th width="10%">Registro</th>
+                    <th width="10%">Cedula</th>
+                    <th width="30%">Nombre</th>
+                    <th width="1%">Carrera</th>                        
+                    <th width="1%">Mencion</th>
+                    <th width="1%">Plan</th>                  
+                    <th width="1%">Actividad</th>
+                    <th width="1%">Turno</th>
+                </tr>
+                </thead>
+                <tbody>';
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE id='" . $id . "'";
+         $resultado=$conn->query($sql);
+         while ($fila=$resultado->fetch_assoc()) { {
+             $_SESSION['id']=$fila["id"];
+             $_SESSION['pensum']=$fila["carrera"] . $fila["mencion"] . $fila["plan"];
+             $cedula=$fila["cedula"];
+             $carrera=$fila["carrera"];
+             echo '<tr>
+                      <td >' . $fila["id"] . '</td>
+                      <td>' . $fila["cedula"] . '</td>
+                      <td>' . $fila["nombre"] . '</td>
+                      <td>' . $fila["carrera"] . '</td>                             
+                      <td>' . $fila["mencion"] . '</td>
+                      <td>' . $fila["plan"] . '</td>                              
+                      <td>' . $fila["actividad"] . '</td>
+                      <td>' . $fila["turno"] . '</td>                              
+                   </tr>';
+             }
+         }
+         echo '</tbody>
+                    </table>
+                    <!--Fin de la Tabla-->';
+     }
+     function tabla_contenido_notas2($pensum, $cedula, $carrera) {
+         if ($pensum == "AXC" OR $pensum == "RXC") {
+             $nombre_Sem="Semestre";
+         } else {
+             $nombre_Sem="Trimestre";
+         }
+         echo '
+        <!--inicio de la Tabla-->
+        <table id="editable_table" class="table table-bordered table-striped">
+            <thead>
+            <tr>
+                <th width="1%" style="display: none;">Id</th>
+                <th width="1%">Cod_mat</th>
+                <th width="20%">Descripción</th>
+                <th width="1%">Seccion</th>
+                <th width="1%">Nota</th>
+                <th width="1%">Acu</th>
+                <th width="5%">Lapso</th>
+                <th width="1%">Tipo</th>
+                <th width="1%">Docente</th>
+                <th width="1%">' . $nombre_Sem . '</th>
+                <th width="1%">Trayecto</th>
+                <th width="1%">Editar</th>
+                <th width="1%">Eliminar</th>
+            </tr>
+            </thead>
+            <tbody>';
+         include "db.php";
+         if ($carrera <> "") {
+             $sql="SELECT DISTINCT lismat.semestre,lismat.trayecto,lismat.descrip2,notas.id,notas.codigo,notas.nota,notas.lapso,notas.carrera,notas.tiplap,notas.cod_mat,notas.seccion,notas.acu,notas.cod_doc FROM notas,lismat WHERE notas.cod_mat = lismat.cod_mat and notas.codigo='" . $cedula . "' and carrera='" . $carrera . "' ORDER BY lismat.id ASC";
+         } else {
+             $sql="SELECT DISTINCT lismat.semestre,lismat.trayecto,lismat.descrip2,notas.id,notas.codigo,notas.nota,notas.lapso,notas.carrera,notas.tiplap,notas.cod_mat,notas.seccion,notas.acu,notas.cod_doc FROM notas,lismat WHERE notas.cod_mat = lismat.cod_mat and notas.codigo='" . $cedula . "' ORDER BY lismat.id ASC";
+         }
+         $resultado=$conn->query($sql);
+         while ($fila=$resultado->fetch_assoc()) {
+             echo '<tr>                      
+                                <td style="display: none;">' . $fila["id"] . '</td>     
+                                <td>' . $fila["cod_mat"] . '</td>
+                                <td>' . $fila["descrip2"] . '</td>
+                                <td>' . $fila["seccion"] . '</td>
+                                <td>' . $fila["nota"] . '</td>
+                                <td>' . $fila["acu"] . '</td>
+                                <td>' . $fila["lapso"] . '</td>                             
+                                <td>' . $fila["tiplap"] . '</td>
+                                <td>' . $fila["cod_doc"] . '</td>  
+                                <td>' . $fila["semestre"] . '</td> 
+                                <td>' . $fila["trayecto"] . '</td> 
+                                <td><a href="Formulario notas_form_editar.php?action=editar&id=' . $fila['id'] . '"  data-toggle="tooltip" title="Editar datos" class="btn btn-sm btn-info" style="background: #FFB300;width:45px;border-color: #FFB300;"><span class="glyphicon glyphicon-pencil"></span></a></td>
+                                <td><a data-toggle="tooltip" title="Eliminar" class="btn btn-sm btn-danger" onClick="Borrar(' . $fila['id'] . ')"><span class="glyphicon glyphicon-trash" style="background: #E51C23;width:25px;border-color: #E51C23;"></span></a></td></tr>';
+         }
+         $conn->close();
+         echo '</tbody>
+                        </table>
+                        <!--Fin de la Tabla-->';
+     }
+     function tabla_contenido_notas3($pensum, $cedula, $cod_mat) {
+          
+         if ($pensum == "AXC" OR $pensum == "RXC") {
+             $nombre_Sem="Semestre";
+         } else {
+             $nombre_Sem="Trimestre";
+         }
+         echo '
+                    <!--inicio de la Tabla-->
+                    <table id="editable_table" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th width="1%" style="display: none;">Id</th>
+                                <th width="1%">Cod_mat</th>
+                                <th width="20%">Descripción</th>
+                                <th width="1%">Seccion</th>
+                                <th width="1%">Nota</th>
+                                <th width="1%">Acu</th>
+                                <th width="5%">Lapso</th>
+                                <th width="1%">Tipo</th>
+                                <th width="1%">Docente</th>
+                                <th width="1%">' . $nombre_Sem . '</th>
+                                <th width="1%">Trayecto</th>
+                                <th width="1%">Editar</th>
+                                <th width="1%">Eliminar</th>
+                            </tr>
+                        </thead>
+                        <tbody>';
+         include "db.php";
+         if ($cod_mat <> "") {
+             $sql="SELECT DISTINCT lismat.semestre,lismat.trayecto,lismat.descrip2,notas.id,notas.codigo,notas.nota,notas.lapso,notas.carrera,notas.tiplap,notas.cod_mat,notas.seccion,notas.acu,notas.cod_doc FROM notas,lismat WHERE notas.cod_mat = lismat.cod_mat and notas.codigo='" . $cedula . "' and notas.cod_mat='" . $cod_mat . "' ORDER BY lismat.id ASC";
+         } else {
+             $sql="SELECT DISTINCT lismat.semestre,lismat.trayecto,lismat.descrip2,notas.id,notas.codigo,notas.nota,notas.lapso,notas.carrera,notas.tiplap,notas.cod_mat,notas.seccion,notas.acu,notas.cod_doc FROM notas,lismat WHERE notas.cod_mat = lismat.cod_mat and notas.codigo='" . $cedula . "' and lismat.pensum='" . $pensum . "' ORDER BY lismat.id ASC";
+         }
+         $resultado=$conn->query($sql);
+         while ($fila=$resultado->fetch_assoc()) {
+             echo '<tr>                      
+                                <td style="display: none;">' . $fila["id"] . '</td>     
+                                <td>' . $fila["cod_mat"] . '</td>
+                                <td>' . $fila["descrip2"] . '</td>
+                                <td>' . $fila["seccion"] . '</td>
+                                <td>' . $fila["nota"] . '</td>
+                                <td>' . $fila["acu"] . '</td>
+                                <td>' . $fila["lapso"] . '</td>                             
+                                <td>' . $fila["tiplap"] . '</td>
+                                <td>' . $fila["cod_doc"] . '</td>  
+                                <td>' . $fila["semestre"] . '</td> 
+                                <td>' . $fila["trayecto"] . '</td> 
+                                <td><a href="Formulario notas_form_editar.php?action=editar&id=' . $fila['id'] . '"  data-toggle="tooltip" title="Editar datos" class="btn btn-sm btn-info" style="background: #FFB300;width:45px;border-color: #FFB300;"><span class="glyphicon glyphicon-pencil"></span></a></td>
+                                <td><a data-toggle="tooltip" title="Eliminar" class="btn btn-sm btn-danger" onClick="Borrar(' . $fila['id'] . ')"><span class="glyphicon glyphicon-trash" style="background: #FF0000;width:25px;border-color: #FF0000;"></span></a></td></tr>';
+         }
+         $conn->close();
+         echo '</tbody>
+                        </table>
+                        <!--Fin de la Tabla-->';
+     }
+     function combo_materias($cedula,$carrera) {
+        include('db.php');
+        
+        $sql = "SELECT DISTINCT notas.cod_mat,lismat.descrip2,lismat.trayecto,lismat.semestre,lismat.grado FROM `notas`,lismat where notas.codigo='".$cedula."' and notas.carrera='".$carrera."'and notas.cod_mat=lismat.cod_mat ORDER BY SUBSTRING(notas.cod_mat,3,3),SUBSTRING(notas.cod_mat,2,1),lismat.trayecto,semestre";
+        $resultado = $conn->query($sql); 
+
+        if ($resultado->num_rows > 0) { 
+            echo '<option value="">Seleccionar</option>';   
+            while($fila = $resultado->fetch_assoc()) {      
+                 if (substr($fila["cod_mat"], 1, 1) == "P") {
+                    echo '<option value="' . $fila["cod_mat"] . '" style="color:#FF2F00;background: #DEECBF" >' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                 } elseif (substr($fila["cod_mat"], 1, 1) == "T") {
+                    echo '<option value="' . $fila["cod_mat"] . '" style="color:#002FFF;background: #DEECBF">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                 } elseif (substr($fila["cod_mat"], 1, 1) == "E") {
+                    echo '<option value="' . $fila["cod_mat"] . '" style="color:#0F5500;background: #DEECBF">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                 } else {
+                    if (substr($fila["cod_mat"], 1, 1) == "0") {
+                    echo '<option value="' . $fila["cod_mat"] . '" style="color:#000000;background: #C0C0C0">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                    }
+                    if (substr($fila["cod_mat"], 1, 1) == "1") {
+                    echo '<option value="' . $fila["cod_mat"] . '" style="color:#000000;background: #FFFF7F">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                    }
+                    if (substr($fila["cod_mat"], 1, 1) == "2") {
+                    echo '<option value="' . $fila["cod_mat"] . '" style="color:#000000;background: #E3CE8B">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                    }
+                    if (substr($fila["cod_mat"], 1, 1) == "3") {
+                    echo '<option value="' . $fila["cod_mat"] . '" style="color:#000000;background: #91CA6C">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                    }
+                 }
+            }
+        }
+     }
+     function tabla_contenido_notas($pensum, $cedula, $lapso) {
+         if ($pensum == "AXC" OR $pensum == "RXC") {
+             $nombre_Sem="Semestre";
+         } else {
+             $nombre_Sem="Trimestre";
+         }
+         echo '
+                    <!--inicio de la Tabla-->
+                    <table id="editable_table" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th width="1%" style="display: none;">Id</th>
+                                <th width="1%">Cod_mat</th>
+                                <th width="20%">Descripción</th>
+                                <th width="1%">Seccion</th>
+                                <th width="1%">Nota</th>
+                                <th width="1%">Acu</th>
+                                <th width="5%">Lapso</th>
+                                <th width="1%">Tipo</th>
+                                <th width="1%">Docente</th>
+                                <th width="1%">' . $nombre_Sem . '</th>
+                                <th width="1%">Trayecto</th>
+                                <th width="1%">Editar</th>
+                                <th width="1%">Eliminar</th>
+                            </tr>
+                        </thead>
+                        <tbody>';
+         include "db.php";
+         if ($lapso <> "") {
+             $sql="SELECT DISTINCT lismat.semestre,lismat.trayecto,lismat.descrip2,notas.id,notas.codigo,notas.nota,notas.lapso,notas.tiplap,notas.cod_mat,notas.seccion,notas.acu,notas.cod_doc FROM notas,lismat WHERE notas.cod_mat = lismat.cod_mat and notas.codigo='" . $cedula . "' and notas.lapso='" . $lapso . "' ORDER BY lismat.id ASC";
+         } else {
+             $sql="SELECT DISTINCT lismat.semestre,lismat.trayecto,lismat.descrip2,notas.id,notas.codigo,notas.nota,notas.lapso,notas.tiplap,notas.cod_mat,notas.seccion,notas.acu,notas.cod_doc FROM notas,lismat WHERE notas.cod_mat = lismat.cod_mat and notas.codigo='" . $cedula . "' ORDER BY lismat.id ASC";
+         }
+         $resultado=$conn->query($sql);
+         while ($fila=$resultado->fetch_assoc()) {
+             echo '<tr>                      
+                                <td style="display: none;">' . $fila["id"] . '</td>     
+                                <td>' . $fila["cod_mat"] . '</td>
+                                <td>' . $fila["descrip2"] . '</td>
+                                <td>' . $fila["seccion"] . '</td>
+                                <td>' . $fila["nota"] . '</td>
+                                <td>' . $fila["acu"] . '</td>
+                                <td>' . $fila["lapso"] . '</td>                             
+                                <td>' . $fila["tiplap"] . '</td>
+                                <td>' . $fila["cod_doc"] . '</td>  
+                                <td>' . $fila["semestre"] . '</td> 
+                                <td>' . $fila["trayecto"] . '</td>
+                                <td><a href="Formulario notas_form_editar.php?action=editar&id=' . $fila['id'] . '"  data-toggle="tooltip" title="Editar datos" class="btn btn-sm btn-info" style="background: #FFB300;width:45px;border-color: #FFB300;"><span class="glyphicon glyphicon-pencil"></span></a></td>
+                                <td><a data-toggle="tooltip" title="Eliminar" class="btn btn-sm btn-danger" onClick="Borrar(' . $fila['id'] . ')"><span class="glyphicon glyphicon-trash" style="background: #E51C23;width:25px;border-color: #E51C23;"></span></a></td></tr>';
+         }
+         $conn->close();
+         echo '</tbody>
+                        </table>
+                        <!--Fin de la Tabla-->';
+     }
+     function marco_superior_formulario($action, $titulo) {
+         echo '<div class="container" id="marco">
+                        <form class="form-horizontal" id="effect2" method="post" action="' . $action . '">
+                            <fieldset>
+                                <div class="form-group" id="titulo_formulario">
+                                    <label id="titulo_formulario">' . $titulo . '</label>
+                                </div>';
+     }
+     function getpensum() {
+         include('db.php');
+         $sql="SELECT DISTINCT lismat.pensum,pensum.descripcion2 FROM lismat,pensum WHERE lismat.pensum=pensum.pensum ORDER BY lismat.pensum ASC";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             echo '<option value="">Seleccionar</option>';
+             while ($fila=$resultado->fetch_assoc()) {
+                 echo '<option value="' . $fila["pensum"] . '">' . $fila["pensum"] . " - " . $fila["descripcion2"] . '</option>';
+             }
+         }
+     }
+     function Nombre_carrera($carrera) {
+         include('db.php');
+         $pensum=$carrera . "XC";
+         $sql="SELECT `descripcion2` FROM `pensum` WHERE `pensum`='" . $pensum . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nombre=utf8_decode($fila["descripcion2"]);
+             }
+         }
+         $conn->close();
+         return $nombre;
+     }
+     function getpensum_all() {
+         include('db.php');
+         $sql="SELECT DISTINCT lismat.pensum,pensum.descripcion2 FROM lismat,pensum WHERE lismat.pensum=pensum.pensum ORDER BY lismat.pensum ASC";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             echo '<option value="all">TODOS</option>';
+             while ($fila=$resultado->fetch_assoc()) {
+                 echo '<option value="' . $fila["pensum"] . '">' . $fila["pensum"] . " - " . $fila["descripcion2"] . '</option>';
+             }
+         }
+     }
+     function getpensum_grado($pensum) {
+         echo '<option value="">Seleccionar</option>';
+         if ($pensum == "GXC" OR $pensum == "CXC") {
+             echo '<option value=T>Tsu</option>';
+             echo '<option value=L>Licenciado</option>';
+         } else {
+             echo '<option value=T>Tsu</option>';
+             echo '<option value=I>Ingeniero</option>';
+         }
+     }
+     function getmateria($pensum) {
+         include('db.php');
+         $sql="SELECT * FROM lismat where pensum='" . $pensum . "'  and nota<>'R' ORDER BY `id` ASC";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             echo '<option value="">Seleccionar</option>';
+             while ($fila=$resultado->fetch_assoc()) {
+                 if (substr($fila["cod_mat"], 1, 1) == "P") {
+                     echo '<option value="' . $fila["cod_mat"] . '" style="color:#FF2F00;background: #FBFCBE" >' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                 } elseif (substr($fila["cod_mat"], 1, 1) == "T") {
+                     echo '<option value="' . $fila["cod_mat"] . '" style="color:#002FFF;background: #FBFCBE">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                 } elseif (substr($fila["cod_mat"], 1, 1) == "E") {
+                     echo '<option value="' . $fila["cod_mat"] . '" style="color:#0F5500;background: #FBFCBE">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                 } else {
+                     echo '<option value="' . $fila["cod_mat"] . '" style="color:#000000;background: #C2F8E7">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                 }
+             }
+         }
+     }
+
+     function getmateria_no_vista($cod_mat, $cedula) {
+
+         include( 'db.php' );
+         $sql = "SELECT * FROM notas where codigo='" . $cedula . "' and SUBSTRING(cod_mat,3,3)=SUBSTRING('".$cod_mat."',3,3) and carrera= SUBSTRING('".$cod_mat."',1,1)";
+         $a1==0;
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+               if(substr($fila["cod_mat"], 1, 1)=="0"){
+                $mat0 = $mat0." ".'<span class="badge" style="color:#FFFFFF;background:#FF0000;">0</span>'." ".$fila["cod_mat"]." - ".$fila["nota"]." - ".$fila["lapso"];       
+               }
+               if(substr($fila["cod_mat"], 1, 1)=="1"){
+                $mat1 = $mat1." ".'<span class="badge" style="color:#FFFFFF;background:#FF0000;">1</span>'." ".$fila["cod_mat"]." - ".$fila["nota"]." - ".$fila["lapso"];       
+               }
+               if(substr($fila["cod_mat"], 1, 1)=="2"){
+                $mat2 = $mat2." ".'<span class="badge" style="color:#FFFFFF;background:#FF0000;">2</span>'." ".$fila["cod_mat"]." - ".$fila["nota"]." - ".$fila["lapso"];       
+               }
+               if(substr($fila["cod_mat"], 1, 1)=="3"){
+                $mat3 = $mat3." ".'<span class="badge" style="color:#FFFFFF;background:#FF0000;">3</span>'." ".$fila["cod_mat"]." - ".$fila["nota"]." - ".$fila["lapso"];       
+               }
+               $a1++;
+             }
+         }
+         if ($mat0<>"") {
+            echo $mat0."<br>";
+         }else{
+            echo $mat1."<br>";
+            echo $mat2."<br>";
+            echo $mat3."<br>"; 
+         }        
+     }
+     function getmateria3($pensum, $cedula) {
+         include('db.php');
+         $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' AND SUBSTRING(cod_mat,2,1)='R' GROUP BY id ASC";
+         $resultado=$conn->query($sql);
+         if (!$resultado) {
+             exit;
+         }
+         $x1=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $lismat_cod_mat[$x1]=$fila['cod_mat'];
+                 $descrip2[$x1]=$fila['descrip2'];
+                 $creditos[$x1]=$fila['creditos'];
+                 $semestre[$x1]=$fila['semestre'];
+                 $nota_cat[$x1]=$fila['nota'];
+                 $divicion[$x1]=$fila['divicion'];
+                 $trayecto[$x1]=$fila['trayecto'];
+                 $aprobatori[$x1]=$fila['aprobatori'];
+                 $cod_mat_libro_rector[$x1]=$fila['cod_mat_libro_rector'];
+                 $x1=$x1 + 1;
+             }
+         }
+         for ($i=0; $i < count($lismat_cod_mat); $i++) {
+             $nr=$this->calcular_resumida_datos($pensum, $X1B, $lismat_cod_mat[$i], $cedula, $X1B, $descrip2[$i], $semestre[$i], $creditos[$i], $trayecto[$i], $aprobatori[$i], $divicion[$i], $cod_mat_libro_rector[$i], $electiva[$i], $cant, $apro);
+             list($nota, $lapso, $tipo) = split('[|]', $nr);
+             $nota[$i]=$nota;
+             $aprobo[$i]=$aprobatori[$i];
+             $cod_mat[$i]=$lismat_cod_mat[$i];
+         }
+         $sql="SELECT * FROM lismat where pensum='" . $pensum . "'  and nota<>'R' ORDER BY `id` ASC";
+         $resultado=$conn->query($sql);
+         $x1=0;
+         if ($resultado->num_rows > 0) {
+             echo '<option value="">Seleccionar</option>';
+             while ($fila=$resultado->fetch_assoc()) {
+                 if ($nota[$x1] < $aprobatori[$x1] and substr($cod_mat[$x1], 2, 3) == substr($fila["cod_mat"], 2, 3)) {
+                     if (substr($fila["cod_mat"], 1, 1) == "P") {
+                         echo '<option value="' . $fila["cod_mat"] . '" style="color:#FF2F00;background: #FBFCBE" >' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                     } elseif (substr($fila["cod_mat"], 1, 1) == "T") {
+                         echo '<option value="' . $fila["cod_mat"] . '" style="color:#002FFF;background: #FBFCBE">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                     } elseif (substr($fila["cod_mat"], 1, 1) == "E") {
+                         echo '<option value="' . $fila["cod_mat"] . '" style="color:#0F5500;background: #FBFCBE">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                     } else {
+                         echo '<option value="' . $fila["cod_mat"] . '" style="color:#000000;background: #C2F8E7">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+                     }
+                 }
+                 $x1=$x1 + 1;
+             }
+         }
+     }
+     function getelectivas($pensum, $cod_mat) {
+         include('db.php');
+         $sql="SELECT * FROM lismat where pensum='" . $pensum . "' and cod_mat='" . $cod_mat . "' and electiva='1' ORDER BY `id` ASC";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $dat=$fila["electiva"];
+             }
+         }
+         if ($dat == "1") {
+             $sql="SELECT * FROM electivas where pensum='" . $pensum . "' ORDER BY `id` ASC";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 echo '<option value="">Seleccionar</option>';
+                 while ($fila=$resultado->fetch_assoc()) {
+                     echo '<option value="' . $fila["cod_ele"] . '">' . $fila["descrip2"] . '</option>';
+                 }
+             }
+         }
+     }
+     function getelectivas2($pensum, $cod_mat, $campos) {
+         include('db.php');
+         switch ($campos) {
+             case 'pm':
+                 $sql="SELECT * FROM lismat where pensum='" . $pensum . "' and cod_mat='" . $cod_mat . "' and electiva='1' ORDER BY `id` ASC";
+                 break;
+         }
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $dat=$fila["electiva"];
+             }
+         }
+         if ($dat == "1") {
+             $sql="SELECT * FROM electivas where pensum='" . $pensum . "' ORDER BY `id` ASC";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 echo '<option value="">Seleccionar</option>';
+                 while ($fila=$resultado->fetch_assoc()) {
+                     echo '<option value="' . $fila["cod_ele"] . '">' . $fila["descrip2"] . '</option>';
+                 }
+             }
+         }
+     }
+     function getnumseccion($pensum) {
+         echo '<option value="">Seleccionar</option>';
+         $this->listado_de_secciones($pensum);
+     }
+     function getnumseccion2($cod_doc, $cod_mat, $lapso) {
+         include('db.php');
+         $sql="SELECT DISTINCT seccion FROM agregarseccion where cod_doc='" . $cod_doc . "' and cod_mat='" . $cod_mat . "' and lapso='" . $lapso . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             echo '<option value="">Seleccionar</option>';
+             while ($fila=$resultado->fetch_assoc()) {
+                 echo '<option value="' . $fila["seccion"] . '">' . $fila["seccion"] . '</option>';
+             }
+         }
+     }
+     function getnumseccion3($cod_doc, $cod_mat, $lapso, $campos) {
+         include('db.php');
+         switch ($campos) {
+             case 'dml':
+                 $sql="SELECT DISTINCT seccion FROM notas where cod_doc='" . $cod_doc . "' and cod_mat='" . $cod_mat . "' and lapso='" . $lapso . "'";
+                 break;
+         }
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             echo '<option value="">Seleccionar</option>';
+             while ($fila=$resultado->fetch_assoc()) {
+                 echo '<option value="' . $fila["seccion"] . '">' . $fila["seccion"] . '</option>';
+             }
+         }
+     }
+     function getlapso($pensum, $cod_doc, $cod_mat, $campos) {
+         include('db.php');
+         switch ($campos) {
+             case 'pdm':
+                 $sql="SELECT DISTINCT lapso FROM `agregarseccion` where pensum='" . $pensum . "' and cod_doc='" . $cod_doc . "' and cod_mat='" . $cod_mat . "'";
+                 break;
+             case 'dm':
+                 $sql="SELECT DISTINCT lapso FROM `notas` where cod_doc='" . $cod_doc . "' and cod_mat='" . $cod_mat . "'";
+                 break;
+             case 'lapso':
+                 $sql="SELECT DISTINCT lapso FROM lapso ORDER BY lapso DESC";
+                 break;
+         }
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             echo '<option value="">Seleccionar</option>';
+             while ($fila=$resultado->fetch_assoc()) {
+                 echo '<option value="' . $fila["lapso"] . '">' . $fila["lapso"] . '</option>';
+             }
+         }
+     }
+     function getmateria2($pensum, $cod_doc, $campos) {
+         if ($campos == 'pdm') {           
+              $sql="SELECT DISTINCT lismat.descrip2,lismat.semestre,lismat.grado,lismat.trayecto,notas.cod_mat FROM notas,lismat where lismat.pensum='" . $pensum . "' and notas.cod_doc='" . $cod_doc . "' and notas.cod_mat=lismat.cod_mat ORDER BY lismat.trayecto,lismat.semestre ASC";
+         }else{
+              $sql="SELECT DISTINCT lismat.descrip2,lismat.semestre,lismat.grado,lismat.trayecto,notas.cod_mat FROM notas,lismat where lismat.pensum='" . $pensum . "' and notas.cod_doc='" . $cod_doc . "' and notas.cod_mat=lismat.cod_mat ORDER BY lismat.trayecto,lismat.semestre ASC";
+         }
+
+         include('db.php');         
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             echo '<option value="">Seleccionar</option>';
+             while ($fila=$resultado->fetch_assoc()) {
+                 echo '<option value="' . $fila["cod_mat"] . '">' . $fila["cod_mat"] . ' - ' . $fila["trayecto"] . ' - ' . $fila["semestre"] . ' - ' . $fila["grado"] . ' - ' . $fila["descrip2"] . '</option>';
+             }
+         }
+         
+     }
+     function getcantidad($cod_doc, $cod_mat, $lapso, $seccion) {
+         include('db.php');
+         $sql="SELECT DISTINCT codigo FROM `notas` where cod_doc='" . $cod_doc . "' and cod_mat='" . $cod_mat . "' and lapso='" . $lapso . "' and seccion='" . $seccion . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $dat=$resultado->num_rows;
+         }
+         echo $dat;
+     }
+     function getcantidad2($pensum, $lapso, $seccion) {
+         $carrera=substr($pensum, 0, 1);
+         include('db.php');
+         $sql="SELECT DISTINCT codigo FROM `notas` where carrera='" . $carrera . "' and lapso='" . $lapso . "' and seccion='" . $seccion . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $dat=$resultado->num_rows;
+         }
+         echo $dat;
+     }
+     function getdocente($pensum, $campos) {
+         include('db.php');
+         $carrera=substr($pensum, 0, 1);
+         switch ($campos) {
+             case 'docente':
+                 $sql="SELECT DISTINCT docente.cod_doc,docente.nombre FROM docente ORDER BY docente.nombre";
+                 break;
+             case 'pd':
+                 $sql="SELECT DISTINCT docente.cod_doc,docente.nombre FROM docente,notas WHERE notas.carrera='" . $carrera . "' AND docente.cod_doc=notas.cod_doc ORDER BY docente.nombre";
+                 break;
+             case 'P':
+                 $sql="SELECT DISTINCT agregarseccion.cod_doc,docente.nombre FROM agregarseccion,docente where pensum='" . $pensum . "' and docente.cod_doc=agregarseccion.cod_doc ORDER BY docente.nombre";
+                 break;
+         }
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             echo '<option value="">Seleccionar</option>';
+             while ($fila=$resultado->fetch_assoc()) {
+                 echo '<option value="' . $fila["cod_doc"] . '">' . $fila["nombre"] . ' | ' . $fila["cod_doc"] . '</option>';
+             }
+         }
+     }
+     function Encabezado_nomina_asistencia($cod_mat, $cod_doc, $lapso, $seccion) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         date_default_timezone_set('UTC');
+         $hoy=date("d-m-Y");
+         $carrera=substr($cod_mat, 0, 1);
+         $carrera_a1=$this->carrera_larga($carrera);
+         $carrera_a2=$this->carrera_corta($carrera);
+         $this->SetFont('Arial', 'B', 12);
+         $X1=5;
+         $this->Image("LOGO.jpg", 10, 0 + $X1, 43, 25, "jpg", "");
+         $this->SetXY(54, 0 + $X1);
+         $this->Cell(136, 5, utf8_decode("REPÚBLICA BOLIVARIANA DE VENEZUELA"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 10);
+         $this->SetXY(54, 4 + $X1);
+         $this->Cell(136, 5, utf8_decode("MINISTERIO DEL PODER POPULAR PARA EDUCACIÓN UNIVERSITARIA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 8 + $X1);
+         $this->Cell(136, 5, utf8_decode("CIENCIA Y TECNOLOGÍA"), 0, 0, 'L', 0);
+         $this->SetXY(54, 15 + $X1);
+         $this->Cell(136, 5, utf8_decode("UNIVERSIDAD POLITÉCNICA TERRITORIAL"), 0, 0, 'L', 0);
+         $this->SetXY(54, 19 + $X1);
+         $this->Cell(136, 5, utf8_decode("PUERTO CABELLO"), 0, 0, 'L', 0);
+         $this->SetXY(54, 23 + $X1);
+         $this->Cell(136, 5, utf8_decode("DEPARTAMENTO DE CONTROL DE ESTUDIOS"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(55, 35 + $X1);
+         $this->Cell(100, 7, "NOMINA DE ASISTENCIA ESTUDIANTIL " . substr($lapso, 0, 4) . " " . $tipo, 0, 0, 'C', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(15, 45 + $X1);
+         $this->Cell(136, 5, utf8_decode("ASIGNATURA:"), 0, 0, 'L', 0);
+         $COD=substr($cod_mat, 0, 5);
+         include "db.php";
+         $sql="SELECT * FROM lismat WHERE cod_mat='" . $cod_mat . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $DESCRIP2=utf8_decode($fila['descrip2']);
+                 $CRED=$fila['creditos'];
+                 $semestre=$fila['semestre'];
+                 $pensum=$fila['pensum'];
+                 $aprobatori=$fila['aprobatori'];
+             }
+         }
+         $this->SetXY(38, 45 + $X1);
+         $this->Cell(250, 5, substr($DESCRIP2, 0, 31) . " (" . $COD . ")", 0, 0, 'L', 0);
+         $this->SetXY(105, 45 + $X1);
+         $this->Cell(111, 5, utf8_decode("SECCIÓN: ") . $semestre . " - " . $seccion, 0, 0, 'L', 0);
+         $this->SetXY(132, 45 + $X1);
+         $this->Cell(20, 5, utf8_decode("U.C.: ") . $CRED, 0, 0, 'L', 0);
+         $this->SetXY(145, 45 + $X1);
+         $this->Cell(20, 5, utf8_decode("AULA: ") . $AULA, 0, 0, 'L', 0);
+         $this->SetXY(167, 45 + $X1);
+         $this->Cell(20, 5, utf8_decode("FECHA: ") . $fechaActual, 0, 0, 'L', 0);
+         $sql="SELECT * FROM docente WHERE cod_doc='" . $cod_doc . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $CEDULA=utf8_decode($fila['cedula']);
+                 $NOMBRE=utf8_decode($fila['nombre']);
+             }
+         }
+         $this->SetXY(15, 53 + $X1);
+         $this->Cell(136, 5, "DOCENTE:", 0, 0, 'L', 0);
+         $this->SetXY(35, 53 + $X1);
+         $this->Cell(136, 5, $NOMBRE . "  (" . $cod_doc . ")", 0, 0, 'L', 0);
+         $this->SetLineWidth(0.4);
+         $this->Line(35, 63, 97, 63);
+         $this->SetXY(105, 53 + $X1);
+         $this->Cell(15, 5, utf8_decode("CÉDULA:"), 0, 0, 'L', 0);
+         $this->SetXY(120, 53 + $X1);
+         $this->Cell(30, 5, $CEDULA, 0, 0, 'L', 0);
+         $this->Line(120, 63, 137, 63);
+         $this->SetLineWidth(0.2);
+         $this->SetXY(145, 53 + $X1);
+         $this->Cell(136, 5, "FIRMA:", 0, 0, 'L', 0);
+         $this->Line(157, 63, 195, 63);
+         $this->SetLineWidth(0.2);
+         $this->SetFont('Arial', 'B', 7);
+         $this->SetXY(15, 60 + $X1);
+         $this->Cell(180, 10, "", 1, 1, 'L', 0);
+         $this->SetXY(15, 60 + $X1);
+         $this->Cell(95, 5, "DATOS DEL ALUMNO", 0, 0, 'C', 0);
+         $this->SetXY(110, 60 + $X1);
+         $this->Cell(85, 10, "SESIONES DE CLASES", 0, 0, 'C', 0);
+         $this->SetXY(15.3, 65 + $X1);
+         $this->Cell(5, 5, "#", 0, 0, 'C', 0);
+         $this->SetXY(20, 65 + $X1);
+         $this->Cell(15, 5, "CEDULA", 1, 1, 'C', 0);
+         $this->SetXY(35, 65 + $X1);
+         $this->Cell(70, 5, "NOMBRE DEL ALUMNO", 1, 1, 'C', 0);
+         $this->SetXY(15, 65 + $X1);
+         $this->Cell(90, 5, "", 1, 1, 'L', 0);
+         $this->SetXY(105, 60 + $X1);
+         $this->Cell(90, 10, "", 1, 1, 'L', 0);
+     }
+     function calculo_ira($cedula, $pensum, $grado, $tr, $entre_lineado) {
+         include "db.php";
+         $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' AND grado='" . $grado . "' AND SUBSTRING(cod_mat,2,1)='R' AND trayecto='" . $tr . "' GROUP BY id ASC";
+         $resultado=$conn->query($sql);
+         if (!$resultado) {
+             exit;
+         }
+         $x1=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $lismat_cod_mat[$x1]=$fila['cod_mat'];
+                 $descrip2[$x1]=$fila['descrip2'];
+                 $creditos[$x1]=$fila['creditos'];
+                 $semestre[$x1]=$fila['semestre'];
+                 $nota_cat[$x1]=$fila['nota'];
+                 $divicion[$x1]=$fila['divicion'];
+                 $trayecto[$x1]=$fila['trayecto'];
+                 $aprobatori[$x1]=$fila['aprobatori'];
+                 $cod_mat_libro_rector[$x1]=$fila['cod_mat_libro_rector'];
+                 $x1=$x1 + 1;
+             }
+         }
+         for ($i=0; $i < count($lismat_cod_mat); $i++) {
+             $nr=$this->calcular_resumida_datos($pensum, $X1B, $lismat_cod_mat[$i], $cedula, $X1B, $descrip2[$i], $semestre[$i], $creditos[$i], $trayecto[$i], $aprobatori[$i], $divicion[$i], $cod_mat_libro_rector[$i], $electiva[$i], $cant, $apro);
+             list($nota_resumida, $lapso_resumida, $tipo_resumida) = split('[|]', $nr);
+             $IRA_0=$creditos[$i] * $nota_resumida;
+             $IRA_0B=$IRA_0B + $IRA_0;
+             $uc_0=$uc_0 + $creditos[$i];
+             $ira_0=$IRA_0B;
+             if ($uc_0 <> 0 AND $ira_0 <> 0) {
+                 $ira_0_t=number_format($ira_0 / $uc_0, 3);
+             }
+         }
+         return $ira_0_t . "|" . $uc_0;
+     }
+     function calculo_ira_total($cedula, $pensum, $grado) {
+         include "db.php";
+         $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' AND grado='" . $grado . "' AND SUBSTRING(cod_mat,2,1)='R' GROUP BY id ASC";
+         $resultado=$conn->query($sql);
+         if (!$resultado) {
+             exit;
+         }
+         $x1=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $lismat_cod_mat[$x1]=$fila['cod_mat'];
+                 $descrip2[$x1]=$fila['descrip2'];
+                 $creditos[$x1]=$fila['creditos'];
+                 $semestre[$x1]=$fila['semestre'];
+                 $nota_cat[$x1]=$fila['nota'];
+                 $divicion[$x1]=$fila['divicion'];
+                 $trayecto[$x1]=$fila['trayecto'];
+                 $aprobatori[$x1]=$fila['aprobatori'];
+                 $cod_mat_libro_rector[$x1]=$fila['cod_mat_libro_rector'];
+                 $x1=$x1 + 1;
+             }
+         }
+         for ($i=0; $i < count($lismat_cod_mat); $i++) {
+             $nr=$this->calcular_resumida_datos($pensum, $X1B, $lismat_cod_mat[$i], $cedula, $X1B, $descrip2[$i], $semestre[$i], $creditos[$i], $trayecto[$i], $aprobatori[$i], $divicion[$i], $cod_mat_libro_rector[$i], $electiva[$i], $cant, $apro);
+             list($nota_resumida, $lapso_resumida, $tipo_resumida) = split('[|]', $nr);
+             $IRA_0=$creditos[$i] * $nota_resumida;
+             $IRA_0B=$IRA_0B + $IRA_0;
+             $uc_0=$uc_0 + $creditos[$i];
+             $ira_0=$IRA_0B;
+             if ($uc_0 <> 0 AND $ira_0 <> 0) {
+                 $ira_0_t=number_format($ira_0 / $uc_0, 3);
+             }
+         }
+         return $ira_0_t . "|" . $uc_0;
+     }
+     function calculo_ira_grado($cedula, $pensum, $grado) {
+         include "db.php";
+         if ($grado == "T") {
+             $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' AND grado='" . $grado . "' AND SUBSTRING(cod_mat,2,1)='R' GROUP BY id ASC";
+             $resultado=$conn->query($sql);
+             if (!$resultado) {
+                 exit;
+             }
+             $x1=0;
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $lismat_cod_mat[$x1]=$fila['cod_mat'];
+                     $descrip2[$x1]=$fila['descrip2'];
+                     $creditos[$x1]=$fila['creditos'];
+                     $semestre[$x1]=$fila['semestre'];
+                     $nota_cat[$x1]=$fila['nota'];
+                     $divicion[$x1]=$fila['divicion'];
+                     $trayecto[$x1]=$fila['trayecto'];
+                     $aprobatori[$x1]=$fila['aprobatori'];
+                     $cod_mat_libro_rector[$x1]=$fila['cod_mat_libro_rector'];
+                     $x1=$x1 + 1;
+                 }
+             }
+         }
+         if ($grado == "I" OR $grado == "L") {
+             require('db.php');
+             $sql="SELECT pnf FROM `alumno` WHERE `cedula` LIKE '" . $cedula . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $pnf=$fila['pnf'];
+                 }
+             }
+             if ($pnf == "0" or $pnf == "1") {
+                 $cantidad_materias=$this->cantidad_materias_pensum($pensum, "T");
+             } else {
+                 $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+             }
+             $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+             if ($materias_aprobadas == $cantidad_materias) {
+                 $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' AND grado='" . $grado . "' AND trayecto<>'0' AND SUBSTRING(cod_mat,2,1)='R' GROUP BY id ASC";
+                 $resultado=$conn->query($sql);
+                 if (!$resultado) {
+                     exit;
+                 }
+                 $x1=0;
+                 if ($resultado->num_rows > 0) {
+                     while ($fila=$resultado->fetch_assoc()) {
+                         $lismat_cod_mat[$x1]=$fila['cod_mat'];
+                         $descrip2[$x1]=$fila['descrip2'];
+                         $creditos[$x1]=$fila['creditos'];
+                         $semestre[$x1]=$fila['semestre'];
+                         $nota_cat[$x1]=$fila['nota'];
+                         $divicion[$x1]=$fila['divicion'];
+                         $trayecto[$x1]=$fila['trayecto'];
+                         $aprobatori[$x1]=$fila['aprobatori'];
+                         $cod_mat_libro_rector[$x1]=$fila['cod_mat_libro_rector'];
+                         $x1=$x1 + 1;
+                     }
+                 }
+             } else {
+                 $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' AND grado='" . $grado . "' AND SUBSTRING(cod_mat,2,1)='R' GROUP BY id ASC";
+                 $resultado=$conn->query($sql);
+                 if (!$resultado) {
+                     exit;
+                 }
+                 $x1=0;
+                 if ($resultado->num_rows > 0) {
+                     while ($fila=$resultado->fetch_assoc()) {
+                         $lismat_cod_mat[$x1]=$fila['cod_mat'];
+                         $descrip2[$x1]=$fila['descrip2'];
+                         $creditos[$x1]=$fila['creditos'];
+                         $semestre[$x1]=$fila['semestre'];
+                         $nota_cat[$x1]=$fila['nota'];
+                         $divicion[$x1]=$fila['divicion'];
+                         $trayecto[$x1]=$fila['trayecto'];
+                         $aprobatori[$x1]=$fila['aprobatori'];
+                         $cod_mat_libro_rector[$x1]=$fila['cod_mat_libro_rector'];
+                         $x1=$x1 + 1;
+                     }
+                 }
+             }
+         }
+         for ($i=0; $i < count($lismat_cod_mat); $i++) {
+             $nr=$this->calcular_resumida_datos($pensum, $X1B, $lismat_cod_mat[$i], $cedula, $X1B, $descrip2[$i], $semestre[$i], $creditos[$i], $trayecto[$i], $aprobatori[$i], $divicion[$i], $cod_mat_libro_rector[$i], $electiva[$i], $cant, $apro);
+             list($nota_resumida, $lapso_resumida, $tipo_resumida) = split('[|]', $nr);
+             $IRA_0=$creditos[$i] * $nota_resumida;
+             $IRA_0B=$IRA_0B + $IRA_0;
+             $uc_0=$uc_0 + $creditos[$i];
+             $ira_0=$IRA_0B;
+             if ($uc_0 <> 0 AND $ira_0 <> 0) {
+                 $ira_0_t=number_format($ira_0 / $uc_0, 3);
+             }
+         }
+         return $ira_0_t . "|" . $uc_0;
+     }
+
+     //
+     // Esta funcion Genera el Historial Academico TSU
+     // es necesario cambiar en las materias tradiconales (Trimestres a Semestre)
+     //
+
+     function historial_academico($pensum, $grado, $cedula) {
+         $this->encabezado_historial($pensum, $cedula);
+         if ($grado == "T") {
+             $X1B=12;
+             $nr=$this->trayecto_datos_historial($X1B, 0, $pensum, $cedula, $grado);
+             list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+             $nr=$this->trayecto_datos_historial($X1B, 1, $pensum, $cedula, $grado);
+             list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+             $nr=$this->trayecto_datos_historial($X1B, 2, $pensum, $cedula, $grado);
+             list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         }
+         if ($grado == "I" OR $grado == "L") {
+             include "db.php";
+             $sql="SELECT pnf FROM `alumno` WHERE `cedula` LIKE '" . $cedula . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $pnf=$fila['pnf'];
+                 }
+             }
+             if ($pnf == "0" OR $pnf == "1") {
+                 $cantidad_materias=$this->cantidad_materias_pensum($pensum, "T");
+                 $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+                 if ($materias_aprobadas == $cantidad_materias) {
+                     $X1B=12;
+                     $nr=$this->trayecto_datos_historial($X1B, 3, $pensum, $cedula, $grado);
+                     list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+                     $nr=$this->trayecto_datos_historial($X1B, 4, $pensum, $cedula, $grado);
+                     list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+                 } else {
+                     $X1B=12;
+                     $nr=$this->trayecto_datos_historial($X1B, 0, $pensum, $cedula, $grado);
+                     list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+                     $nr=$this->trayecto_datos_historial($X1B, 3, $pensum, $cedula, $grado);
+                     list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+                     $nr=$this->trayecto_datos_historial($X1B, 4, $pensum, $cedula, $grado);
+                     list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+                 }
+             }
+             if ($pnf == "2") {
+                 $X1B=12;
+                 $nr=$this->trayecto_datos_historial($X1B, 0, $pensum, $cedula, $grado);
+                 list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+                 $nr=$this->trayecto_datos_historial($X1B, 3, $pensum, $cedula, $grado);
+                 list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+                 $nr=$this->trayecto_datos_historial($X1B, 4, $pensum, $cedula, $grado);
+                 list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+             }
+         }
+         if ($grado == "L") {
+             $X1B=$X1B + 4;
+         }
+         $this->pie_de_pagina_historial($X1B, $NOMBRE_USER, $ira, $APROBADOS, $FALTANTES, $MAX_A_CURSAR, $nota_sum, $cedula, $pensum, $grado);
+         $this->Output();
+     }
+     function buscar_trayecto_0($pensum) {
+         include "db.php";
+         $sql="SELECT * FROM `lismat` WHERE pensum='" . $pensum . "' and trayecto= '0' AND grado='I'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             $dat="true";
+         } else {
+             $dat="false";
+         }
+         return $dat;
+     }
+     function pensum_alumno($cedula) {
+         require('db.php');
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $carrera=$fila["carrera"];
+                 $mencion=$fila["mencion"];
+                 $plan=$fila["plan"];
+             }
+         }
+         $dat=$carrera . $mencion . $plan;
+         return $dat;
+     }
+     function contenido_certificacion($pensum, $cedula, $grado) {
+         if ($grado == "T") {
+             switch ($pensum) {
+                 case 'AXC':
+                     echo $this->tsu_certificacion_AXC($pensum, $cedula, "T", 0);
+                     break;
+                 case 'CXC':
+                     echo $this->tsu_certificacion_CXC($pensum, $cedula, "T", 0);
+                     break;
+                 case 'EXC':
+                     echo $this->tsu_certificacion_EXC($pensum, $cedula, "T", 0);
+                     break;
+                 case 'GXC':
+                     echo $this->tsu_certificacion_GXC($pensum, $cedula, "T", 0);
+                     break;
+                 case 'IXC':
+                     echo $this->tsu_certificacion_IXC($pensum, $cedula, "T", 0);
+                     break;
+                 case 'MXC':
+                     echo $this->tsu_certificacion_MXC($pensum, $cedula, "T", 0);
+                     break;
+                 case 'RXC':
+                     echo $this->tsu_certificacion_RXC($pensum, $cedula, "T", 0);
+                     break;
+                 case 'TXC':
+                     echo $this->tsu_certificacion_TXC($pensum, $cedula, "T", 0);
+                     break;
+             }
+         }
+         if ($grado == "I") {
+             require('db.php');
+             $sql="SELECT pnf FROM `alumno` WHERE `cedula` LIKE '" . $cedula . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $pnf=$fila['pnf'];
+                 }
+             }
+             if ($pnf == "0" or $pnf == "1") {
+                 $cantidad_materias=$this->cantidad_materias_pensum($pensum, "T");
+             } else {
+                 $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+             }
+             $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+             if ($materias_aprobadas == $cantidad_materias) {
+                 switch ($pensum) {
+                     case 'EXC':
+                         echo $this->ing_certificacion_EXC($pensum, $cedula, "I", 0);
+                         break;
+                     case 'IXC':
+                         echo $this->ing_certificacion_IXC($pensum, $cedula, "I", 0);
+                         break;
+                     case 'MXC':
+                         echo $this->ing_certificacion_MXC($pensum, $cedula, "I", 0);
+                         break;
+                     case 'TXC':
+                         echo $this->ing_certificacion_TXC($pensum, $cedula, "I", 0);
+                         break;
+                 }
+             } else {
+                 header("Location: msg_no_graduado.php");
+             }
+         }
+         if ($grado == "L") {
+             $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+             $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+             if ($materias_aprobadas == $cantidad_materias) {
+                 switch ($pensum) {
+                     case 'GXC':
+                         echo $this->lic_certificacion_GXC($pensum, $cedula, "L", 0);
+                         break;
+                     case 'CXC':
+                         echo $this->lic_certificacion_CXC($pensum, $cedula, "L", 0);
+                         break;
+                     case 'DXC':
+                         echo $this->lic_certificacion_DXC($pensum, $cedula, "L", 0);
+                         break;
+                 }
+             } else {
+                 header("Location: msg_no_graduado.php");
+             }
+         }
+     }
+     function contenido_certificacion_gtu($pensum, $cedula, $grado) {
+         if ($grado == "T") {
+             switch ($pensum) {
+                 case 'AXC':
+                     echo $this->tsu_certificacion_AXC($pensum, $cedula, "T", 1);
+                     break;
+                 case 'CXC':
+                     echo $this->tsu_certificacion_CXC($pensum, $cedula, "T", 1);
+                     break;
+                 case 'EXC':
+                     echo $this->tsu_certificacion_EXC($pensum, $cedula, "T", 1);
+                     break;
+                 case 'GXC':
+                     echo $this->tsu_certificacion_GXC($pensum, $cedula, "T", 1);
+                     break;
+                 case 'IXC':
+                     echo $this->tsu_certificacion_IXC($pensum, $cedula, "T", 1);
+                     break;
+                 case 'MXC':
+                     echo $this->tsu_certificacion_MXC($pensum, $cedula, "T", 1);
+                     break;
+                 case 'RXC':
+                     echo $this->tsu_certificacion_RXC($pensum, $cedula, "T", 1);
+                     break;
+                 case 'TXC':
+                     echo $this->tsu_certificacion_TXC($pensum, $cedula, "T", 1);
+                     break;
+				  //   Ultima Adicion 05-06-2023: Ing. Elio Milano   
+                case 'DXC':
+					echo $this->tsu_certificacion_DXC($pensum, $cedula, "I", 0);
+					break; 
+             }
+         }
+         if ($grado == "I") {
+             switch ($pensum) {
+                 case 'EXC':
+                     echo $this->ing_certificacion_EXC($pensum, $cedula, "I", 1);
+                     break;
+                 case 'IXC':
+                     echo $this->ing_certificacion_IXC($pensum, $cedula, "I", 1);
+                     break;
+                 case 'MXC':
+                     echo $this->ing_certificacion_MXC($pensum, $cedula, "I", 1);
+                     break;
+                 case 'TXC':
+                     echo $this->ing_certificacion_TXC($pensum, $cedula, "I", 1);
+                     break;
+				  //   Ultima Adicion 05-06-2023: Ing. Elio Milano   
+               case 'DXC':
+					echo $this->tsu_certificacion_DXC($pensum, $cedula, "I", 1);
+					break; 
+
+			
+             }
+         }
+         if ($grado == "L") {
+             switch ($pensum) {
+                 case 'GXC':
+                     echo $this->lic_certificacion_GXC($pensum, $cedula, "L", 1);
+                     break;
+                 case 'CXC':
+                     echo $this->lic_certificacion_CXC($pensum, $cedula, "L", 1);
+                     break;
+                 case 'DXC':
+                     echo $this->lic_certificacion_DXC($pensum, $cedula, "L", 1);
+                     break;
+             }
+         }
+     }
+     function tsu_certificacion_AXC($pensum, $cedula, $grado, $gtu) {
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 0, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 1, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 2, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->nueva_pagina_certificacion($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1, $paginas);
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $X1B=$X1B - 0;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 3, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $X1B=$X1B - 3;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function tsu_certificacion_CXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 0, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 1, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 2, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $X1B=$X1B + 8;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function tsu_certificacion_EXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 27;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 0, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 1, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 2, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $nr=$this->nueva_pagina_certificacion(0, 0, $pensum, $grado, $cedula, $carrera_a1);
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $X1B=$X1B - 2;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function tsu_certificacion_GXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 0, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 1, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 2, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $X1B=$X1B - 3;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function tsu_certificacion_IXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 0, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 1, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 2, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $X1B=$X1B - 2;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function tsu_certificacion_MXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 0, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 1, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 2, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $nr=$this->nueva_pagina_certificacion($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1, $paginas);
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function tsu_certificacion_RXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 30;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 0, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 1, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 2, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->nueva_pagina_certificacion($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1, $paginas);
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $X1B=$X1B + 18;
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $X1B=$X1B - 3;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function tsu_certificacion_TXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 0, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 1, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 2, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $nr=$this->nueva_pagina_certificacion($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1, $paginas);
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+	 
+	 // Agregada 05-06-2023  : Ing. Elio Milano
+     function tsu_certificacion_DXC($pensum, $cedula, $grado, $gtu) {
+        $paginas=$paginas + 1;
+        $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+        list($X1B) = split('[|]', $nr);
+        $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+        $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+        $X1B=$X1B - 28;
+        $this->titulos_unidades_certificacion($X1B);
+        $X1B=$X1B + 30;
+        $nr=$this->trayecto_datos_certificacion($X1B, 0, $pensum, $cedula, "T");
+        list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+        $nr=$this->trayecto_datos_certificacion($X1B, 1, $pensum, $cedula, "T");
+        list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+        $nr=$this->trayecto_datos_certificacion($X1B, 2, $pensum, $cedula, "T");
+        list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+        $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+        list($ira_t, $uc_t) = split('[|]', $nr);
+        $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+        $nr=$this->nueva_pagina_certificacion($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1, $paginas);
+        list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+        $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+        $this->Output();
+    }
+	
+	function ing_certificacion_IXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 3, $pensum, $cedula, "I");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 4, $pensum, $cedula, "I");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $X1B=$X1B - 2;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function ing_certificacion_EXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 3, $pensum, $cedula, "I");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 4, $pensum, $cedula, "I");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $nr=$this->nueva_pagina_certificacion($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1, $paginas);
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $X1B=$X1B - 0;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function ing_certificacion_MXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 3, $pensum, $cedula, "I");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 4, $pensum, $cedula, "I");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $X1B=$X1B - 3;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function ing_certificacion_TXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 3, $pensum, $cedula, "I");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 4, $pensum, $cedula, "I");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $nr=$this->nueva_pagina_certificacion($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1, $paginas);
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function lic_certificacion_CXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 1, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 2, $pensum, $cedula, "T");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 3, $pensum, $cedula, "L");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 4, $pensum, $cedula, "L");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $X1B=$X1B + 8;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function lic_certificacion_GXC($pensum, $cedula, $grado, $gtu) {
+         $paginas=$paginas + 1;
+         $nr=$this->Encabezado_certificacion($pensum, $cedula, $carrera_a1, $grado);
+         list($X1B) = split('[|]', $nr);
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $X1B=$X1B - 28;
+         $this->titulos_unidades_certificacion($X1B);
+         $X1B=$X1B + 30;
+         $nr=$this->trayecto_datos_certificacion($X1B, 3, $pensum, $cedula, "L");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->trayecto_datos_certificacion($X1B, 4, $pensum, $cedula, "L");
+         list($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) = split('[|]', $nr);
+         $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+         list($ira_t, $uc_t) = split('[|]', $nr);
+         $X1B=$X1B + 4;
+         $this->unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula);
+         $X1B=$X1B - 2;
+         $this->pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu);
+         $this->Output();
+     }
+     function pie_de_pagina_CERTIFICACION($X1B, $carrera_a1, $grado, $entre_lineado, $paginas, $pensum, $cedula, $gtu) {
+         date_default_timezone_set('America/Caracas');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $CODIGO=$fila['codigo'];
+                 $carrera=$fila['carrera'];
+                 $MENCION=$fila['mencion'];
+                 $PLAN=$fila['plan'];
+             }
+         }
+         if ($pensum == "AXC" or $pensum == "RXC") {
+             $X1B=$X1B + 22;
+             $this->SetFont('Arial', '', 7);
+             $this->SetXY(12, 35 + $X1B);
+             $this->Cell(180, $entre_lineado, utf8_decode("Reglamento general de Evaluación del rendimiento estudiantil de los Institutos y Colegios Colegios Universitarios:"), 0, 0, 'L', 0);
+             $X1B=$X1B + 3;
+             $this->SetFont('Arial', '', 7);
+             $this->SetXY(12, 35 + $X1B);
+             $this->Cell(180, $entre_lineado, utf8_decode("1) Según Gaceta Oficial N° 5342, de fecha 06/05/1999, art. 16: Expresa La Escala de Evaluación del uno (01) al veinte (20); y el art. 17: expresa que la Nota"), 0, 0, 'L', 0);
+             $X1B=$X1B + 3;
+             $this->SetFont('Arial', '', 7);
+             $this->SetXY(12, 35 + $X1B);
+             $this->Cell(180, $entre_lineado, utf8_decode("    Mínima Aprobatoria es de diez (10) puntos para carreras tradicionales."), 0, 0, 'L', 0);
+             $X1B=$X1B + 4;
+             $this->SetFont('Arial', '', 7);
+             $this->SetXY(12, 35 + $X1B);
+             $this->Cell(180, $entre_lineado, utf8_decode("Observación: los Periodos 1 y 2 corresponden a los Trayectos 3 y 4 en la malla curricular, con una duración de 36 semanas lectivas cada trayecto."), 0, 0, 'L', 0);
+             $X1B=$X1B + 4;
+         } else {
+             $X1B=$X1B + 22;
+             $this->SetFont('Arial', '', 7);
+             $this->SetXY(12, 35 + $X1B);
+             $this->Cell(180, $entre_lineado, utf8_decode("Lineamiento de Evaluación del desempeño estudiantil en los PNF: "), 0, 0, 'L', 0);
+             $X1B=$X1B + 3;
+             $this->SetFont('Arial', '', 7);
+             $this->SetXY(12, 35 + $X1B);
+             $this->Cell(180, $entre_lineado, utf8_decode("1) Según Resolución N° 549, Gaceta Oficial N° 39.483, de fecha 09/08/2010, art. 31: La Escala de Evaluación era de 01 al 05, siendo la Nota Mínima Aprobatoria 03 ptos."), 0, 0, 'L', 0);
+             $X1B=$X1B + 4;
+             $this->SetFont('Arial', '', 7);
+             $this->SetXY(12, 35 + $X1B);
+             $this->Cell(180, $entre_lineado, utf8_decode("Lineamiento de Evaluación del desempeño estudiantil en los PNF en el Marco de la Misión Sucre y Misión Alma Mater:"), 0, 0, 'L', 0);
+             $X1B=$X1B + 3;
+             $this->SetFont('Arial', '', 7);
+             $this->SetXY(12, 35 + $X1B);
+             $this->Cell(180, $entre_lineado, utf8_decode("1) Según Resolución N° 2593, Gaceta Oficial N° 39.839, de fecha 10/01/2012, art. 18: La Escala de Evaluación es de 01 al 20, siendo la Nota Mínima Aprobatoria 12 ptos."), 0, 0, 'L', 0);
+             $X1B=$X1B + 3;
+             $this->SetFont('Arial', '', 7);
+             $this->SetXY(12, 35 + $X1B);
+             $this->Cell(180, $entre_lineado, utf8_decode("2) Según Resolución N° 2593, Gaceta Oficial N° 39.839, de fecha 10/01/2012, art. 19: Para la UC Proyecto, la Nota Mínima Aprobatoria es de 16 ptos."), 0, 0, 'L', 0);
+             $X1B=$X1B + 4;
+         }
+         if ($grado == "T") {
+             $titulo=utf8_decode("TÉCNICO SUPERIOR UNIVERSITARIO");
+         }
+         if ($grado == "I") {
+             $titulo="INGENIERO";
+         }
+         if ($grado == "L") {
+             $titulo="LICENCIADO";
+         }
+         $X1B=$X1B + 4;
+         $sql="SELECT * FROM sede where id=2";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $sede=$fila['lugar'];
+             }
+         }
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(0, 35 + $X1B);
+         $this->Cell(210, $entre_lineado, utf8_decode("En la ciudad de ") . $sede . " a los " . $this->num2letras($DIA) . " (" . $DIA . ")" . utf8_decode(" días del mes de ") . ucfirst($this->nombremes($MES)) . utf8_decode(" del año ") . $this->num2letras($AÑO) . " (" . $AÑO . ")", 0, 0, 'C', 0);
+         if ($pensum == "TXC" AND $grado == "T") {
+             if ($gtu == "1") {
+                 $this->firmas(1, 30, $X1B + 15, "true");
+                 $this->firmas(2, 120, $X1B + 15, "true");
+                 $this->firmas(3, 70, $X1B + 55, "true");
+             } else {
+                 $this->firmas(2, 75, $X1B + 14, "true");
+                 $X1B=$X1B + 23;
+                 $this->firmas(3, 10, $X1B, "");
+             }
+         } else {
+             if ($gtu == "1") {
+                 $this->firmas(1, 30, $X1B + 15, "true");
+                 $this->firmas(2, 120, $X1B + 15, "true");
+                 $this->firmas(3, 70, $X1B + 55, "true");
+             } else {
+                 $X1B=$X1B + 7;
+                 $this->firmas(2, 75, $X1B + 10, "true");
+                 $X1B=$X1B + 30;
+                 $this->firmas(3, 10, $X1B, "");
+             }
+         }
+     }
+     function titulos_unidades_certificacion($X1B) {
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(0, 55 + $X1B);
+         $this->Cell(210, 7, utf8_decode("UNIDADES CURRICULARES CURSADAS"), 0, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(10, 62 + $X1B);
+         $this->Cell(187, 4, "", 1, 0, 'C', 0);
+         $this->SetXY(19, 62 + $X1B);
+         $this->Cell(20, 4, utf8_decode("CÓDIGO"), 0, 0, 'L', 0);
+         $this->SetXY(45, 62 + $X1B);
+         $this->Cell(74.1, 4, utf8_decode("UNIDAD CURRICULAR"), 0, 0, 'C', 0);
+         $this->SetXY(132, 62 + $X1B);
+         $this->Cell(20, 4, utf8_decode("UC"), 0, 0, 'L', 0);
+         $this->SetXY(142, 62 + $X1B);
+         $this->Cell(20, 4, utf8_decode("NOTA"), 0, 0, 'L', 0);
+         $this->SetXY(154, 62 + $X1B);
+         $this->Cell(20, 4, utf8_decode("LAPSO"), 0, 0, 'L', 0);
+         $this->SetXY(170, 62 + $X1B);
+         $this->Cell(20, 4, utf8_decode("OBSERVACIÓN"), 0, 0, 'L', 0);
+         return $X1B;
+     }
+     function trayecto_datos_certificacion($X1B, $tr, $pensum, $cedula, $grado) {
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, "T");
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, "T");
+         $cantidad_materias_L=$this->cantidad_materias($pensum, $cedula, "L");
+         $materias_aprobadas_L=$this->materias_aprobadas($pensum, $cedula, "L");
+         include "db.php";
+         $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' AND grado='" . $grado . "'  AND trayecto='" . $tr . "' AND SUBSTRING(cod_mat,2,1)='R' GROUP BY id ASC";
+         $resultado=$conn->query($sql);
+         $x1=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $lismat_cod_mat[$x1]=$fila['cod_mat'];
+                 $descrip2[$x1]=$fila['descrip2'];
+                 $creditos[$x1]=$fila['creditos'];
+                 $semestre[$x1]=$fila['semestre'];
+                 $nota_cat[$x1]=$fila['nota'];
+                 $divicion[$x1]=$fila['divicion'];
+                 $trayecto[$x1]=$fila['trayecto'];
+                 $aprobatori[$x1]=$fila['aprobatori'];
+                 $cod_mat_libro_rector[$x1]=$fila['cod_mat_libro_rector'];
+                 $x1=$x1 + 1;
+             }
+         }
+         $esta == "NO";
+         $t0=0;
+         $t1=0;
+         $t2=0;
+         $entre_lineado=4;
+         $conteo=1;
+         $primera_del_trayecto_0=0;
+         $t=$tr;
+         $nivel=$grado;
+         if ($X0 < 1) {
+             $X0=1;
+         }
+         for ($i=0; $i < count($lismat_cod_mat); $i++) {
+             if ($grado == $nivel) {
+                 if ($trayecto[$i] == $tr && $t == $tr) {
+                     $this->ira_texto_certificacion($X1B, $cedula, $pensum, $grado, $t, $entre_lineado, $ira_a_t, $uc_a, "false");
+                     $X1B=$X1B + 1.5;
+                     $t=$t + 1;
+                     $X1B_0=$X1B_0 + $X1B;
+                     $X1B=$X1B + $entre_lineado;
+                 }
+                 if (substr($lismat_cod_mat[$i], 1, 1) == "R") {
+                     $nr=$this->calcular_resumida_datos($pensum, $X1B, $lismat_cod_mat[$i], $cedula, $X1B, $descrip2[$i], $semestre[$i], $creditos[$i], $trayecto[$i], $aprobatori[$i], $divicion[$i], $cod_mat_libro_rector[$i], $electiva[$i], $cant, $apro);
+                     list($nota, $lapso, $tiplap, $cursar, $veses) = split('[|]', $nr);
+                     $this->SetFont('Arial', '', 8);
+                     $this->unidades_curriculares_certificacion($X1B, $cod_mat_libro_rector[$i], $lismat_cod_mat[$i], $descrip2[$i], $creditos[$i], $pensum, $grado, $cantidad_materias, $materias_aprobadas, $cedula);
+                     if ($lismat_cod_mat[$i] == "GRBSC" OR $lismat_cod_mat[$i] == "GRAYC") {
+                         $X1B=$X1B + $entre_lineado;
+                     } else {
+                         $this->SetXY(137, 35 + $X1B);
+                         $this->Cell(19, 4, $nota, 0, 0, 'C', 0);
+                         $this->SetXY(135, 35 + $X1B);
+                         $this->Cell(49, 4, substr($lapso, 0, 4), 0, 0, 'C', 0);
+                         $this->SetXY(148, 35 + $X1B);
+                         $this->Cell(70, 4, $tiplap, 0, 0, 'C', 0);
+                         $X1B=$X1B + $entre_lineado;
+                     }
+                 }
+             }
+         }
+         $this->Line(10, 36 + $X1B, 197, 36 + $X1B);
+         return $X0 . "|" . $X1B . "|" . $pensum . "|" . $grado . "|" . $cedula . "|" . $carrera_a1;
+     }
+     function nueva_pagina_certificacion($X0, $X1B, $pensum, $grado, $cedula, $carrera_a1) {
+         $this->AddPage();
+         $this->Encabezado_general(8);
+         $this->SetFont('Arial', 'B', 11);
+         $this->SetXY(0, 25 + $X1);
+         $this->Cell(210, 7, utf8_decode("CERTIFICACIÓN"), 0, 0, 'C', 0);
+         $X1B=-5;
+         $this->Encabezado_datos_alumno($X1B, $pensum, $cedula, $carrera_a1, $grado);
+         $X1B=0;
+         return $X0 . "|" . $X1B . "|" . $pensum . "|" . $grado . "|" . $cedula . "|" . $carrera_a1;
+     }
+     function unidades_curriculares_certificacion($X1B, $cod_mat_libro_rector, $lismat_cod_mat, $descrip2, $creditos, $pensum, $grado, $cantidad_materias, $materias_aprobadas, $cedula) {
+         $this->SetXY(12, 35 + $X1B);
+         $this->Cell(20, 4, $cod_mat_libro_rector, 0, 0, 'L', 0);
+         $this->SetXY(28, 35 + $X1B);
+         $this->Cell(20, 4, $lismat_cod_mat, 0, 0, 'C', 0);
+         $this->SetXY(45, 35 + $X1B);
+         $this->Cell(75, 4, substr(utf8_decode($descrip2), 0, 39), 0, 0, 'L', 0);
+         $this->SetXY(130, 35 + $X1B);
+         $this->Cell(10, 4, $creditos, 0, 0, 'C', 0);
+         if ($lismat_cod_mat == "GRBSC" or $lismat_cod_mat == "GRAYC") {
+             $this->_certificacion_GRBSC_GRAYC($X1B, $lismat_cod_mat, $entre_lineado, $pensum, $grado, $cantidad_materias, $materias_aprobadas, $cedula);
+         }
+     }
+     function unidades_curriculares_historial($X1B, $semestre, $lismat_cod_mat, $descrip2, $creditos, $divicion, $pensum, $grado, $cantidad_materias, $materias_aprobadas, $cedula) {
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(20, 4, $lismat_cod_mat, 1, 1, 'C', 0);
+         $this->SetXY(35, 35 + $X1B);
+         $this->Cell(75, 4, substr(utf8_decode($descrip2), 0, 39), 1, 1, 'C', 0);
+         $this->SetXY(110, 35 + $X1B);
+         $this->Cell(10, 4, $semestre, 1, 1, 'C', 0);
+         $this->SetXY(120, 35 + $X1B);
+         $this->Cell(10, 4, $creditos, 1, 1, 'C', 0);
+         $this->SetXY(130, 35 + $X1B);
+         $veses=$this->cantidad_de_veses($cedula, $lismat_cod_mat, $divicion);
+         $this->Cell(10, 4, $veses, 1, 1, 'C', 0);
+         if ($lismat_cod_mat == "GRBSC" or $lismat_cod_mat == "GRAYC") {
+             $this->_historial_GRBSC_GRAYC($X1B, $lismat_cod_mat, $entre_lineado, $pensum, $grado, $cantidad_materias, $materias_aprobadas, $cedula);
+         }
+     }
+     function _historial_GRBSC_GRAYC($X1B, $lismat_cod_mat, $entre_lineado, $pensum, $grado, $cantidad_materias, $materias_aprobadas, $cedula) {
+         $cantidad_materias_t=$this->cantidad_materias_pensum($pensum, $grado);
+         $cantidad_materias=$this->cantidad_materias_GXC($pensum, $cedula, $grado);
+         $materias_aprobadas_L=$this->materias_aprobadas($pensum, $cedula, $grado);
+         if ($grado == "T") {
+             if ($cantidad_materias == $materias_aprobadas_L) {
+                 $this->SetXY(140, 35 + $X1B);
+                 $this->Cell(15, 4, "AP", 1, 0, 'C', 0);
+                 $this->SetXY(155, 35 + $X1B);
+                 $this->Cell(15, 4, " ", 1, 0, 'C', 0);
+                 $this->SetXY(170, 35 + $X1B);
+                 $this->Cell(15, 4, " ", 1, 0, 'C', 0);
+                 $this->SetXY(185, 35 + $X1B);
+                 $this->Cell(15, 4, "", 1, 1, 'C', 0);
+             } else {
+                 $this->SetXY(140, 35 + $X1B);
+                 $this->Cell(15, 4, 0, 1, 0, 'C', 0);
+                 $this->SetXY(185, 35 + $X1B);
+                 $this->Cell(15, 4, "SI", 0, 0, 'C', 0);
+             }
+         }
+         if ($grado == "L") {
+             if ($cantidad_materias == $materias_aprobadas_L) {
+                 $this->SetXY(140, 35 + $X1B);
+                 $this->Cell(15, 4, "AP", 1, 0, 'C', 0);
+                 $this->SetXY(155, 35 + $X1B);
+                 $this->Cell(15, 4, " ", 1, 0, 'C', 0);
+                 $this->SetXY(170, 35 + $X1B);
+                 $this->Cell(15, 4, " ", 1, 0, 'C', 0);
+                 $this->SetXY(185, 35 + $X1B);
+                 $this->Cell(15, 4, "", 1, 1, 'C', 0);
+             } else {
+                 $this->SetXY(140, 35 + $X1B);
+                 $this->Cell(15, 4, 0, 1, 0, 'C', 0);
+                 $this->SetXY(185, 35 + $X1B);
+                 $this->Cell(15, 4, "SI", 0, 0, 'C', 0);
+             }
+         }
+     }
+     function _certificacion_GRBSC_GRAYC($X1B, $lismat_cod_mat, $entre_lineado, $pensum, $grado, $cantidad_materias, $materias_aprobadas, $cedula) {
+         $cantidad_materias_t=$this->cantidad_materias_pensum($pensum, $grado);
+         $cantidad_materias=$this->cantidad_materias_GXC($pensum, $cedula, $grado);
+         $materias_aprobadas_L=$this->materias_aprobadas($pensum, $cedula, $grado);
+         if ($grado == "T") {
+             if ($cantidad_materias == $materias_aprobadas_L) {
+                 $this->SetXY(140, 35 + $X1B);
+                 $this->Cell(15, 4, "AP", 0, 0, 'C', 0);
+                 $this->SetXY(155, 35 + $X1B);
+                 $this->Cell(15, 4, " ", 0, 0, 'C', 0);
+             } else {
+                 $this->SetXY(140, 35 + $X1B);
+                 $this->Cell(15, 4, 0, 0, 0, 'C', 0);
+             }
+         }
+         if ($grado == "L") {
+             if ($cantidad_materias == $materias_aprobadas_L) {
+                 $this->SetXY(140, 35 + $X1B);
+                 $this->Cell(15, 4, "AP", 0, 0, 'C', 0);
+                 $this->SetXY(155, 35 + $X1B);
+                 $this->Cell(15, 4, " ", 0, 0, 'C', 0);
+             } else {
+                 $this->SetXY(140, 35 + $X1B);
+                 $this->Cell(15, 4, 0, 0, 0, 'C', 0);
+             }
+         }
+     }
+     function ira_texto_certificacion($X1B, $cedula, $pensum, $grado, $t, $entre_lineado, $ira_a_t, $uc_a, $linea) {
+         if ($linea == "true") {
+             $this->Line(13, 35 + $X1B, 199, 35 + $X1B);
+         }
+         $X1B=$X1B + 1.5;
+         $ir=$this->calculo_ira($cedula, $pensum, $grado, $t, $entre_lineado);
+         list($ira_a_t, $uc_a) = split('[|]', $ir);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(120, 35 + $X1B);
+         if ($pensum == "AXC" or $pensum == "RXC") {
+             $this->Cell(50, $entre_lineado, "IRA " . $t . " del Semestre: " . $ira_a_t . " Total UC del Semestre: " . $uc_a, 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 8);
+             $this->SetXY(20, 35 + $X1B);
+             $this->Cell(20, $entre_lineado, utf8_decode("Semestre:  ") . $t, 0, 0, 'L', 0);
+         } else {
+             $this->Cell(50, $entre_lineado, "IRA " . $t . " del Trayecto: " . $ira_a_t . " Total UC del Trayecto: " . $uc_a, 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 8);
+             $this->SetXY(20, 35 + $X1B);
+             $this->Cell(20, $entre_lineado, utf8_decode("Trayecto:  ") . $t, 0, 0, 'L', 0);
+         }
+         $t=$t + 1;
+         $X1B=$X1B + 1.5;
+         $X1B_0=$X1B_0 + $X1B;
+         $X1B=$X1B + $entre_lineado;
+     }
+     function trayecto_texto_historial($X1B, $t, $entre_lineado) {
+         $X1B=$X1B + 1.5;
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(20, 35 + $X1B);
+         $this->Cell(20, $entre_lineado, utf8_decode("Trayecto:  ") . $t, 0, 0, 'L', 0);
+         $t=$t + 1;
+         $X1B=$X1B + 1.5;
+         $X1B_0=$X1B_0 + $X1B;
+         $X1B=$X1B + $entre_lineado;
+     }
+     function Encabezado_tabla_certificacion($X1, $X2) {
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(0 + $X2, 55 + $X1);
+         $this->Cell(210, 7, utf8_decode("UNIDADES CURRICULARES CURSADAS"), 0, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 8);
+         $this->SetXY(10 + $X2, 62 + $X1);
+         $this->Cell(187, 4, "", 1, 0, 'C', 0);
+         $this->SetXY(19 + $X2, 62 + $X1);
+         $this->Cell(20, 4, utf8_decode("CÓDIGO"), 0, 0, 'L', 0);
+         $this->SetXY(45 + $X2, 62 + $X1);
+         $this->Cell(74.1, 4, utf8_decode("UNIDAD CURRICULAR"), 0, 0, 'C', 0);
+         $this->SetXY(132 + $X2, 62 + $X1);
+         $this->Cell(20, 4, utf8_decode("UC"), 0, 0, 'L', 0);
+         $this->SetXY(142 + $X2, 62 + $X1);
+         $this->Cell(20, 4, utf8_decode("NOTA"), 0, 0, 'L', 0);
+         $this->SetXY(154 + $X2, 62 + $X1);
+         $this->Cell(20, 4, utf8_decode("LAPSO"), 0, 0, 'L', 0);
+         $this->SetXY(170 + $X2, 62 + $X1);
+         $this->Cell(20, 4, utf8_decode("OBSERVACIÓN"), 0, 0, 'L', 0);
+     }
+     function trayecto_datos_historial($X1B, $tr, $pensum, $cedula, $grado) {
+         include "db.php";
+         $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' AND grado='" . $grado . "'  AND trayecto='" . $tr . "' AND SUBSTRING(cod_mat,2,1)='R' GROUP BY id ASC";
+         $resultado=$conn->query($sql);
+         $x1=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $lismat_cod_mat[$x1]=$fila['cod_mat'];
+                 $descrip2[$x1]=$fila['descrip2'];
+                 $creditos[$x1]=$fila['creditos'];
+                 $semestre[$x1]=$fila['semestre'];
+                 $nota_cat[$x1]=$fila['nota'];
+                 $divicion[$x1]=$fila['divicion'];
+                 $trayecto[$x1]=$fila['trayecto'];
+                 $aprobatori[$x1]=$fila['aprobatori'];
+                 $cod_mat_libro_rector[$x1]=$fila['cod_mat_libro_rector'];
+                 $x1=$x1 + 1;
+             }
+         }
+         $esta == "NO";
+         $t0=0;
+         $t1=0;
+         $t2=0;
+         $entre_lineado=4;
+         $conteo=1;
+         $primera_del_trayecto_0=0;
+         $t=$tr;
+         $nivel=$grado;
+         if ($X0 < 1) {
+             $X0=1;
+         }
+         for ($i=0; $i < count($lismat_cod_mat); $i++) {
+             if ($grado == $nivel) {
+                 if ($trayecto[$i] == $tr && $t == $tr) {
+                     $this->trayecto_texto_historial($X1B, $t, $entre_lineado);
+                     $X1B=$X1B + 1.5;
+                     $t=$t + 1;
+                     $X1B_0=$X1B_0 + $X1B;
+                     $X1B=$X1B + $entre_lineado;
+                 }
+                 if (substr($lismat_cod_mat[$i], 1, 1) == "R") {
+                     $nr=$this->calcular_resumida_datos($pensum, $X1B, $lismat_cod_mat[$i], $cedula, $X1B, $descrip2[$i], $semestre[$i], $creditos[$i], $trayecto[$i], $aprobatori[$i], $divicion[$i], $cod_mat_libro_rector[$i], $electiva[$i], $cant, $apro);
+                     list($nota, $lapso, $tiplap, $cursar, $veses) = split('[|]', $nr);
+                     $this->SetFont('Arial', '', 8);
+                     $this->unidades_curriculares_historial($X1B, $semestre[$i], $lismat_cod_mat[$i], $descrip2[$i], $creditos[$i], $divicion[$i], $pensum, $grado, $cantidad_materias, $materias_aprobadas, $cedula);
+                     if ($lismat_cod_mat[$i] <> "GRBSC" OR $lismat_cod_mat[$i] <> "GRAYC") {
+                         if ($lismat_cod_mat[$i] <> "GRAYC" and $lismat_cod_mat[$i] <> "GRBSC") {
+                             $this->SetXY(140, 35 + $X1B);
+                             $this->Cell(15, 4, $nota, 1, 0, 'C', 0);
+                         }
+                         $this->SetXY(155, 35 + $X1B);
+                         $this->Cell(15, 4, substr($lapso, 0, 4), 1, 0, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, $tiplap, 1, 0, 'C', 0);
+                         if ($nota < $aprobatori[$i] and $lismat_cod_mat[$i] <> "GRAYC" and $lismat_cod_mat[$i] <> "GRBSC") {
+                             $this->SetXY(185, 35 + $X1B);
+                             $this->Cell(15, 4, "SI", 1, 1, 'C', 0);
+                             $faltantes=$faltantes + 1;
+                         } else {
+                             $this->SetXY(185, 35 + $X1B);
+                             $this->Cell(15, 4, " ", 1, 1, 'C', 0);
+                             $aprobados=$aprobados + 1;
+                         }
+                     } else {
+                         $this->SetXY(140, 35 + $X1B);
+                         $this->Cell(15, 4, "", 1, 0, 'C', 0);
+                         $this->SetXY(155, 35 + $X1B);
+                         $this->Cell(15, 4, "", 1, 0, 'C', 0);
+                         $this->SetXY(170, 35 + $X1B);
+                         $this->Cell(15, 4, "", 1, 0, 'C', 0);
+                         $this->SetXY(185, 35 + $X1B);
+                         $this->Cell(15, 4, " ", 1, 1, 'C', 0);
+                         $aprobados=$aprobados + 1;
+                     }
+                     $X1B=$X1B + $entre_lineado;
+                 }
+             }
+             if ($lismat_cod_mat[$i] == "GRBSC" or $lismat_cod_mat[$i] == "GRAYC") {
+                 $X1B=$X1B + 4;
+             }
+         }
+         return $X0 . "|" . $X1B . "|" . $pensum . "|" . $grado . "|" . $cedula . "|" . $carrera_a1;
+     }
+     function unidades_de_creditos_total($pensum, $grado) {
+         include "db.php";
+         $sql="SELECT SUM(creditos) AS TOTAL_CREDITOS FROM lismat WHERE pensum='" . $pensum . "' AND grado='" . $grado . "' AND SUBSTRING(cod_mat,2,1)='R'";
+         $resultado=$conn->query($sql);
+         $x1=0;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $dat=$fila['TOTAL_CREDITOS'];
+             }
+         }
+         return $dat;
+     }
+     function unidades_de_creditos($X1B, $pensum, $grado, $uc_t, $ira_t, $cedula) {
+         if ($grado == "T") {
+             $titulo_nombre="TSU";
+         }
+         if ($grado == "I") {
+             $titulo_nombre="Ing.";
+         }
+         if ($grado == "L") {
+             $titulo_nombre="Lcdo.";
+         }
+         switch ($pensum) {
+             case 'IXC':
+                 $uc_t_tsu=109;
+                 break;
+             case 'TXC':
+                 $uc_t_tsu=106;
+                 break;
+             case 'MXC':
+                 $uc_t_tsu=122;
+                 break;
+             case 'CXC':
+                 $uc_t_tsu=0;
+                 break;
+             case 'RXC':
+                 $uc_t_tsu=0;
+                 break;
+             case 'AXC':
+                 $uc_t_tsu=0;
+                 break;
+             case 'EXC':
+                 $uc_t_tsu=110;
+                 break;
+             case 'GXC':
+                 $uc_t_tsu=94;
+                 break;
+         }
+         $this->SetFont('Arial', '', 8);
+         if ($grado == "T") {
+             $this->SetXY(17, 37 + $X1B);
+             $this->Cell(175, 7, utf8_decode("Unidades de Créditos Cursadas y Aprobadas: ") . $uc_t_tsu, 1, 0, 'C', 0);
+             $total=$this->unidades_de_creditos_total($pensum, $grado);
+             $this->SetXY(17, 44 + $X1B);
+             $this->Cell(175, 7, utf8_decode("Índice de Rendimiento Académico: ") . $ira_t, 1, 0, 'C', 0);
+             $X1B=$X1B + 7;
+         } else {
+             $this->SetXY(17, 37 + $X1B);
+             $this->Cell(77.5, 7, utf8_decode("Unidades de Créditos Cursadas y Aprobadas T.S.U.: ") . $uc_t_tsu, 1, 0, 'C', 0);
+             $this->SetXY(94.5, 37 + $X1B);
+             $this->Cell(77.5, 7, utf8_decode("Unidades de Créditos Cursadas y Aprobadas ") . $titulo_nombre . ": " . $this->unidades_de_creditos_total($pensum, $grado), 1, 0, 'C', 0);
+             $total=$uc_t_tsu + $this->unidades_de_creditos_total($pensum, $grado);
+             $this->SetXY(172, 37 + $X1B);
+             $this->Cell(20, 7, "UC Total: " . $total, 1, 0, 'C', 0);
+             $this->SetXY(17, 44 + $X1B);
+             $this->Cell(175, 7, utf8_decode("Indice de Rendimiento Academico: ") . $ira_t, 1, 0, 'C', 0);
+             $X1B=$X1B + 7;
+         }
+         return $X1B . "|" . $X1B;
+     }
+     function cargar_materias_por_trayecto($pensum, $cedula, $cod_mat, $grado, $lapso, $seccion, $trayecto, $cod_usu1) {
+         $cod_doc="0";
+         $nota="0";
+         $tiplap="";
+         $acu="0";
+         include "db.php";
+         $sql2="SELECT * FROM notas WHERE cedula='" . $cedula . "' and cod_mat='" . $cod_mat . "' and lapso='" . $lapso . "'";
+         $resultado_x=$conn->query($sql2);
+         if ($resultado_x->num_rows < 35) {
+             $sql="SELECT * FROM lismat WHERE pensum='" . $pensum . "' and trayecto='" . $trayecto . "' and SUBSTRING(`cod_mat`,2,1)<>'R' and SUBSTRING(`cod_mat`,2,1)<>'T' and SUBSTRING(`cod_mat`,2,1)<>'E' and SUBSTRING(`cod_mat`,2,1)<>'P'";
+             $x1=0;
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $cod_mat_a[$x1]=$fila['cod_mat'];
+                     $descrip2_a[$x1]=$fila['descrip2'];
+                     $creditos_a[$x1]=$fila['creditos'];
+                     $semestre_a[$x1]=$fila['semestre'];
+                     $aprobatori_a[$x1]=$fila['aprobatori'];
+                     $trayecto_a[$x1]=$fila['trayecto'];
+                     $x1=$x1 + 1;
+                 }
+             }
+             for ($i=0; $i < count($cod_mat_a); $i++) {
+                 if (substr($cod_mat_a[$i], 1, 1) == "1" and substr($lapso, 5, 1) == "1") {
+                     $lapso1=substr($lapso, 0, 5) . "1";
+                 }
+                 if (substr($cod_mat_a[$i], 1, 1) == "2" and substr($lapso, 5, 1) == "1") {
+                     $lapso1=substr($lapso, 0, 5) . "2";
+                 }
+                 if (substr($cod_mat_a[$i], 1, 1) == "3" and substr($lapso, 5, 1) == "1") {
+                     $lapso1=substr($lapso, 0, 5) . "3";
+                 }
+                 if (substr($cod_mat_a[$i], 1, 1) == "1" and substr($lapso, 5, 1) == "2") {
+                     $lapso1=substr($lapso, 0, 5) . "2";
+                 }
+                 if (substr($cod_mat_a[$i], 1, 1) == "2" and substr($lapso, 5, 1) == "2") {
+                     $lapso1=substr($lapso, 0, 5) . "3";
+                 }
+                 if (substr($cod_mat_a[$i], 1, 1) == "3" and substr($lapso, 5, 1) == "2") {
+                     $lapso1=substr($lapso, 0, 4) + "1" . substr($lapso, 4, 1) . "1";
+                 }
+                 if (substr($cod_mat_a[$i], 1, 1) == "1" and substr($lapso, 5, 1) == "3") {
+                     $lapso1=substr($lapso, 0, 5) . "3";
+                 }
+                 if (substr($cod_mat_a[$i], 1, 1) == "2" and substr($lapso, 5, 1) == "3") {
+                     $lapso1=substr($lapso, 0, 4) + "1" . substr($lapso, 4, 1) . "1";
+                 }
+                 if (substr($cod_mat_a[$i], 1, 1) == "3" and substr($lapso, 5, 1) == "3") {
+                     $lapso1=substr($lapso, 0, 4) + "1" . substr($lapso, 4, 1) . "2";
+                 }
+                 $this->guarda_seccion_2B($pensum, $cedula, $cod_mat_a[$i], $cod_doc, $lapso1, $seccion, $cod_usu1);
+                 $this->notas_auditoria("Inscribir_varias", $usuario, $cedula, $cod_mat_a[$i], $cod_mat_ant, $carrera, $nota, $nota_ant, $lapso, $lapso_ant, $tiplap, $tiplap_ant, $cod_doc, $cod_doc_ant, $cod_usu, $acu, $acu_ant, $seccion, $seccion_ant, $electiva, $electiva_ant);
+             }
+         } else {
+             echo "La seccion " . $seccion . " esta llena";
+         }
+     }
+     function dominio_rango($pensum, $cedula, $grado) {
+         if ($grado == "T") {
+             $cantidad_materias=$this->cantidad_materias_pensum($pensum, $grado);
+             $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, $grado);
+         }
+         if ($grado == "I" OR $grado == "L") {
+             $cantidad_materias=$this->cantidad_materias($pensum, $cedula, $grado);
+             $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, $grado);
+         }
+         if ($materias_aprobadas == $cantidad_materias AND $grado == "T" OR $materias_aprobadas == $cantidad_materias AND $grado == "I" OR $materias_aprobadas == $cantidad_materias AND $grado == "L") {
+             $this->AddPage();
+             date_default_timezone_set('America/Caracas');
+             $DIA=date("d");
+             $MES=date("m");
+             $AÑO=date("Y");
+             $id=intval($_GET['id']);
+             if ($id == "") {
+                 $id=$_SESSION['id'];
+             }
+             $this->Encabezado_general(8);
+             $this->SetFont('Arial', 'B', 11);
+             $this->SetXY(0, 35 + $X1);
+             $this->Cell(210, 7, utf8_decode("CONSTANCIA"), 0, 0, 'C', 0);
+             include "db.php";
+             $sql="SELECT * FROM sede where id=1";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $sede=$fila['lugar'];
+                 }
+             }
+             $this->Quien_suscribe_Secretario(13, 5);
+             $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+             $resultado=$conn->query($sql);
+             if (!$resultado) {
+                 exit;
+             }
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $CODIGO=$fila['codigo'];
+                     $cedula=$fila['cedula'];
+                     $carrera=$fila['carrera'];
+                     $MENCION=$fila['mencion'];
+                     $PLAN=$fila['plan'];
+                     $nombre=$fila['nombre'];
+                     $SEMESTRE=$fila['semestre'];
+                     $ACTIVIDAD=$fila['actividad'];
+                     $NIVEL=$fila['nivel'];
+                     $ubicacion=$fila['ubicacion'];
+                     $num_est=$fila['num_est'];
+                 }
+             }
+             $this->SetFont('Arial', 'B', 12);
+             $this->SetXY(20, 77 + $X1);
+             $this->Cell(180, 5, utf8_decode($nombre), 0, 0, 'C', 0);
+             $this->SetXY(35, 75 + $X1);
+             $this->Cell(140, 10, "", 1, 0, 'C', 0);
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(17, 95 + $X1);
+             $this->Cell(180, 5, utf8_decode("Titular   de   la   cédula   de   identidad   ") . $cedula . utf8_decode("   cursó   estudios,   obteniendo") . utf8_decode("  el   título   de"), 0, 0, 'L', 0);
+             if ($grado == "T") {
+                 $titulo_nombre=utf8_decode("TÉCNICO SUPERIOR UNIVERSITARIO");
+             }
+             if ($grado == "I") {
+                 $titulo_nombre="INGENIERO";
+             }
+             if ($grado == "L") {
+                 $titulo_nombre="LICENCIADO";
+             }
+             $carrera_a1=$this->carrera_larga($carrera);
+             $carrera_a2=$this->carrera_corta($carrera);
+             $this->SetXY(17, 105 + $X1);
+             $this->Cell(180, 5, $titulo_nombre . utf8_decode(", en el Programa Nacional de Formación en:"), 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 12);
+             $this->SetXY(17, 112.7 + $X1);
+             $this->Cell(180, 5, utf8_decode($carrera_a1), 0, 0, 'C', 0);
+             $X1=10;
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(15 - $X3, 110 + $X1);
+             $this->Cell(210, 7, utf8_decode("Asi mismo se Certifica que obtuvo  el   ") . $ubicacion . utf8_decode("   lugar  entre  los   ") . $num_est . utf8_decode("   de  su promoción, su índice de"), 0, 0, 'L', 0);
+             $this->Line(80.5 - $X3, 115.5 + $X1, 86 - $X3, 115.5 + $X1);
+             $this->Line(117 - $X3, 115.5 + $X1, 125 - $X3, 115.5 + $X1);
+             $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+             list($ira, $uc) = split('[|]', $nr);
+             $iras=$ira;
+             $nr2=$this->calculo_ira_total($cedula, $pensum, $grado, $tr, 0);
+             list($irapromo, $uc) = split('[|]', $nr2);
+             $this->SetXY(15 - $X3, 117 + $X1);
+             $this->Cell(120, 7, utf8_decode("rendimiento académico fue de    ") . $iras . utf8_decode("      y el de su promoción fue de   ") . $irapromo, 0, 0, 'L', 0);
+             $X3=$X3 - 2;
+             $this->Line(70 - $X3, 122.5 + $X1, 83 - $X3, 122.5 + $X1);
+             $X3=$X3 - 7;
+             $this->Line(132 - $X3, 122.5 + $X1, 145 - $X3, 122.5 + $X1);
+             $this->Constancia_que_se_expide(45);
+             $this->firmas(2, 75, 165, "true");
+             $this->firmas(3, 10, 215, "");
+             $this->Output();
+         } else {
+             header("Location: msg_no_graduado.php");
+         }
+     }
+     function dominio_rango2($pensum, $cedula, $grado) {
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, $grado);
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, $grado);
+         if ($materias_aprobadas == $cantidad_materias AND $grado == "T" OR $materias_aprobadas == $cantidad_materias AND $grado == "I" OR $materias_aprobadas == $cantidad_materias AND $grado == "L") {
+             $this->AddPage();
+             date_default_timezone_set('America/Caracas');
+             $DIA=date("d");
+             $MES=date("m");
+             $AÑO=date("Y");
+             $id=intval($_GET['id']);
+             if ($id == "") {
+                 $id=$_SESSION['id'];
+             }
+             $this->Encabezado_general(8);
+             $this->SetFont('Arial', 'B', 11);
+             $this->SetXY(0, 35 + $X1);
+             $this->Cell(210, 7, utf8_decode("CONSTANCIA"), 0, 0, 'C', 0);
+             include "db.php";
+             $sql="SELECT * FROM sede where id=1";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $sede=$fila['lugar'];
+                 }
+             }
+             $this->Quien_suscribe_Secretario(13, 5);
+             $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+             $resultado=$conn->query($sql);
+             if (!$resultado) {
+                 exit;
+             }
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $CODIGO=$fila['codigo'];
+                     $cedula=$fila['cedula'];
+                     $carrera=$fila['carrera'];
+                     $MENCION=$fila['mencion'];
+                     $PLAN=$fila['plan'];
+                     $nombre=$fila['nombre'];
+                     $SEMESTRE=$fila['semestre'];
+                     $ACTIVIDAD=$fila['actividad'];
+                     $NIVEL=$fila['nivel'];
+                 }
+             }
+             $this->SetFont('Arial', 'B', 12);
+             $this->SetXY(20, 77 + $X1);
+             $this->Cell(180, 5, $nombre, 0, 0, 'C', 0);
+             $this->SetXY(35, 75 + $X1);
+             $this->Cell(140, 10, "", 1, 0, 'C', 0);
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(17, 95 + $X1);
+             $this->Cell(180, 5, utf8_decode("Titular   de   la   cédula   de   identidad   ") . $cedula . utf8_decode("   cursó   estudios,   obteniendo") . utf8_decode("  el   título   de"), 0, 0, 'L', 0);
+             if ($grado == "T") {
+                 $titulo_nombre=utf8_decode("TÉCNICO SUPERIOR UNIVERSITARIO");
+             }
+             if ($grado == "I") {
+                 $titulo_nombre="INGENIERO";
+             }
+             if ($grado == "L") {
+                 $titulo_nombre="LICENCIADO";
+             }
+             $this->SetXY(17, 105 + $X1);
+             $this->Cell(180, 5, $titulo_nombre . utf8_decode(", en el Programa Nacional de Formación en:"), 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 12);
+             $this->SetXY(17, 123 + $X1);
+             $this->Cell(180, 5, utf8_decode($carrera_a1), 0, 0, 'C', 0);
+             $X1=10;
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(15 - $X3, 110 + $X1);
+             $this->Cell(210, 7, utf8_decode("Asi mismo se Certifica que obtuvo  el   ") . $ubicacion . utf8_decode("   lugar  entre  los   ") . $num_est . utf8_decode("   de  su promoción, su índice de"), 0, 0, 'L', 0);
+             $this->Line(80 - $X3, 115.5 + $X1, 86 - $X3, 115.5 + $X1);
+             $this->Line(112 - $X3, 115.5 + $X1, 120 - $X3, 115.5 + $X1);
+             $nr=$this->calculo_ira_grado($cedula, $pensum, $grado);
+             list($ira, $uc) = split('[|]', $nr);
+             $iras=$ira;
+             $nr2=$this->calculo_ira_total($cedula, $pensum, $grado, $tr, 0);
+             list($irapromo, $uc) = split('[|]', $nr2);
+             $this->SetXY(15 - $X3, 117 + $X1);
+             $this->Cell(120, 7, utf8_decode("rendimiento académico fue de    ") . $iras . utf8_decode("      y el de su promoción fue de   ") . $irapromo, 0, 0, 'L', 0);
+             $this->Line(70 - $X3, 122.5 + $X1, 80 - $X3, 122.5 + $X1);
+             $this->Line(132 - $X3, 122.5 + $X1, 142 - $X3, 122.5 + $X1);
+             $this->Constancia_que_se_expide(45);
+             $this->firmas(1, 30, 170, "true");
+             $this->firmas(2, 120, 170, "true");
+             $this->firmas(3, 70, 215, "true");
+             $this->Output();
+         } else {
+             header("Location: msg_no_graduado.php");
+         }
+     }
+     function Quien_suscribe_Secretario($X1B, $entreliniado) {
+         include "db.php";
+         $sql="SELECT * FROM directivos where id='2'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+            while ($fila=$resultado->fetch_assoc()) {
+              $Sub_a_nombre=$fila["nombre"];
+              $Sub_a_cargo=$fila["cargo"];
+              $Sub_a_cedula=$fila["cedula"];
+              $Sub_a_lugar=$fila["lugar"];
+            }
+         }
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 35 + $X1B);
+         $this->Cell(10, 4, utf8_decode("Quien suscribe,                                            ") . utf8_decode(", titular de la cédula de identidad ") . $Sub_a_cedula . utf8_decode(", Secretario"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 11);
+         $this->SetXY(43, 35 + $X1B);
+         $this->Cell(10, 4, $Sub_a_nombre, 0, 0, 'L', 0);
+         $X1B=$X1B + $entreliniado;
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 39 + $X1B);
+         $this->Cell(10, 4, utf8_decode("del  Consejo  de  Gestión  Universitaria  de  la  Universidad  Politécnica  Territorial  de  Puerto Cabello"), 0, 0, 'L', 0);
+         $X1B=$X1B + $entreliniado;
+         $this->SetFont('Arial', 'B', 11);
+         $this->SetXY(15, 43 + $X1B);
+         $this->Cell(10, 4, utf8_decode("certifica"), 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 43 + $X1B);
+         $this->Cell(10, 4, utf8_decode("               al Ciudadano (a):"), 0, 0, 'L', 0);
+         return $fin;
+     }
+     function Quien_suscribe_Secretario_prosecucion($X1B, $entreliniado, $cedula) {
+         include "db.php";
+         $sql="SELECT * FROM directivos where id='2'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+            while ($fila=$resultado->fetch_assoc()) {
+              $Sub_a_nombre=$fila["nombre"];
+              $Sub_a_cargo=$fila["cargo"];
+              $Sub_a_cedula=$fila["cedula"];
+              $Sub_a_cargo=$fila["cargo"];
+              $Sub_a_lugar=$fila["lugar"];
+              $Sub_a_resolucion=$fila["resolucion"];
+              $Sub_a_gaceta=$fila["gaceta"];
+              $Sub_a_numero=$fila["numero"];
+            }
+         }
+         $sql="SELECT * FROM sede where id=2";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $sede=$fila['lugar'];
+             }
+         }
+         $this->SetFont('Arial', 'B', 12);
+         $this->SetXY(38, 30);
+         $this->MultiCell(140, 8, utf8_decode("CERTIFICACIÓN DE PROSECUCIÓN DE ESTUDIOS PARA TÉCNICOS SUPERIORES UNIVERSITARIOS EGRESADOS DE LOS PROGRAMAS NACIONALES  DE FORMACIÓN"), 0, "C", false);
+         date_default_timezone_set('America/Caracas');
+         $fechaActual=date('d-m-Y');
+         $d=date("d");
+         $m=date("m");
+         $y=date("Y");
+         $DIA=$this->num2letras($d);
+         $AÑO=$this->num2letras($y);
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+            while ($fila=$resultado->fetch_assoc()) {
+              $nombre=utf8_decode($fila['nombre']);
+              $carrera=$fila['carrera'];
+              $codigo=$fila['codigo'];
+              $carrera=$fila['carrera'];
+              $MENCION=$fila['mencion'];
+              $PLAN=$fila['plan'];
+            }
+         }
+         $X1B=$X1B + 8;
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 39 + $X1B);
+
+         $this->MultiCell(175, 8, utf8_decode("Quien suscribe, $Sub_a_nombre., titular de la cédula de identidad $Sub_a_cedula, Secretario del Consejo de Gestión Universitaria de la Universidad Politécnica Territorial de Puerto Cabello (U.P.T.P.C), designada bajo Resolución $Sub_a_resolucion emitida por el Ministerio del Poder Popular para la Educación Universitaria, publicada en la  $Sub_a_gaceta $Sub_a_numero, en el uso de sus atribuciones legales y reglamentarias certifica que los planes de estudios basados en los Programas Nacionales de Formación (PNF), creados bajo resolución 2.963 en Gaceta Oficial de la República Bolivariana de Venezuela N° 39.148, de fecha 27 de Marzo de 2009, permiten incorporar a Técnicos Superiores Universitarios graduados con anterioridad del área o afines, para cursar estudios conducentes a los títulos de Licenciatura o Ingeniería: siendo posible en un lapso de dos (02) años, optar a los referidos títulos de Ingeniero (a) y Licenciado (a), bajo la modalidad de Ingreso y Prosecución. Al T.S.U: . "), 0, "J", false);
+         
+         $this->SetFont('Arial', 'B', 11);
+         $this->SetXY(30, 129 + $X1B);
+         $this->Cell(10, 4, utf8_decode("$nombre  C.I: $cedula."), 0, 0, 'L', 0);
+       
+         return $fin;
+     }
+     function Constancia_que_se_expide($y) {
+         date_default_timezone_set('America/Caracas');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         include "db.php";
+         $sql="SELECT * FROM sede where id=2";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $sede=$fila['lugar'];
+             }
+         }
+         $this->SetFont('Arial', '', 11);
+         $this->SetXY(15, 100 + $y);
+         $this->MultiCell(175, 8, utf8_decode("Constancia  que  se  expide en la ciudad de ") . $sede . " a los " . $this->num2letras($DIA) . " (" . $DIA . ")" . utf8_decode(" días del mes de ") . ucfirst($this->nombremes($MES)) . utf8_decode(" del año ") . $this->num2letras($AÑO) . " (" . $AÑO . ")" . ".", 0, "J", false);
+     }
+     function firmas($id, $w, $y, $negrita) {
+         include "db.php";
+         $sql="SELECT * FROM directivos where id=$id";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $cedula=$fila["cedula"];
+                 $nombre=$fila["nombre"];
+                 $cargo=$fila["cargo"];
+                 $lugar=$fila["lugar"];
+                 $resolucion=$fila["resolucion"];
+                 $gaceta=$fila["gaceta"];
+                 $numero=$fila["numero"];
+             }
+         }
+         if ($negrita == "true") {
+             $this->SetFont('Arial', 'B', 8);
+         } else {
+             $this->SetFont('Arial', 'B', 8);
+         }
+         $this->Line(3 + $w, 35 + $y, 58 + $w, 35 + $y);
+         $this->SetXY(0 + $w, 35 + $y);
+         $this->Cell(60, 5, utf8_decode($nombre), 0, 0, 'C', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(0 + $w, 38 + $y);
+         $this->Cell(60, 5, utf8_decode($cargo), 0, 0, 'C', 0);
+         $this->SetFont('Arial', '', 8);
+         $this->SetXY(0 + $w, 41 + $y);
+         $this->Cell(60, 5, utf8_decode($resolucion), 0, 0, 'C', 0);
+         $this->SetXY(0 + $w, 44 + $y);
+         $this->Cell(60, 5, utf8_decode($gaceta), 0, 0, 'C', 0);
+         $this->SetXY(0 + $w, 47 + $y);
+         $this->Cell(60, 5, utf8_decode($numero), 0, 0, 'C', 0);
+     }
+     function culminacion($pensum, $cedula, $grado) {
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nombre=utf8_decode($fila['nombre']);
+                 $carrera=$fila['carrera'];
+                 $codigo=$fila['codigo'];
+             }
+         }
+         $pensum=$carrera . "XC";
+         $sql="SELECT DISTINCT * FROM pensum where pensum='" . $pensum . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $Carrera_a2=$fila["descripcion"];
+             }
+         }
+         if ($grado == "T") {
+             $cantidad_materias=$this->cantidad_materias_pensum($pensum, $grado);
+             $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, $grado);
+         }
+         if ($grado == "I" OR $grado == "L") {
+             $cantidad_materias=$this->cantidad_materias($pensum, $cedula, $grado);
+             $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, $grado);
+         }
+         if ($materias_aprobadas == $cantidad_materias AND $grado == "T" OR $materias_aprobadas == $cantidad_materias AND $grado == "I" OR $materias_aprobadas == $cantidad_materias AND $grado == "L") {
+             $this->AddPage();
+             date_default_timezone_set('America/Caracas');
+             $fechaActual=date('d-m-Y');
+             $d=date("d");
+             $m=date("m");
+             $y=date("Y");
+             $DIA=$this->num2letras($d);
+             $AÑO=$this->num2letras($y);
+             $sql="SELECT * FROM sede where id=1";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $sede=$fila['lugar'];
+                 }
+             }
+             $this->Encabezado_general(8);
+             $this->SetFont('Arial', 'B', 14);
+             $this->SetXY(20, 35 + $X1);
+             $this->Cell(180, 5, utf8_decode("CARTA DE CULMINACIÓN DE ESTUDIOS"), 0, 0, 'C', 0);
+             $sql="SELECT * FROM directivos where id='2'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $Sub_a_nombre=$fila["nombre"];
+                     $Sub_a_cargo=$fila["cargo"];
+                     $Sub_a_lugar=$fila["lugar"];
+                 }
+             }
+             $sql="SELECT * FROM sede where id=2";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $sede=$fila['lugar'];
+                 }
+             }
+             $this->Quien_suscribe_Secretario(20, 4);
+             $sql="SELECT max(lapso) as max_lapso FROM notas,lismat WHERE codigo='" . $cedula . "' and lismat.grado='" . $grado . "' and notas.cod_mat=lismat.cod_mat";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $max_lapso=$fila["max_lapso"];
+                 }
+             }
+             $this->SetFont('Arial', 'B', 12);
+             $this->SetXY(20, 80 + $X1);
+             $this->Cell(180, 5, $nombre, 0, 0, 'C', 0);
+             $this->SetXY(35, 78 + $X1);
+             $this->Cell(140, 10, "", 1, 0, 'C', 0);
+             $this->SetFont('Arial', '', 10);
+             if ($pensum == "AXC" AND $pensum == "RXC") {
+                 $carreras="Programas Tradicionales";
+             } else {
+                 $carreras="Programa Nacional de Formación";
+             }
+             $this->SetXY(17, 95 + $X1);
+             $this->Cell(180, 5, utf8_decode("Titular  de  la  Cédula  de  Identidad     " . $cedula . ", Quien curso y aprobó todas las Unidades Curriculares"), 0, 0, 'L', 0);
+             $this->SetXY(17, 105 + $X1);
+             $this->Cell(180, 5, utf8_decode("del Plan de  Estudios  del  ") . utf8_decode($carreras) . " en", 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 12);
+             $this->SetXY(17, 118 + $X1);
+             if ($pensum == "TXC" OR $pensum == "GXC") {
+                 if ($pensum == "GXC" AND $grado == "L") {
+                     $Carrera_a2=utf8_decode($this->carrera_larga($carrera) . " MENCIÓN GESTIÓN TURÍSTICA");
+                 }
+                 if ($pensum == "GXC" AND $grado == "T") {
+                     $Carrera_a2=utf8_decode($this->carrera_larga($carrera));
+                 }
+                 if ($pensum == "TXC" AND $grado == "I") {
+                     $Carrera_a2=utf8_decode($this->carrera_larga($carrera));
+                 }
+                 if ($pensum == "TXC" AND $grado == "T") {
+                     $Carrera_a2=utf8_decode($this->carrera_larga($carrera) . " MECÁNICO");
+                 }
+             } else {
+                 $Carrera_a2=utf8_decode($this->carrera_larga($carrera));
+             }
+             $this->Cell(180, 5, $Carrera_a2, 0, 0, 'C', 0);
+             $this->SetXY(35, 115 + $X1);
+             $this->Cell(140, 10, "", 1, 0, 'C', 0);
+             $this->SetFont('Arial', '', 10);
+             $this->SetXY(17, 135 + $X1);
+             $this->Cell(180, 5, utf8_decode("Obteniendo  el  Título"), 0, 0, 'L', 0);
+             $X1=$X1 + 30;
+             if ($grado == "T") {
+                 $this->SetXY(52, 105 + $X1);
+                 $this->Cell(180, 5, utf8_decode("de TÉCNICO SUPERIOR UNIVERSITARIO."), 0, 0, 'L', 0);
+             } else {
+                 if ($grado == "I") {
+                     $this->SetXY(52, 105 + $X1);
+                     $this->Cell(180, 5, utf8_decode("de INGENIERO."), 0, 0, 'L', 0);
+                 }
+                 if ($grado == "L") {
+                     $this->SetXY(52, 105 + $X1);
+                     $this->Cell(180, 5, utf8_decode("de LICENCIADO."), 0, 0, 'L', 0);
+                 }
+             }
+             $this->Constancia_que_se_expide(50);
+             $this->firmas(2, 70, 168, "true");
+             $this->Output();
+         } else {
+             header("Location: msg_no_graduado.php");
+         }
+     }
+     function culminacion2($pensum, $cedula, $grado) {
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $nombre=utf8_decode($fila['nombre']);
+                 $carrera=$fila['carrera'];
+                 $codigo=$fila['codigo'];
+             }
+         }
+         $pensum=$carrera . "XC";
+         $sql="SELECT DISTINCT * FROM pensum where pensum='" . $pensum . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $Carrera_a2=$fila["descripcion"];
+             }
+         }
+         $cantidad_materias=$this->cantidad_materias($pensum, $cedula, $grado);
+         $materias_aprobadas=$this->materias_aprobadas($pensum, $cedula, $grado);
+         if ($materias_aprobadas == $cantidad_materias AND $grado == "T" OR $materias_aprobadas == $cantidad_materias AND $grado == "I" OR $materias_aprobadas == $cantidad_materias AND $grado == "L") {
+             $this->AddPage();
+             date_default_timezone_set('America/Caracas');
+             $fechaActual=date('d-m-Y');
+             $d=date("d");
+             $m=date("m");
+             $y=date("Y");
+             $DIA=$this->num2letras($d);
+             $AÑO=$this->num2letras($y);
+             $sql="SELECT * FROM sede where id=1";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $sede=$fila['lugar'];
+                 }
+             }
+             $this->Encabezado_general(8);
+             $this->SetFont('Arial', 'B', 14);
+             $this->SetXY(20, 35 + $X1);
+             $this->Cell(180, 5, utf8_decode("CARTA DE CULMINACIÓN DE ESTUDIOS"), 0, 0, 'C', 0);
+             $sql="SELECT * FROM directivos where id='2'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $Sub_a_nombre=$fila["nombre"];
+                     $Sub_a_cargo=$fila["cargo"];
+                     $Sub_a_lugar=$fila["lugar"];
+                 }
+             }
+             $sql="SELECT * FROM sede where id=2";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $sede=$fila['lugar'];
+                 }
+             }
+             $this->Quien_suscribe_Secretario(20, 4);
+             $sql="SELECT max(lapso) as max_lapso FROM notas,lismat WHERE codigo='" . $cedula . "' and lismat.grado='" . $grado . "' and notas.cod_mat=lismat.cod_mat";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $max_lapso=$fila["max_lapso"];
+                 }
+             }
+             $conn->close();
+             $this->SetFont('Arial', 'B', 12);
+             $this->SetXY(20, 80 + $X1);
+             $this->Cell(180, 5, $nombre, 0, 0, 'C', 0);
+             $this->SetXY(35, 78 + $X1);
+             $this->Cell(140, 10, "", 1, 0, 'C', 0);
+             $this->SetFont('Arial', '', 10);
+             if ($pensum == "AXC" AND $pensum == "RXC") {
+                 $carreras="Programas Tradicionales";
+             } else {
+                 $carreras="Programa Nacional de Formación";
+             }
+             $this->SetXY(17, 95 + $X1);
+             $this->Cell(180, 5, utf8_decode("Titular  de  la  Cédula  de  Identidad     " . $cedula . ", Quien curso y aprobó todas las Unidades Curriculares"), 0, 0, 'L', 0);
+             $this->SetXY(17, 105 + $X1);
+             $this->Cell(180, 5, utf8_decode("del Plan de  Estudios  del  ") . utf8_decode($carreras) . " en", 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 12);
+             $this->SetXY(17, 118 + $X1);
+             $this->Cell(180, 5, utf8_decode($Carrera_a2), 0, 0, 'C', 0);
+             $this->SetXY(35, 115 + $X1);
+             $this->Cell(140, 10, "", 1, 0, 'C', 0);
+             $this->SetFont('Arial', '', 10);
+             $this->SetXY(17, 135 + $X1);
+             $this->Cell(180, 5, utf8_decode("Obteniendo  el  Título"), 0, 0, 'L', 0);
+             $X1=$X1 + 30;
+             if ($grado == "T") {
+                 $this->SetXY(52, 105 + $X1);
+                 $this->Cell(180, 5, utf8_decode("de TÉCNICO SUPERIOR UNIVERSITARIO."), 0, 0, 'L', 0);
+             } else {
+                 if ($grado == "I") {
+                     $this->SetXY(52, 105 + $X1);
+                     $this->Cell(180, 5, utf8_decode("de INGENIERO."), 0, 0, 'L', 0);
+                 }
+                 if ($grado == "L") {
+                     $this->SetXY(52, 105 + $X1);
+                     $this->Cell(180, 5, utf8_decode("de LICENCIADO."), 0, 0, 'L', 0);
+                 }
+             }
+             $this->Constancia_que_se_expide(50);
+             $this->firmas(1, 30, 170, "true");
+             $this->firmas(2, 120, 170, "true");
+             $this->firmas(3, 70, 215, "true");
+             $this->Output();
+         } else {
+             header("Location: msg_no_graduado.php");
+         }
+     }
+     function constancia($id) {
+         include "db.php";
+         $sql="SELECT * FROM alumno WHERE id='" . $id . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $cedula=$fila["cedula"];
+                 $nombre=utf8_decode($fila['nombre']);
+                 $codigo=$fila['codigo'];
+                 $actividad=$fila['actividad'];
+                 $carrera=$fila['carrera'];
+                 $MENCION=$fila['mencion'];
+                 $PLAN=$fila['plan'];
+             }
+         }
+         $pensum=$carrera . $MENCION . $PLAN;
+         if ($actividad == 1) {
+             $this->AddPage();
+             $this->SetAutoPageBreak(FALSE, PDF_MARGIN_BOTTOM);
+             date_default_timezone_set('America/Caracas');
+             $fechaActual=date('d-m-Y');
+             $d=date("d");
+             $m=date("m");
+             $y=date("Y");
+             $DIA=strtolower($this->num2letras($d));
+             $AÑO=strtolower($this->num2letras($y));
+             $MES=ucfirst($this->nombremes($m));
+             $X1=5;
+             $carrera_a1=$this->carrera_larga($carrera);
+             $carrera_a2=$this->carrera_corta($carrera);
+             $this->Encabezado_general(8);
+             $this->SetFont('Arial', 'B', 14);
+             $this->SetXY(75, 35 + $X1);
+             $this->Cell(70, 5, utf8_decode("CONSTANCIA DE ESTUDIOS"), 0, 0, 'C', 0);
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(17, 55 + $X1);
+             $this->Cell(180, 5, utf8_decode("Quien suscribe Jefe del Departamento de Control de Estudio de nuestra Institución, Hace Constar"), 0, 0, 'L', 0);
+             $this->SetXY(17, 65 + $X1);
+             $this->Cell(180, 5, utf8_decode("que el (la) Ciudadano (a) que se menciona a continuación"), 0, 0, 'L', 0);
+             $sql="SELECT * FROM `lapso` WHERE carrera= '" . $carrera . "' ORDER BY `ID` ASC";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $nombre_lapso=$fila['descrip'];
+                     $lapso_actual=$fila['lapso'];
+                 }
+             }
+             $this->SetFont('Arial', 'B', 14);
+             $this->SetXY(20, 80 + $X1);
+             $this->Cell(180, 5, $nombre, 0, 0, 'C', 0);
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(17, 95 + $X1);
+             $this->Cell(180, 5, utf8_decode("Titular   de   la   Cédula   de   Identidad   "), 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 11);
+             $this->SetXY(75, 95 + $X1);
+             $this->Cell(180, 5, "          " . $cedula, 0, 0, 'L', 0);
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(95, 95 + $X1);
+             $this->Cell(180, 5, utf8_decode("          ,  se   encuentra   inscrito   en   esta   casa   de"), 0, 0, 'L', 0);
+             if ($pensum == "AXC" OR $pensum == "RXC") {
+                 $carreras="Programa Tradicional de Formación";
+             } else {
+                 $carreras="Programa Nacional de Formación";
+             }
+             $this->SetXY(17, 105 + $X1);
+             $this->Cell(180, 5, utf8_decode("estudio y es cursante del $carreras en:"), 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 14);
+             $this->SetXY(17, 120 + $X1);
+             if ($pensum == "TXC" OR $pensum == "GXC") {
+                 if ($pensum == "GXC" AND $grado == "L") {
+                     $carrera_a1=utf8_decode($this->carrera_larga($carrera) . " MENCIÓN GESTIÓN TURÍSTICA");
+                 }
+                 if ($pensum == "GXC" AND $grado == "T") {
+                     $carrera_a1=utf8_decode($this->carrera_larga($carrera));
+                 }
+                 if ($pensum == "TXC" AND $grado == "I") {
+                     $carrera_a1=utf8_decode($this->carrera_larga($carrera));
+                 }
+                 if ($pensum == "TXC" AND $grado == "T") {
+                     $carrera_a1=utf8_decode($this->carrera_larga($carrera) . " MECÁNICO");
+                 }
+             } else {
+                 $carrera_a1=utf8_decode($this->carrera_larga($carrera));
+             }
+             $this->Cell(180, 5, $carrera_a1, 0, 0, 'C', 0);
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(17, 135 + $X1);
+             $this->Cell(180, 5, utf8_decode("Cuyo  lapso  académico  ") . substr($lapso_actual, 0, 4) . utf8_decode(" (Trimestre)  y  su  vigencia  corresponde  desde"), 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 14);
+             $this->SetXY(17, 150 + $X1);
+             $this->Cell(180, 5, utf8_decode($nombre_lapso), 0, 0, 'C', 0);
+             $this->SetFont('Arial', '', 11);
+             $sql="SELECT * FROM sede where id=2";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $sede=$fila['lugar'];
+                 }
+             }
+             $conn->close();
+             $this->Constancia_que_se_expide(70);
+             $this->firmas(3, 75, 170, "true");
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(17, 220 + $X1);
+             $this->Cell(180, 5, utf8_decode("Este Documento"), 0, 0, 'L', 0);
+             $this->SetFont('Arial', 'B', 13);
+             $this->SetXY(47, 220 + $X1);
+             $this->Cell(180, 5, utf8_decode("NO ES VALIDO"), 0, 0, 'L', 0);
+             $this->SetFont('Arial', '', 11);
+             $this->SetXY(81, 220 + $X1);
+             $this->Cell(180, 5, utf8_decode("sin la firma y Sello del Departamento de Control De Estudios"), 0, 0, 'L', 0);
+             $this->Image("LOGOPIES.jpg", 57, 250, 100, 15, "jpg", "");
+             $this->SetFont('Arial', '', 9);
+             $this->SetXY(17, 260 + $X1);
+             $this->Cell(180, 5, utf8_decode("Urbanización la Elvira, Zona Industrial Santa Rosa, Galpón Nº 8, Puerto Cabello"), 0, 0, 'C', 0);
+             $this->SetXY(17, 265 + $X1);
+             $this->Cell(180, 5, utf8_decode("Número Telefónico: (0242) 3700494. Correo Electrónico: uptpcontroldeestudios03@gmail.com"), 0, 0, 'C', 0);
+             $this->SetXY(17, 280 + $X1);
+             $this->Cell(180, 5, utf8_decode("Instituto Universitario de Tecnología de Puerto Cabello Nº de control: 00000000000000007100939 Página (S): 1"), 0, 0, 'C', 0);
+             $this->Output();
+         } else {
+             header("Location: msg_no_activo.php");
+         }
+     }
+     function mensaje_error() {
+         echo '<html>
+  <head>
+
+    <style>
+      body
+
+  #marco
+      {
+        width:600px;
+        min-width: 600px;
+        border: 10px solid rgba(230, 28, 34,1);
+
+      }
+      #titulo_formulario{    
+      background:#E61C22;   
+    }
+    input[type = "text"]
+    {
+      background:#658DB3;  
+      font-weight:bold; 
+      color:#000000; 
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container" id="marco">
+    <form class="form-horizontal" id="effect2" method="post" action="copiar_seccion_1.php">
+      <fieldset>
+        <div class="form-group" id="titulo_formulario"> 
+          <label id="titulo_formulario"><span class="glyphicon glyphicon-remove"></span> Seccion ya cargada</label>
+        </div>
+
+        <center><table>
+          <tr>
+
+            <td width="100">
+              <div class="form-group">
+                <div class="col-md-12" style="width: 150px;margin-left: 0;margin-top:23px">
+
+                  <input type="submit" class="btn btn-primary" name="submit" value="Volver" style="background: #E61C22;width:120px"/> 
+
+                </div>
+              </div>
+            </td>
+            <td width="10"></td>
+            <td width="100">
+              <div class="form-group">
+                <div class="col-md-12" style="width: 150px;margin-left:0;margin-top:23px">
+                  <a href="principal.php" class="btn btn-primary" style="background: #E61C22;width:120px"><span class="glyphicon glyphicon-log-out"></span> Salir</a>  
+                </div>
+              </div>
+            </td>
+
+          </tr>
+        </tr>
+      </table></center>
+    </form>
+  </div>
+</fieldset>
+</form>
+</body>
+</html>';
+     }
+     function mensaje_listo() {
+         echo '<html>
+<head>
+
+  <style>
+    body
+
+   #marco
+    {
+      width:400px;
+      min-width: 400px;
+
+    }
+    input[type = "text"]
+    {
+      background:#658DB3;  
+      font-weight:bold; 
+      color:#000000; 
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container" id="marco">
+    <form class="form-horizontal" id="effect2" method="post" action="copiar_seccion_1.php">
+      <fieldset>
+        <div class="form-group" id="titulo_formulario"> 
+          <label id="titulo_formulario"><span class="glyphicon glyphicon-ok"></span> Copia Exitosa</label>
+        </div>
+
+        <center><table>
+          <tr>
+
+            <td width="100">
+              <div class="form-group">
+                <div class="col-md-12" style="width: 150px;margin-left: 0;margin-top:23px">
+
+                  <input type="submit" class="btn btn-primary" name="submit" value="Volver" style="background: #0C4783;width:120px"/> 
+
+                </div>
+              </div>
+            </td>
+            <td width="10"></td>
+            <td width="100">
+              <div class="form-group">
+                <div class="col-md-12" style="width: 150px;margin-left:0;margin-top:23px">
+                  <a href="principal.php" class="btn btn-primary" style="background: #0C4783;width:120px"><span class="glyphicon glyphicon-log-out"></span> Salir</a>  
+                </div>
+              </div>
+            </td>
+
+          </tr>
+        </tr>
+      </table></center>
+    </form>
+  </div>
+</fieldset>
+</form>
+</body>
+</html>';
+     }
+     function acta_De_calificacion_contenido($lapso, $cod_mat, $cod_doc, $seccion) {
+         if (substr($cod_mat, 1, 1) == "P" OR substr($cod_mat, 1, 1) == "T" OR substr($cod_mat, 1, 1) == "E") {
+             $TIPO=substr($cod_mat, 1, 1);
+         } else {
+             $TIPO="";
+         }
+         if ($lapso != '' and $cod_mat != '') {
+             $this->acta_De_calificacion_Encabezado($lapso, $cod_mat, $cod_doc, $seccion);
+             $NUM='';
+             $CODIGO='';
+             $CEDULA='';
+             $NOMBRE='';
+             $ACUM='';
+             $NOTA='';
+             $LETRA='';
+             $Observaciones='';
+             include "db.php";
+             $sql="SELECT nombre FROM docente WHERE cod_doc='" . $cod_doc . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $NOMBRE=utf8_decode($fila['nombre']);
+                 }
+             }
+             $sql="SELECT * FROM lismat WHERE cod_mat='" . $cod_mat . "'";
+             $resultado=$conn->query($sql);
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $DESCRIP2=utf8_decode($fila['descrip2']);
+                     $CRED=$fila['creditos'];
+                     $semestre=$fila['semestre'];
+                     $pensum=$fila['pensum'];
+                     $aprobatori=$fila['aprobatori'];
+                 }
+             }
+             $carrera=substr($cod_mat, 0, 1);
+             $plan=substr($cod_mat, 4, 1);
+             $sql="SELECT DISTINCT notas.id,notas.acu,notas.nota,notas.cod_mat,notas.lapso,notas.tiplap,notas.cod_doc,alumno.cedula,alumno.nombre FROM notas,alumno WHERE notas.seccion='" . $seccion . "' and notas.cod_mat='" . $cod_mat . "' and notas.lapso='" . $lapso . "' and notas.cod_doc='" . $cod_doc . "' and alumno.cedula=notas.codigo ORDER BY alumno.nombre";
+             $resultado=$conn->query($sql);
+             $X1B=5;
+             $IN=0;
+             $APRO=0;
+             $REPR=0;
+             $X0_2=0;
+             $X0=0;
+             if ($resultado->num_rows > 0) {
+                 while ($fila=$resultado->fetch_assoc()) {
+                     $this->SetFont('Arial', '', 8);
+                     $X0=$X0 + 1;
+                     $X0_2=$X0_2 + 1;
+                     $X1B=$X1B + 4;
+                     $this->SetXY(15, 67 + $X1B);
+                     $this->Cell(136, 5, $X0, 0, 0, 'L', 0);
+                     $this->SetXY(23, 67 + $X1B);
+                     $this->Cell(136, 5, $fila['id'], 0, 0, 'L', 0);
+                     $this->SetXY(35, 67 + $X1B);
+                     $this->Cell(136, 5, $fila['cedula'], 0, 0, 'L', 0);
+                     $this->SetXY(55, 67 + $X1B);
+                     $this->Cell(136, 5, substr(utf8_decode($fila['nombre']), 0, 39), 0, 0, 'L', 0);
+                     $this->SetXY(127, 67 + $X1B);
+                     $this->Cell(136, 5, $fila['acu'], 0, 0, 'L', 0);
+                     $this->SetXY(142, 67 + $X1B);
+                     $this->Cell(136, 5, $fila['nota'], 0, 0, 'L', 0);
+                     if ($fila['nota'] == "IN") {
+                         $this->SetXY(153, 67 + $X1B);
+                         $this->Cell(136, 5, "INASISTENTE", 0, 0, 'L', 0);
+                         $IN=$IN + 1;
+                         $this->SetXY(175, 67 + $X1B);
+                         $this->Cell(15, 5, "Reprobado", 0, 0, 'C', 0);
+                     } elseif ($fila['nota'] >= $aprobatori) {
+                         $this->SetXY(175, 67 + $X1B);
+                         $this->Cell(15, 5, "Aprobado", 0, 0, 'C', 0);
+                         $APRO=$APRO + 1;
+                     } elseif ($fila['nota'] < $aprobatori && $fila['nota'] <> "IN") {
+                         $this->SetXY(175, 67 + $X1B);
+                         $this->Cell(15, 5, "Reprobado", 0, 0, 'C', 0);
+                         $REPR=$REPR + 1;
+                     }
+                     $this->SetXY(153, 67 + $X1B);
+                     if ($fila['nota'] < 10 AND $fila['nota'] <> "IN") {
+                         $this->Cell(15, 5, "CERO " . strtoupper($this->num2letras($fila['nota'])), 0, 0, 'C', 0);
+                     } else {
+                         $this->Cell(15, 5, strtoupper($this->num2letras($fila['nota'])), 0, 0, 'C', 0);
+                     }
+                     if ($X0_2 > 40) {
+                         $this->acta_De_calificacion_Encabezado($lapso, $cod_mat, $cod_doc, $seccion);
+                         $X1B=5;
+                         $X0_2=0;
+                     }
+                 }
+             }
+             $conn->close();
+             $this->acta_De_calificacion_Piedepagina($X1B, $IN, $APRO, $REPR, $lapso, $cod_mat, $cod_doc, $seccion);
+             $this->Output();
+         } else {
+             echo "Debe indicar el semestre y el lapso";
+         }
+     }
+   /*   function getgrado($pensum) {
+         $pensum=$_POST["pensum"];
+         echo '<option value="">Seleccionar</option>';
+         if ($pensum == "GXC" OR $pensum == "CXC" OR $pensum == "DXC") {
+             echo '<option value=T>Tsu</option>';
+             echo '<option value=L>Licenciado</option>';
+         } else {
+             echo '<option value=T>Tsu</option>';
+             echo '<option value=I>Ingeniero</option>';
+         }
+     } */
+	 
+	 function getgrado($pensum) 
+ { //   Inicio function getgrado   //
+
+         $pensum=$_POST["pensum"];
+         echo '<option value="">Seleccionar</option>';
+         
+         // 
+         //  LISTA CARRERAS TRADICIONALES TSU, QUE NO TIENEN PROSECUSION A INGENIERA O LICENCIATURA
+         //
+         // RXC = TERMICA
+         // AXC = AUTOMOTRIZ
+         //
+
+         if ($pensum == "RXC" OR $pensum == "AXC") 
+             {
+             echo '<option value=T>Tsu (Tradicional)</option>';
+             echo '<option value=T>Tsu (Carrera Tradicional)</option>';
+             } 
+                 //
+                 //  LISTA CARRERAS DE PNF, QUE TIENEN PROSECUSION A INGENIERA
+                 //
+                 // GXC = TURISMO
+                 // CXC = CIENCIAS FISCALES
+                 // DXC = DIST Y LOGISTICA
+                 //
+
+               elseif ($pensum == "DXC" OR $pensum == "CXC" OR $pensum == "GXC") 
+                  {
+                     echo '<option value=T>Tsu (PNF)</option>';
+                     echo '<option value=L>Licenciado (PNF)</option>';
+                   }
+
+                 //
+                 //  LISTA CARRERAS DE PNF, QUE TIENEN PROSECUSION A LICENCIATURA
+                 //
+                 // IXC = INFORMATICA
+                 // MXC = MECANICA
+                 // DXC = MATERIALES
+                 // TXC = MANTENIMIENTO   
+                 //
+ 
+                elseif ($pensum == "IXC" OR $pensum == "MXC" OR $pensum == "EXC" OR $pensum == "TXC")    
+                     {
+                            echo '<option value=T>Tsu (PNF)</option>';
+                            echo '<option value=I>Ingeniero (PNF)</option>';
+                      }
+              
+         } //   Fin function getgrado   //
+         
+	 
+	 
+	 
+     function reporte_cambio_carrera($cedula) {
+         $this->AddPage();
+         date_default_timezone_set('America/Caracas');
+         $DIA=date("d");
+         $MES=date("m");
+         $AÑO=date("Y");
+         $hoy=date("d-m-Y");
+         $this->Encabezado_general(8);
+         $this->SetFont('Arial', 'B', 14);
+         $this->SetXY(0, 35);
+         $this->Cell(210, 7, utf8_decode("Cambios de Carreras"), 0, 0, 'C', 0);
+         include "db.php";
+         $sql="SELECT * FROM cambio_carrera WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $cedula=$fila['cedula'];
+                 $nombre=$fila['nombre'];
+                 $fechanac=$fila['fechanac'];
+                 $edad=$fila['edad'];
+                 $ingreso=$fila['ingreso'];
+                 $turno=$fila['turno'];
+             }
+         }
+         $X1=$X1 + 10;
+         $this->SetFont('Arial', 'B', 12);
+         $this->SetXY(0, 70 + $X1);
+         $this->Cell(210, 7, utf8_decode("Registro de cambios"), 0, 0, 'C', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(17, 45 + $X1);
+         $this->Cell(40, 5, "Cedula: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 12);
+         $this->SetXY(33, 45 + $X1);
+         $this->Cell(40, 5, $cedula, 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(160, 45 + $X1);
+         $this->Cell(32, 5, "Ingreso: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 12);
+         $this->SetXY(175, 45 + $X1);
+         $this->Cell(62, 5, $ingreso, 0, 0, 'L', 0);
+         $X1=$X1 + 10;
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(17, 45 + $X1);
+         $this->Cell(100, 5, "Nombre: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 12);
+         $this->SetXY(33, 45 + $X1);
+         $this->Cell(100, 5, $nombre, 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(129, 45 + $X1);
+         $this->Cell(67, 5, "Fecha de nacimiento: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 12);
+         $this->SetXY(167, 45 + $X1);
+         $this->Cell(67, 5, $fechanac, 0, 0, 'L', 0);
+         $X1=$X1 + 10;
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(17, 45 + $X1);
+         $this->Cell(20, 5, "Edad: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 12);
+         $this->SetXY(28, 45 + $X1);
+         $this->Cell(20, 5, $edad, 0, 0, 'L', 0);
+         if ($turno == 0 or $turno == 1) {
+             $turno="Diurno";
+         } else {
+             $turno="Nocturno";
+         }
+         $this->SetFont('Arial', 'B', 10);
+         $this->SetXY(163, 45 + $X1);
+         $this->Cell(32, 5, "Turno: ", 0, 0, 'L', 0);
+         $this->SetFont('Arial', '', 12);
+         $this->SetXY(176, 45 + $X1);
+         $this->Cell(30, 5, $turno, 0, 0, 'L', 0);
+         $this->SetFont('Arial', 'B', 12);
+         $this->SetXY(10 + $X0, 60 + $X1);
+         $this->Cell(15, 5, utf8_decode("N°"), 1, 1, 'C', 0);
+         $X0=$X0 + 15;
+         $this->SetXY(10 + $X0, 60 + $X1);
+         $this->Cell(24, 5, "Fecha", 1, 1, 'C', 0);
+         $this->SetXY(34 + $X0, 60 + $X1);
+         $this->Cell(45, 5, "Carrera anterior", 1, 1, 'C', 0);
+         $this->SetXY(79 + $X0, 60 + $X1);
+         $this->Cell(45, 5, "Carrera destino", 1, 1, 'C', 0);
+         $this->SetXY(124 + $X0, 60 + $X1);
+         $this->Cell(30, 5, "Usuario", 1, 1, 'C', 0);
+         $this->SetXY(154 + $X0, 60 + $X1);
+         $this->Cell(30, 5, "Hora", 1, 1, 'C', 0);
+         $sql="SELECT * FROM cambio_carrera WHERE cedula='" . $cedula . "'";
+         $resultado=$conn->query($sql);
+         $n=0;
+         $X0=0;
+         $X0=$X0 + 15;
+         if ($resultado->num_rows > 0) {
+             while ($fila=$resultado->fetch_assoc()) {
+                 $fecha=$fila['fecha'];
+                 $hora=$fila['hora'];
+                 $carrera_anterior=$fila['carrera_anterior'];
+                 $carrera_destino=$fila['carrera_destino'];
+                 $usuario=$fila['usuario'];
+                 $n=$n + 1;
+                 $this->SetFont('Arial', '', 12);
+                 $this->SetXY(10, 65 + $X1);
+                 $this->Cell(15, 5, $n, 1, 1, 'C', 0);
+                 $this->SetFont('Arial', '', 12);
+                 $this->SetXY(10 + $X0, 65 + $X1);
+                 $this->Cell(24, 5, $fecha, 1, 1, 'C', 0);
+                 $nr=$this->Nombre_carrera($carrera_anterior);
+                 list($nombre1) = split('[|]', $nr);
+                 $this->SetXY(34 + $X0, 65 + $X1);
+                 $this->Cell(45, 5, $nombre1, 1, 1, 'C', 0);
+                 $nr=$this->Nombre_carrera($carrera_destino);
+                 list($nombre2) = split('[|]', $nr);
+                 $this->SetXY(79 + $X0, 65 + $X1);
+                 $this->Cell(45, 5, $nombre2, 1, 1, 'C', 0);
+                 $this->SetXY(124 + $X0, 65 + $X1);
+                 $this->Cell(30, 5, $usuario, 1, 1, 'C', 0);
+                 $this->SetXY(154 + $X0, 65 + $X1);
+                 $this->Cell(30, 5, $hora, 1, 1, 'C', 0);
+                 $X1=$X1 + 5;
+             }
+         }
+         $conn->close();
+         $this->Output();
+     }
+     function UPDATE_ubicacion($cedula, $ubicacion, $num_est) {
+         require('db.php');
+         $sql="UPDATE alumno SET  `num_est` = '" . $num_est . "',ubicacion = '" . $ubicacion . "' WHERE cedula ='" . $cedula . "'";
+         $conn->query($sql);
+     }
+ }
+?>

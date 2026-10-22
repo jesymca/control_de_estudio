@@ -9,8 +9,6 @@ $titulo ="Ingreso al Sistema";
 require_once('funciones/functions.php');
 
 $mostrarPreinscripcion = obtenerConfiguracionSecretaria('mostrar_preinscripcion', '1');
-$mostrarProsecucion = obtenerConfiguracionSecretaria('mostrar_prosecucion', '1');
-
 ?>
 
 <!DOCTYPE html>
@@ -50,22 +48,10 @@ $mostrarProsecucion = obtenerConfiguracionSecretaria('mostrar_prosecucion', '1')
             </span>
             <?php endif; ?>
             
-            <!-- Botón de Prosecución -->
-            <?php if ($mostrarProsecucion !== '0'): ?>
-            <span class="d-inline-block" data-toggle="popover" data-content="Continúe con su proceso de prosecución académica.">
-                <a type="link" class="btn btn-outline-info" href="prosecucion.php">
-                    <i class="fa fa-graduation-cap"></i> Prosecución
-                </a>
-            </span>
-            <?php endif; ?>
-            
-            <!-- Botones de Recuperar Contraseña -->
-            <span class="d-inline-block" data-toggle="popover" data-content="...">
+            <!-- Botón de Recuperar Contraseña -->
+            <span class="d-inline-block" data-toggle="popover" data-content="Si olvidó su contraseña, solicite un enlace seguro de recuperación a su correo electrónico.">
                 <a type="link" class="btn btn-outline-danger" href="recuperar_password.php">
                     <i class="fa fa-unlock-alt"></i> Recuperar Contraseña
-                </a>
-                <a type="link" class="btn btn-outline-danger" href="recuperar_password_provicional.php">
-                    <i class="fa fa-unlock-alt"></i> Recuperar Contraseña provicional
                 </a>
             </span>
             
@@ -88,14 +74,16 @@ $mostrarProsecucion = obtenerConfiguracionSecretaria('mostrar_prosecucion', '1')
 
 <form class="was-validated" method="post" action="login.php" autocomplete="on">
 <!-- notification message -->
-<?php if (isset($_SESSION['msg'])) : ?>
-<div class="alert alert-danger" role="alert" >
-<h3>
+<?php if (isset($_SESSION['msg'])) : 
+    $es_exito = (strpos($_SESSION['msg'], '✅') !== false);
+?>
+<div class="alert <?php echo $es_exito ? 'alert-success' : 'alert-danger'; ?>" role="alert">
+<h5 class="mb-0">
 <?php
 echo $_SESSION['msg'];
 unset($_SESSION['msg']);
 ?>
-</h3>
+</h5>
 </div>
 <hr>
 <?php endif ?>

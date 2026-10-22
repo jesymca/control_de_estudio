@@ -12,6 +12,21 @@ verificarPermiso('editar_nota');
 // LLAMAR A LA FUNCIÓN DE VISITA
 visita();
 
+// ==========================================
+// CONTROLADOR AJAX PARA BÚSQUEDA EN TIEMPO REAL
+// (Usa la función centralizada buscarEstudiantesPagosAjax de functions.php)
+// ==========================================
+if (isset($_POST['ajax_buscar_estudiantes'])) {
+    if (ob_get_length()) ob_clean();
+    header('Content-Type: application/json; charset=utf-8');
+    
+    $termino = trim($_POST['termino'] ?? '');
+    $estudiantes = function_exists('buscarEstudiantesPagosAjax') ? buscarEstudiantesPagosAjax($termino, 15) : [];
+    
+    echo json_encode(['success' => true, 'estudiantes' => $estudiantes]);
+    exit();
+}
+
 // Procesar formularios
 $mensaje = '';
 $tipo_mensaje = '';
@@ -24,19 +39,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['accion'])) {
         switch ($_POST['accion']) {
             case 'buscar_estudiante':
+                $id_usuario = intval($_POST['id_usuario'] ?? 0);
                 $cedula = trim($_POST['cedula'] ?? '');
-                if (!empty($cedula)) {
-                    $estudiante = buscarEstudiantePorCedula($cedula);
+                
+                if ($id_usuario > 0) {
+                    $estudiante = obtenerEstudiantePorId($id_usuario);
+                    if (isset($estudiante['error'])) $estudiante = null;
+                } elseif (!empty($cedula)) {
+                    // 1. Búsqueda directa por cédula con auditoría estándar
+                    $estudiante = buscarEstudiantePorCedulaConsulta($cedula);
                     
-                    echo "<!-- DEBUG: Estudiante encontrado: " . print_r($estudiante, true) . " -->";
-
-                    if ($estudiante) {
-                        $carreras = obtenerCarrerasEstudiante($estudiante['id']);
-                        echo "<!-- DEBUG: Carreras encontradas: " . print_r($carreras, true) . " -->";
-                    } else {
-                        $mensaje = 'No se encontró ningún estudiante con esa cédula';
-                        $tipo_mensaje = 'warning';
+                    // 2. Fallback a búsqueda general por cédula
+                    if (!$estudiante) {
+                        $res_est = buscarEstudiantePorCedula($cedula);
+                        if (is_array($res_est) && !empty($res_est)) {
+                            if (isset($res_est['id'])) {
+                                $estudiante = $res_est;
+                            } else if (isset($res_est[0]['id'])) {
+                                $estudiante = $res_est[0];
+                            }
+                        }
                     }
+                    
+                    // 3. Si no se encontró y quizás ingresó un nombre, buscar con la función ajax
+                    if (!$estudiante && function_exists('buscarEstudiantesPagosAjax')) {
+                        $res_ajax = buscarEstudiantesPagosAjax($cedula, 2);
+                        if (is_array($res_ajax) && count($res_ajax) === 1 && isset($res_ajax[0]['id'])) {
+                            $estudiante = obtenerEstudiantePorId($res_ajax[0]['id']);
+                            if (isset($estudiante['error'])) $estudiante = null;
+                        }
+                    }
+                }
+
+                if ($estudiante && is_array($estudiante) && isset($estudiante['id'])) {
+                    $carreras = obtenerCarrerasEstudiante($estudiante['id']);
+                } else {
+                    $estudiante = null;
+                    $mensaje = 'No se encontró ningún estudiante con esa cédula o búsqueda';
+                    $tipo_mensaje = 'warning';
                 }
                 break;
                 
@@ -85,6 +125,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 break;
         }
     }
+}
+
+// Cédula activa para formularios y vistas
+$cedula_actual = '';
+if ($estudiante && is_array($estudiante)) {
+    $cedula_actual = $estudiante['idusuario'] ?? $estudiante['cedula'] ?? '';
+} elseif (!empty($_POST['cedula'])) {
+    $cedula_actual = trim($_POST['cedula']);
 }
 
 include("includes/head.php");
@@ -150,32 +198,78 @@ include("includes/head.php");
             </div>
             <?php endif; ?>
 
-            <!-- Paso 1: Buscar estudiante por cédula -->
+            <!-- Paso 1: Buscar estudiante -->
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Paso 1: Buscar Estudiante</h6>
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-search mr-1"></i> Buscar Estudiante
+                    </h6>
+                    <?php if ($estudiante): ?>
+                    <a href="correccion_notas.php" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-times mr-1"></i> Limpiar Búsqueda
+                    </a>
+                    <?php endif; ?>
                 </div>
                 <div class="card-body">
-                    <form method="POST" class="form-inline">
+                    <form method="POST" action="" id="form_buscar_estudiante">
                         <input type="hidden" name="accion" value="buscar_estudiante">
-                        <div class="form-group mr-3 mb-2">
-                            <label for="cedula" class="mr-2">Cédula del Estudiante:</label>
-                            <input type="text" name="cedula" id="cedula" class="form-control" 
-                                   value="<?php echo htmlspecialchars($_POST['cedula'] ?? ''); ?>" 
-                                   placeholder="Ingrese la cédula" required>
+                        <input type="hidden" name="id_usuario" id="input_sel_id_usuario" value="">
+                        
+                        <div class="position-relative">
+                            <label for="buscador_estudiante" class="font-weight-bold text-gray-800 mb-1">
+                                <i class="fas fa-user-graduate mr-1 text-primary"></i> Cédula o Nombre del Estudiante:
+                            </label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-light"><i class="fas fa-search text-muted"></i></span>
+                                </div>
+                                <input type="text" 
+                                       id="buscador_estudiante" 
+                                       name="cedula" 
+                                       class="form-control" 
+                                       placeholder="<?php echo $estudiante ? 'Buscar otro estudiante por nombre o cédula...' : 'Escriba la cédula o nombre del estudiante...'; ?>" 
+                                       value="<?php echo htmlspecialchars($cedula_actual); ?>" 
+                                       autocomplete="off"
+                                       <?php echo $estudiante ? '' : 'autofocus'; ?>>
+                                <div class="input-group-append" id="spinner_busqueda_est" style="display: none;">
+                                    <span class="input-group-text bg-white text-primary">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </span>
+                                </div>
+                                <div class="input-group-append">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-search mr-1"></i> Buscar
+                                    </button>
+                                </div>
+                                <?php if ($estudiante): ?>
+                                <div class="input-group-append">
+                                    <a href="correccion_notas.php" class="btn btn-outline-secondary" title="Limpiar y buscar otro">
+                                        <i class="fas fa-times"></i>
+                                    </a>
+                                </div>
+                                <?php endif; ?>
+                            </div>
+                            <small class="form-text text-muted">Escriba para ver sugerencias en tiempo real o ingrese la cédula y presione Buscar.</small>
+
+                            <!-- Lista flotante de sugerencias -->
+                            <div id="sugerencias_estudiantes" class="list-group shadow position-absolute w-100 mt-1" 
+                                 style="z-index: 9999; display: none; max-height: 320px; overflow-y: auto; left: 0; right: 0; background: #ffffff; border: 1px solid #007bff; border-radius: 6px;">
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary mb-2">
-                            <i class="fas fa-search"></i> Buscar Estudiante
-                        </button>
                     </form>
                     
                     <?php if ($estudiante): ?>
-                    <div class="mt-3 p-3 bg-light rounded">
-                        <h6>Estudiante Encontrado:</h6>
-                        <p><strong>Nombre:</strong> <?php echo htmlspecialchars($estudiante['nombre']); ?></p>
-                        <p><strong>Cédula:</strong> <?php echo htmlspecialchars($estudiante['idusuario']); ?></p>
-                        <p><strong>Carrera:</strong> <?php echo htmlspecialchars($estudiante['carrera']); ?></p>
-                        <p><strong>ID Estudiante:</strong> <?php echo $estudiante['id']; ?></p>
+                    <div class="mt-3 p-3 bg-light rounded border-left-primary shadow-sm">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong><i class="fas fa-user mr-1 text-primary"></i> Nombre:</strong> <?php echo htmlspecialchars($estudiante['nombre'] ?? ''); ?></p>
+                                <p class="mb-1"><strong><i class="fas fa-id-card mr-1 text-primary"></i> Cédula:</strong> <?php echo htmlspecialchars($estudiante['idusuario'] ?? $estudiante['cedula'] ?? ''); ?></p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong><i class="fas fa-graduation-cap mr-1 text-primary"></i> Carrera:</strong> <?php echo htmlspecialchars($estudiante['carrera'] ?? ''); ?></p>
+                                <p class="mb-0"><strong><i class="fas fa-hashtag mr-1 text-primary"></i> ID Estudiante:</strong> <?php echo htmlspecialchars((string)($estudiante['id'] ?? '')); ?></p>
+                            </div>
+                        </div>
                     </div>
                     <?php endif; ?>
                 </div>
@@ -192,7 +286,7 @@ include("includes/head.php");
                     <form method="POST">
                         <input type="hidden" name="accion" value="seleccionar_carrera">
                         <input type="hidden" name="id_usuario" value="<?php echo $estudiante['id']; ?>">
-                        <input type="hidden" name="cedula" value="<?php echo htmlspecialchars($_POST['cedula'] ?? ''); ?>">
+                        <input type="hidden" name="cedula" value="<?php echo htmlspecialchars($cedula_actual); ?>">
                         
                         <div class="form-group">
                             <label for="id_carrera">Seleccione la Carrera:</label>
@@ -229,7 +323,7 @@ include("includes/head.php");
                         <input type="hidden" name="accion" value="seleccionar_materia">
                         <input type="hidden" name="id_usuario" value="<?php echo $estudiante['id']; ?>">
                         <input type="hidden" name="id_carrera" value="<?php echo htmlspecialchars($_POST['id_carrera'] ?? ''); ?>">
-                        <input type="hidden" name="cedula" value="<?php echo htmlspecialchars($_POST['cedula'] ?? ''); ?>">
+                        <input type="hidden" name="cedula" value="<?php echo htmlspecialchars($cedula_actual); ?>">
                         
                         <div class="form-group">
                             <label for="id_materia">Seleccione la Materia:</label>
@@ -352,7 +446,7 @@ include("includes/head.php");
                                                         <input type="hidden" name="id_usuario" value="<?php echo $estudiante['id']; ?>">
                                                         <input type="hidden" name="id_carrera" value="<?php echo htmlspecialchars($_POST['id_carrera'] ?? ''); ?>">
                                                         <input type="hidden" name="id_materia" value="<?php echo htmlspecialchars($_POST['id_materia'] ?? ''); ?>">
-                                                        <input type="hidden" name="cedula" value="<?php echo htmlspecialchars($_POST['cedula'] ?? ''); ?>">
+                                                        <input type="hidden" name="cedula" value="<?php echo htmlspecialchars($cedula_actual); ?>">
                                                         
                                                         <div class="form-group">
                                                             <label for="trayecto_<?php echo $nota['id']; ?>">Seleccione el Trayecto a Editar:</label>
@@ -413,5 +507,113 @@ include("includes/head.php");
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const inputBuscador = document.getElementById('buscador_estudiante');
+    const sugerenciasContainer = document.getElementById('sugerencias_estudiantes');
+    const spinnerBusqueda = document.getElementById('spinner_busqueda_est');
+    const formBuscar = document.getElementById('form_buscar_estudiante');
+    const inputSelId = document.getElementById('input_sel_id_usuario');
+    let debounceTimer = null;
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.toString().replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function buscarEstudiantes() {
+        if (!inputBuscador || !sugerenciasContainer) return;
+        const termino = inputBuscador.value.trim();
+        clearTimeout(debounceTimer);
+
+        if (termino.length < 1) {
+            sugerenciasContainer.style.display = 'none';
+            sugerenciasContainer.innerHTML = '';
+            if (spinnerBusqueda) spinnerBusqueda.style.display = 'none';
+            return;
+        }
+
+        if (spinnerBusqueda) spinnerBusqueda.style.display = 'flex';
+
+        debounceTimer = setTimeout(() => {
+            const fd = new FormData();
+            fd.append('ajax_buscar_estudiantes', '1');
+            fd.append('termino', termino);
+
+            fetch('', { method: 'POST', body: fd })
+                .then(r => r.json())
+                .then(data => {
+                    if (spinnerBusqueda) spinnerBusqueda.style.display = 'none';
+                    sugerenciasContainer.innerHTML = '';
+
+                    if (data.success && Array.isArray(data.estudiantes) && data.estudiantes.length > 0) {
+                        data.estudiantes.forEach(est => {
+                            const item = document.createElement('a');
+                            item.href = 'javascript:void(0);';
+                            item.className = 'list-group-item list-group-item-action p-2 d-flex justify-content-between align-items-center border-bottom text-decoration-none';
+                            item.style.cursor = 'pointer';
+                            item.innerHTML = `
+                                <div>
+                                    <strong class="text-dark"><i class="fas fa-user-graduate mr-1 text-primary"></i> ${escapeHtml(est.nombre)}</strong>
+                                    <div class="small text-muted">
+                                        <span>C.I: ${escapeHtml(est.cedula || est.idusuario)}</span> | 
+                                        <span>${escapeHtml(est.nombre_carrera || 'Sin Carrera')}</span>
+                                    </div>
+                                </div>
+                                <span class="btn btn-sm btn-success py-1 px-2"><i class="fas fa-check mr-1"></i> Seleccionar</span>
+                            `;
+
+                            item.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                if (inputSelId && formBuscar && inputBuscador) {
+                                    inputSelId.value = est.id;
+                                    inputBuscador.value = est.cedula || est.idusuario;
+                                    formBuscar.submit();
+                                }
+                            });
+
+                            sugerenciasContainer.appendChild(item);
+                        });
+                        sugerenciasContainer.style.display = 'block';
+                    } else {
+                        sugerenciasContainer.innerHTML = `
+                            <div class="list-group-item p-3 text-center text-muted">
+                                <i class="fas fa-user-slash mr-1"></i> No se encontraron estudiantes activos con "<strong>${escapeHtml(termino)}</strong>".
+                            </div>
+                        `;
+                        sugerenciasContainer.style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    if (spinnerBusqueda) spinnerBusqueda.style.display = 'none';
+                    console.error("Error buscando estudiante:", err);
+                });
+        }, 200);
+    }
+
+    if (inputBuscador) {
+        inputBuscador.addEventListener('input', buscarEstudiantes);
+        inputBuscador.addEventListener('focus', function() {
+            if (this.value.trim().length > 0) {
+                buscarEstudiantes();
+            }
+        });
+    }
+
+    document.addEventListener('click', function(e) {
+        if (inputBuscador && sugerenciasContainer && !inputBuscador.contains(e.target) && !sugerenciasContainer.contains(e.target)) {
+            sugerenciasContainer.style.display = 'none';
+        }
+    });
+});
+</script>
 
 <?php include("includes/footer.php"); ?>

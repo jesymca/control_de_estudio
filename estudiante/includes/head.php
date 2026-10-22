@@ -46,6 +46,15 @@ if (isset($_SESSION['user']['id'])) {
     $usuario_vocero = $result_vocero->fetch_assoc();
     $es_vocero = ($usuario_vocero && $usuario_vocero['vocero'] == 1);
 }
+
+// Verificar elegibilidad para prosecución
+$es_apto_prosecucion = false;
+$motivo_no_apto_prosecucion = '';
+if (isset($_SESSION['user']['id']) && function_exists('verificarElegibilidadProsecucion')) {
+    $eval_prosecucion = verificarElegibilidadProsecucion($_SESSION['user']['id']);
+    $es_apto_prosecucion = !empty($eval_prosecucion['es_apto']);
+    $motivo_no_apto_prosecucion = $eval_prosecucion['motivo'] ?? 'No cumple con los requisitos académicos para prosecución.';
+}
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html lang="es-Es" xmlns="http://www.w3.org/1999/xhtml">
@@ -249,6 +258,21 @@ if (isset($_SESSION['user']['id'])) {
               </a>
             </li>
 
+            <!-- OPCIÓN: PROSECUCIÓN ACADÉMICA (TSU A INGENIERÍA / LICENCIATURA) -->
+            <?php if ($es_apto_prosecucion): ?>
+            <li class="nav-item">
+              <a title="Inscripción de Prosecución a Ingeniería/Licenciatura" class="nav-link" href="prosecucion.php">
+                <i class="fas fa-graduation-cap fa-fw"></i> Prosecución
+              </a>
+            </li>
+            <?php else: ?>
+            <li class="nav-item">
+              <a title="Prosecución de Estudios (Requisitos Pendientes)" class="nav-link" href="javascript:void(0);" data-toggle="modal" data-target="#modalNoAptoProsecucionNav">
+                <i class="fas fa-graduation-cap fa-fw"></i> Prosecución
+              </a>
+            </li>
+            <?php endif; ?>
+
             <!-- OPCIÓN PARA VOCEROS: PANEL DE VOCERO (SOLO VISIBLE SI ES VOCERO) -->
             <?php if ($es_vocero): ?>
             <li class="nav-item">
@@ -297,6 +321,9 @@ if (isset($_SESSION['user']['id'])) {
                 <!-- Nueva opción: Cambiar Perfil -->
                 <a title="Cambiar Perfil de Usuario" class="dropdown-item" href="../profile_selector.php">
                   <i class="fas fa-user-edit fa-fw"></i> Cambiar Perfil
+                </a>
+                <a title="Manual Oficial de Usuario" class="dropdown-item" href="../manual_usuario.php">
+                  <i class="fas fa-book-reader fa-fw"></i> Manual de Usuario
                 </a>
                 
                 <div class="dropdown-divider"></div>
@@ -365,6 +392,43 @@ if (isset($_SESSION['user']['id'])) {
                 <a href="../logout.php" class="btn btn-danger" id="confirmLogout">
                     <i class="fas fa-sign-out-alt mr-2"></i>Sí, Cerrar Sesión
                 </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL INFORMATIVO: NO APTO PARA PROSECUCIÓN (DISPARADO DESDE EL NAVBAR) -->
+<div class="modal fade" id="modalNoAptoProsecucionNav" tabindex="-1" role="dialog" aria-labelledby="modalNoAptoProsecucionNavLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark py-3">
+                <h5 class="modal-title font-weight-bold" id="modalNoAptoProsecucionNavLabel">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Prosecución No Disponible
+                </h5>
+                <button type="button" class="close text-dark" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <div class="mb-3">
+                    <i class="fas fa-user-lock fa-3x text-warning"></i>
+                </div>
+                <h5 class="font-weight-bold text-dark mb-2">Actualmente no eres apto para inscribirte en Prosecución</h5>
+                <p class="text-secondary small mb-3"><?php echo htmlspecialchars($motivo_no_apto_prosecucion ?? 'Requisitos académicos pendientes.'); ?></p>
+                
+                <div class="alert alert-info text-left small mb-0">
+                    <h6 class="font-weight-bold text-primary mb-2"><i class="fas fa-info-circle mr-1"></i> Requisitos Académicos Institucionales (UPTPC):</h6>
+                    <ul class="mb-0 pl-3">
+                        <li>Haber culminado y aprobado la totalidad de unidades curriculares del ciclo T.S.U. (Trayecto II).</li>
+                        <li>Poseer registro de egresado/graduado o contar con la aprobación oficial de avance de trayecto emitida por Control de Estudios.</li>
+                        <li>La carrera que cursas debe disponer del ciclo de prosecución (Ingeniería / Licenciatura).</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 justify-content-end">
+                <button type="button" class="btn btn-secondary font-weight-bold px-4" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Entendido
+                </button>
             </div>
         </div>
     </div>

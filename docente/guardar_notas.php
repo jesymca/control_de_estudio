@@ -66,7 +66,7 @@ if (!in_array($tipo_archivo, $tipos_permitidos) && !in_array($extension, $extens
 // ============================================
 foreach ($notas as $estudiante_id => $notas_trimestres) {
     if (isset($notas_trimestres['trimestre_1']) && $notas_trimestres['trimestre_1'] !== '') {
-        $disponibilidad = verificarDisponibilidadTrimestre(1);
+        $disponibilidad = verificarDisponibilidadTrimestre(1, $periodo_id);
         if (!$disponibilidad['disponible']) {
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => false, 'message' => '❌ Trimestre 1: ' . $disponibilidad['mensaje']]);
@@ -74,7 +74,7 @@ foreach ($notas as $estudiante_id => $notas_trimestres) {
         }
     }
     if (isset($notas_trimestres['trimestre_2']) && $notas_trimestres['trimestre_2'] !== '') {
-        $disponibilidad = verificarDisponibilidadTrimestre(2);
+        $disponibilidad = verificarDisponibilidadTrimestre(2, $periodo_id);
         if (!$disponibilidad['disponible']) {
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => false, 'message' => '❌ Trimestre 2: ' . $disponibilidad['mensaje']]);
@@ -82,7 +82,7 @@ foreach ($notas as $estudiante_id => $notas_trimestres) {
         }
     }
     if (isset($notas_trimestres['trimestre_3']) && $notas_trimestres['trimestre_3'] !== '') {
-        $disponibilidad = verificarDisponibilidadTrimestre(3);
+        $disponibilidad = verificarDisponibilidadTrimestre(3, $periodo_id);
         if (!$disponibilidad['disponible']) {
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['success' => false, 'message' => '❌ Trimestre 3: ' . $disponibilidad['mensaje']]);

@@ -16,9 +16,17 @@ $version_year = null;
 $codigo_malla = null;
 $id_malla = null;
 
-// --- LÓGICA DE BÚSQUEDA ---
-if (isset($_GET['id_malla'])) {
-    $malla_id = intval($_GET['id_malla']);
+// --- LÓGICA DE BÚSQUEDA (SOPORTE HTTP POST Y GET) ---
+$id_malla_in = isset($_POST['id_malla']) ? intval($_POST['id_malla']) : (isset($_GET['id_malla']) ? intval($_GET['id_malla']) : null);
+$id_carrera_in = isset($_POST['id_carrera']) ? intval($_POST['id_carrera']) : (isset($_GET['id_carrera']) ? intval($_GET['id_carrera']) : null);
+$id_version_in = isset($_POST['id_version']) ? intval($_POST['id_version']) : (isset($_GET['id_version']) ? intval($_GET['id_version']) : null);
+
+if (!empty($id_version_in) && empty($id_malla_in)) {
+    $id_malla_in = $id_version_in;
+}
+
+if (!empty($id_malla_in)) {
+    $malla_id = intval($id_malla_in);
     $stmt = $db->prepare("SELECT m.id_malla, m.id_carrera, m.codigo_malla, m.anio, c.nombre_carrera, c.tipo_formacion FROM mallas m JOIN carreras c ON m.id_carrera = c.id_carrera WHERE m.id_malla = ? LIMIT 1");
     if ($stmt) {
         $stmt->bind_param('i', $malla_id);
@@ -33,8 +41,10 @@ if (isset($_GET['id_malla'])) {
         }
         $stmt->close();
     }
-} elseif (isset($_GET['id_carrera'])) {
-    $id_carrera = (int)$_GET['id_carrera'];
+}
+
+if (empty($carrera) && !empty($id_carrera_in)) {
+    $id_carrera = (int)$id_carrera_in;
     $stmt = $db->prepare("SELECT nombre_carrera, tipo_formacion FROM carreras WHERE id_carrera = ? LIMIT 1");
     if ($stmt) {
         $stmt->bind_param('i', $id_carrera);
@@ -47,11 +57,12 @@ if (isset($_GET['id_malla'])) {
 
 if (!$carrera) { header("Location: lista_carreras.php"); exit(); }
 
+$mallas_carrera = !empty($id_carrera) ? obtenerMallasPorCarrera($id_carrera) : [];
+
 if (empty($id_malla) && !empty($id_carrera)) {
-    $mallas_disponibles = obtenerMallasPorCarrera($id_carrera);
-    if (!empty($mallas_disponibles)) {
-        $id_malla = intval($mallas_disponibles[0]['id_malla']);
-        $codigo_malla = $mallas_disponibles[0]['codigo_malla'];
+    if (!empty($mallas_carrera)) {
+        $id_malla = intval($mallas_carrera[0]['id_malla']);
+        $codigo_malla = $mallas_carrera[0]['codigo_malla'];
     }
 }
 
@@ -90,7 +101,7 @@ while ($materia = mysqli_fetch_assoc($result_materias)) {
 // ==========================================
 // GENERACIÓN DE PDF (VERTICAL OPTIMIZADO)
 // ==========================================
-if (isset($_GET['pdf']) && $_GET['pdf'] == '1') {
+if ((isset($_POST['pdf']) && $_POST['pdf'] == '1') || (isset($_GET['pdf']) && $_GET['pdf'] == '1')) {
     ini_set('display_errors', '0');
     require_once __DIR__ . '/../fpdf/fpdf.php';
 
@@ -129,7 +140,9 @@ if (isset($_GET['pdf']) && $_GET['pdf'] == '1') {
         $pdf->Ln();
 
         $pdf->SetFont('Arial', '', 8);
+        $total_uc_trayecto = 0;
         foreach ($materias as $m) {
+            $total_uc_trayecto += (int)($m['creditos'] ?? 0);
             // Calcular altura de la fila basándose en el nombre de la materia
             $nb_lines = $pdf->GetStringWidth(to_iso($m['nombre_materia'])) > $w[1] ? 2 : 1;
             $h_fila = 6 * $nb_lines;
@@ -153,8 +166,21 @@ if (isset($_GET['pdf']) && $_GET['pdf'] == '1') {
             $pdf->Cell($w[6], $h_fila, $m['horas_semanales'], 1, 0, 'C');
             $pdf->Cell($w[7], $h_fila, ($m['activa'] ? 'Activa' : 'Inactiva'), 1, 1, 'C');
         }
+
+        // Fila Total UC por Trayecto
+        if ($pdf->GetY() + 6 > 270) $pdf->AddPage();
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(240, 240, 240);
+        $pdf->Cell($w[0] + $w[1], 6, to_iso('Total Unidades de Crédito (UC):'), 1, 0, 'R', true);
+        $pdf->Cell($w[2], 6, $total_uc_trayecto, 1, 0, 'C', true);
+        $pdf->Cell($w[3] + $w[4] + $w[5] + $w[6] + $w[7], 6, '', 1, 1, 'C', true);
         $pdf->Ln(4);
     }
+    
+    // Leyenda de abreviaturas al pie del documento
+    $pdf->SetFont('Arial', 'I', 7);
+    $pdf->Cell(0, 4, to_iso('Leyenda: UC = Unidades de Crédito | H.T. = Horas Teóricas | H.P. = Horas Prácticas | H.L. = Horas en Laboratorio | H.S. = Horas Semanales'), 0, 1, 'L');
+    
     $pdf->Output('I', 'Pensum_Academico.pdf');
     exit();
 }
@@ -304,18 +330,63 @@ include("includes/head.php");
     .badge-secondary {
         background-color: #858796;
     }
+    
+    /* Estilos para popovers de abreviaturas */
+    .abbr-popover {
+        cursor: pointer;
+        border-bottom: 1px dotted #4e73df;
+        display: inline-block;
+        padding-bottom: 1px;
+        transition: color 0.15s ease-in-out;
+    }
+    .abbr-popover:hover {
+        color: #4e73df;
+    }
+    .popover-header {
+        font-weight: bold;
+        background-color: #4e73df;
+        color: #fff;
+    }
 </style>
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4 header-buttons" style="display: flex; flex-wrap: wrap;">
         <h1 class="h3 mb-0 text-gray-800" style="flex: 1;">Pensum: <?php echo htmlspecialchars($carrera['nombre_carrera']); ?></h1>
-        <div class="d-flex gap-2" style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div class="d-flex gap-2 align-items-center" style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <?php if (!empty($mallas_carrera) && count($mallas_carrera) > 1): ?>
+                <!-- Selector de Malla / Versión vía POST -->
+                <form method="POST" action="ver_pensum.php" class="d-inline-flex align-items-center m-0 no-print">
+                    <input type="hidden" name="id_carrera" value="<?= intval($id_carrera) ?>">
+                    <label class="small font-weight-bold text-muted mr-2 mb-0 d-none d-md-inline">
+                        <i class="fas fa-layer-group text-primary mr-1"></i> Versión:
+                    </label>
+                    <select name="id_malla" class="custom-select custom-select-sm font-weight-bold border-primary shadow-sm" onchange="this.form.submit();" style="max-width: 220px;">
+                        <?php foreach ($mallas_carrera as $mc): ?>
+                            <option value="<?= intval($mc['id_malla']) ?>" <?= (intval($mc['id_malla']) === intval($id_malla)) ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($mc['codigo_malla']) ?><?= !empty($mc['anio']) ? ' (' . htmlspecialchars($mc['anio']) . ')' : '' ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </form>
+            <?php endif; ?>
+
             <a href="lista_carreras.php" class="btn btn-sm btn-primary shadow-sm no-print">
-                <i class="fas fa-arrow-left"></i> <span>Volver</span>
+                <i class="fas fa-arrow-left mr-1"></i> <span>Volver</span>
             </a>
-            <a href="?<?= $_SERVER['QUERY_STRING'] ?>&pdf=1" class="btn btn-sm btn-success shadow-sm no-print">
-                <i class="fas fa-print"></i> <span>Generar PDF</span>
-            </a>
+
+            <!-- Generación de PDF vía POST -->
+            <form method="POST" action="ver_pensum.php" target="_blank" class="d-inline m-0">
+                <input type="hidden" name="pdf" value="1">
+                <?php if (!empty($id_malla)): ?>
+                    <input type="hidden" name="id_malla" value="<?= intval($id_malla) ?>">
+                <?php endif; ?>
+                <?php if (!empty($id_carrera)): ?>
+                    <input type="hidden" name="id_carrera" value="<?= intval($id_carrera) ?>">
+                <?php endif; ?>
+                <button type="submit" class="btn btn-sm btn-success shadow-sm no-print">
+                    <i class="fas fa-print mr-1"></i> <span>Generar PDF</span>
+                </button>
+            </form>
         </div>
     </div>
 
@@ -340,16 +411,65 @@ include("includes/head.php");
                                 <tr>
                                     <th style="width: 12%">Código</th>
                                     <th style="width: 38%">Nombre de la Asignatura</th>
-                                    <th style="width: 8%">UC</th>
-                                    <th style="width: 8%">H.T.</th>
-                                    <th style="width: 8%">H.P.</th>
-                                    <th style="width: 8%">H.L.</th>
-                                    <th style="width: 8%">H.S.</th>
+                                    <th style="width: 8%">
+                                        <span class="abbr-popover" 
+                                              data-toggle="popover" 
+                                              data-trigger="hover focus" 
+                                              data-placement="top" 
+                                              title="UC" 
+                                              data-content="Unidades de Crédito">
+                                            UC <i class="fas fa-info-circle text-primary ml-1" style="font-size: 0.65rem;"></i>
+                                        </span>
+                                    </th>
+                                    <th style="width: 8%">
+                                        <span class="abbr-popover" 
+                                              data-toggle="popover" 
+                                              data-trigger="hover focus" 
+                                              data-placement="top" 
+                                              title="H.T." 
+                                              data-content="Horas Teóricas">
+                                            H.T. <i class="fas fa-info-circle text-primary" style="font-size: 0.65rem;"></i>
+                                        </span>
+                                    </th>
+                                    <th style="width: 8%">
+                                        <span class="abbr-popover" 
+                                              data-toggle="popover" 
+                                              data-trigger="hover focus" 
+                                              data-placement="top" 
+                                              title="H.P." 
+                                              data-content="Horas Prácticas">
+                                            H.P. <i class="fas fa-info-circle text-primary" style="font-size: 0.65rem;"></i>
+                                        </span>
+                                    </th>
+                                    <th style="width: 8%">
+                                        <span class="abbr-popover" 
+                                              data-toggle="popover" 
+                                              data-trigger="hover focus" 
+                                              data-placement="top" 
+                                              title="H.L." 
+                                              data-content="Horas en Laboratorio">
+                                            H.L. <i class="fas fa-info-circle text-primary" style="font-size: 0.65rem;"></i>
+                                        </span>
+                                    </th>
+                                    <th style="width: 8%">
+                                        <span class="abbr-popover" 
+                                              data-toggle="popover" 
+                                              data-trigger="hover focus" 
+                                              data-placement="top" 
+                                              title="H.S." 
+                                              data-content="Horas Semanales">
+                                            H.S. <i class="fas fa-info-circle text-primary" style="font-size: 0.65rem;"></i>
+                                        </span>
+                                    </th>
                                     <th style="width: 10%">Estado</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($materias as $m): ?>
+                                <?php 
+                                $total_uc_trayecto = 0;
+                                foreach ($materias as $m): 
+                                    $total_uc_trayecto += (int)($m['creditos'] ?? 0);
+                                ?>
                                     <tr>
                                         <td class="text-center font-weight-medium"><?= htmlspecialchars($m['cod_materia']) ?></td>
                                         <td><?= htmlspecialchars($m['nombre_materia']) ?></td>
@@ -360,22 +480,38 @@ include("includes/head.php");
                                         <td class="text-center"><?= $m['horas_semanales'] ?></td>
                                         <td class="text-center">
                                             <span class="badge badge-<?= $m['activa'] ? 'success' : 'secondary' ?>">
-                                                <?= $m['activa'] ? 'Activa' : 'Inactiva' ?>
+                                                 <?= $m['activa'] ? 'Activa' : 'Inactiva' ?>
                                             </span>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
+                            <tfoot class="thead-light">
+                                <tr class="font-weight-bold bg-light">
+                                    <td colspan="2" class="text-right align-middle py-2">
+                                        <i class="fas fa-calculator text-primary mr-1"></i> Total Unidades de Crédito (UC):
+                                    </td>
+                                    <td class="text-center align-middle py-2 text-primary font-weight-bold" style="font-size: 1.05rem;">
+                                        <?= $total_uc_trayecto ?>
+                                    </td>
+                                    <td colspan="5" class="py-2"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 <?php endforeach; ?>
                 
-                <!-- Leyenda informativa para móviles -->
-                <div class="alert alert-info mt-4 d-block d-md-none">
+                <!-- Leyenda informativa -->
+                <div class="alert alert-info mt-4">
                     <small>
-                        <i class="fas fa-info-circle"></i> 
-                        <strong>Leyenda:</strong> UC = Unidades Crédito | H.T. = Horas Teóricas | 
-                        H.P. = Horas Prácticas | H.L. = Horas Laboratorio | H.S. = Horas Semanales
+                        <i class="fas fa-info-circle mr-1"></i> 
+                        <strong>Abreviaturas:</strong> 
+                        <strong>UC</strong> = Unidades de Crédito | 
+                        <strong>H.T.</strong> = Horas Teóricas | 
+                        <strong>H.P.</strong> = Horas Prácticas | 
+                        <strong>H.L.</strong> = Horas en Laboratorio | 
+                        <strong>H.S.</strong> = Horas Semanales
+                        <span class="text-muted ml-1 d-none d-sm-inline">(Pase el cursor o toque cada abreviatura para ver su significado).</span>
                     </small>
                 </div>
             <?php endif; ?>
@@ -383,32 +519,25 @@ include("includes/head.php");
     </div>
 </div>
 
-<!-- Script adicional para mejorar la experiencia en móviles -->
+<!-- Script para popovers de Bootstrap y mejoras de navegación -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Detectar si es dispositivo móvil para optimizar la visualización
-    const isMobile = window.innerWidth <= 768;
-    
-    if (isMobile) {
-        // Añadir tooltips a los encabezados de las tablas en móvil
-        const tableHeaders = document.querySelectorAll('.table thead th');
-        const headerTitles = {
-            'UC': 'Unidades Crédito',
-            'H.T.': 'Horas Teóricas',
-            'H.P.': 'Horas Prácticas',
-            'H.L.': 'Horas Laboratorio',
-            'H.S.': 'Horas Semanales'
-        };
-        
-        tableHeaders.forEach(header => {
-            const text = header.innerText.trim();
-            if (headerTitles[text]) {
-                header.setAttribute('title', headerTitles[text]);
-                header.style.cursor = 'help';
+$(document).ready(function() {
+    // Inicializar popovers de Bootstrap para abreviaturas
+    $('[data-toggle="popover"]').popover({
+        trigger: 'hover focus',
+        placement: 'top',
+        container: 'body'
+    });
+
+    // Cerrar popover al hacer clic fuera
+    $('body').on('click', function (e) {
+        $('[data-toggle="popover"]').each(function () {
+            if (!$(this).is(e.target) && $(this).has(e.target).length === 0 && $('.popover').has(e.target).length === 0) {
+                $(this).popover('hide');
             }
         });
-    }
-    
+    });
+
     // Smooth scroll para enlaces internos
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {

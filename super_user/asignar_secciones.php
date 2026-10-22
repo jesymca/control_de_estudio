@@ -317,7 +317,7 @@ include("includes/head.php");
                                 if(count($asignaciones) > 0) {
                                     foreach($asignaciones as $row) {
                                         $docente_upper = htmlspecialchars(mb_strtoupper($row['docente'], 'UTF-8'));
-                                        $cedula_upper = htmlspecialchars($row['cedula_docente'] ?? $row['idusuario'] ?? '');
+                                        $cedula_upper = htmlspecialchars($row['cedula_docente'] ?? $row['docente_cedula'] ?? $row['idusuario'] ?? '');
                                         $seccion_upper = htmlspecialchars(mb_strtoupper($row['codigo_seccion'], 'UTF-8'));
                                         $carrera_upper = htmlspecialchars(mb_strtoupper($row['nombre_carrera'] ?? 'Sin carrera asignada', 'UTF-8'));
                                         $materia_upper = htmlspecialchars(mb_strtoupper($row['nombre_materia'], 'UTF-8'));
@@ -342,7 +342,7 @@ include("includes/head.php");
                                                             data-id='".$row['id_docente_seccion']."'
                                                             data-docente='".$docente_upper."'
                                                             data-cedula='".$cedula_upper."'
-                                                            data-id-docente='".$row['id_usuario']."'
+                                                            data-id-docente='".htmlspecialchars((string)($row['id_usuario'] ?? $row['id_docente'] ?? ''))."'
                                                             data-id-seccion='".$row['id_seccion']."'
                                                             data-id-materia='".$row['id_materia']."'>
                                                         <i class='fas fa-edit mr-1'></i> CAMBIAR

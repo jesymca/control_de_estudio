@@ -34,10 +34,10 @@ $docente_id = obtenerIdUsuario();
 $estados_notas = verificarEstadosNotas($estudiantes, $materia_id, $periodo_id, $docente_id, $trayecto_a_mostrar);
 $mostrar_campo_soporte = true;
 
-// Verificar disponibilidad de los trimestres
+// Verificar disponibilidad de los trimestres para este período académico
 $disponibilidad_trimestres = [];
 for ($t = 1; $t <= 3; $t++) {
-    $disponibilidad_trimestres[$t] = verificarDisponibilidadTrimestre($t);
+    $disponibilidad_trimestres[$t] = verificarDisponibilidadTrimestre($t, $periodo_id);
 }
 $disponibilidad_json = json_encode($disponibilidad_trimestres);
 ?>

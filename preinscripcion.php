@@ -17,21 +17,24 @@ $carreras = obtenerTodasLasCarreras();
 $ingresos = obtenerIngresos($db);
 $estados = obtenerEstados($db);
 $mostrarPreinscripcion = obtenerConfiguracionSecretaria('mostrar_preinscripcion', '1');
-$mostrarProsecucion = obtenerConfiguracionSecretaria('mostrar_prosecucion', '1');
 
 $success_message = '';
 $error_message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $periodoActivo = obtenerPeriodoActivo();
     $_POST['tipo_cedula'] = $_POST['tipo_cedula'] ?? '';
     $_POST['numero_cedula'] = preg_replace('/[^0-9]/', '', $_POST['numero_cedula'] ?? '');
     $_POST['idusuario'] = trim($_POST['tipo_cedula'] . $_POST['numero_cedula']);
     $_POST['turno'] = $_POST['turno'] ?? '';
     $_POST['status'] = 'Pendiente';
     $_POST['fecha_ingreso'] = $_POST['fecha_ingreso'] ?? date('Y-m-d');
+    $_POST['id_periodo'] = $periodoActivo ? (int)$periodoActivo['id_periodo'] : null;
 
     if ($mostrarPreinscripcion === '0') {
         $error_message = 'La preinscripción se encuentra temporalmente deshabilitada. Por favor contacte a Secretaría.';
+    } elseif (!$periodoActivo) {
+        $error_message = 'No hay un período académico activo disponible para preinscripciones. Por favor contacte a Secretaría.';
     } elseif (empty($_POST['tipo_cedula']) || empty($_POST['numero_cedula'])) {
         $error_message = 'Debe indicar tipo y número de cédula para la preinscripción.';
     } else {

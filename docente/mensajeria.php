@@ -1,5 +1,5 @@
 <?php
-require_once('../funciones/functions.php');
+require_once __DIR__ . '/../funciones/functions.php';
 
 // Verificar autenticación y rol
 if (!isLoggedIn() || !isDocente()) {
@@ -108,7 +108,7 @@ if (isset($_POST['ajax_eliminar_mensaje'])) {
 $mensaje_exito = '';
 $mensaje_error = '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['enviar_mensaje'])) {
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['enviar_mensaje'])) {
     if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         $mensaje_error = "Error de seguridad. Token CSRF inválido.";
     } else {

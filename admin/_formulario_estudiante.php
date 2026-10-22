@@ -25,12 +25,13 @@ if (!isset($estados)) {
     $estados = obtenerEstados($db);
 }
 
-// Obtener cupos disponibles para todas las carreras y turnos
+// Obtener cupos disponibles para todas las carreras y turnos según el período académico
+$periodoFormulario = resolverIdPeriodo(isset($id_periodo) ? $id_periodo : null);
 $todosLosCupos = [];
 foreach ($carreras as $carrera) {
     $turnosCupos = ['Diurno', 'Nocturno'];
     foreach ($turnosCupos as $turno) {
-        $todosLosCupos[$carrera['id']][$turno] = obtenerCuposDisponiblesPorCarreraYTurno($carrera['id'], $turno);
+        $todosLosCupos[$carrera['id']][$turno] = obtenerCuposDisponiblesPorCarreraYTurno($carrera['id'], $turno, $periodoFormulario);
     }
 }
 
@@ -1189,8 +1190,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function actualizarCuposTiempoReal(carreraId, turno) {
         if (!carreraId || !turno) return;
-        
-        fetch('api/obtener_cupos_disponibles.php?carrera_id=' + carreraId + '&turno=' + turno)
+        const apiUrl = '<?php echo ($modo_preinscripcion ? "admin/" : ""); ?>api/obtener_cupos_disponibles.php';
+        fetch(apiUrl + '?carrera_id=' + carreraId + '&turno=' + turno + '&periodo_id=<?php echo (int)$periodoFormulario; ?>')
             .then(response => response.json())
             .then(data => {
                 if (data.success) {

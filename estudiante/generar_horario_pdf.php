@@ -2,8 +2,8 @@
 // Evitar que cualquier error previo ensucie la salida del PDF
 ob_start();
 
-require_once('../funciones/functions.php');
-require_once('../fpdf/fpdf.php');
+require_once __DIR__ . '/../funciones/functions.php';
+require_once __DIR__ . '/../fpdf/fpdf.php';
 
 // Seguridad y datos
 if (!isLoggedIn() || !isEstudiante()) die('Acceso denegado');

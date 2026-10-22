@@ -515,10 +515,39 @@ $(document).ready(function() {
         });
     });
     
+    // Función reutilizable para abrir/descargar PDF de notas aprobadas vía POST
+    function generarPdfNotasAprobadasPost(docenteId, materiaId, periodoId) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = 'generar_pdf_notas_aprobadas.php';
+        form.target = '_blank';
+        form.style.display = 'none';
+
+        const campos = {
+            docente_id: docenteId,
+            materia_id: materiaId,
+            periodo_id: periodoId
+        };
+
+        for (const clave in campos) {
+            if (campos.hasOwnProperty(clave)) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = clave;
+                input.value = campos[clave];
+                form.appendChild(input);
+            }
+        }
+
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
+    }
+
     // Botón PDF del modal
     $('#btnModalPDF').click(function() {
         if (currentDocenteId && currentMateriaId && currentPeriodoId) {
-            window.location.href = `generar_pdf_notas_aprobadas.php?docente_id=${currentDocenteId}&materia_id=${currentMateriaId}&periodo_id=${currentPeriodoId}`;
+            generarPdfNotasAprobadasPost(currentDocenteId, currentMateriaId, currentPeriodoId);
         } else {
             alert('No se pudo generar el PDF. Faltan datos.');
         }
@@ -536,7 +565,7 @@ $(document).ready(function() {
         $btn.html('<i class="fas fa-spinner fa-spin"></i>');
         $btn.prop('disabled', true);
         
-        window.location.href = `generar_pdf_notas_aprobadas.php?docente_id=${docenteId}&materia_id=${materiaId}&periodo_id=${periodoId}`;
+        generarPdfNotasAprobadasPost(docenteId, materiaId, periodoId);
         
         setTimeout(() => {
             $btn.html(originalHtml);

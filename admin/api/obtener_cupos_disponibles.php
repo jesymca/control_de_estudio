@@ -9,8 +9,9 @@ if (!isset($_GET['carrera_id']) || !isset($_GET['turno'])) {
 
 $carreraId = (int)$_GET['carrera_id'];
 $turno = $_GET['turno'];
+$periodoId = isset($_GET['periodo_id']) ? (int)$_GET['periodo_id'] : null;
 
-$cupos = obtenerCuposDisponiblesPorCarreraYTurno($carreraId, $turno);
+$cupos = obtenerCuposDisponiblesPorCarreraYTurno($carreraId, $turno, $periodoId);
 
 echo json_encode([
     'success' => true,

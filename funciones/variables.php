@@ -117,8 +117,16 @@
       $ano_sistema             = date("/Y");
       $nombrepag            = basename($_SERVER['PHP_SELF']);
 
-      @$usua = $_SESSION['user']['username'];
-      @$id_usua = ($_SESSION['user']['id']);
+      $usua = '';
+      $id_usua = '';
+      if (isset($_SESSION['user'])) {
+          if (is_array($_SESSION['user'])) {
+              $usua = $_SESSION['user']['username'] ?? '';
+              $id_usua = $_SESSION['user']['id'] ?? '';
+          } elseif (is_string($_SESSION['user']) || is_numeric($_SESSION['user'])) {
+              $usua = (string)$_SESSION['user'];
+          }
+      }
 
       $id_componente = '';
       $cantidad = '';

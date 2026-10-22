@@ -3,8 +3,8 @@ error_reporting(0);
 ini_set('display_errors', 0);
 ob_start();
 
-require_once('../funciones/functions.php');
-require_once('../fpdf/fpdf.php');
+require_once __DIR__ . '/../funciones/functions.php';
+require_once __DIR__ . '/../fpdf/fpdf.php';
 
 if (!isset($_GET['id'])) die("ID no proporcionado.");
 $id_preinscripcion = intval($_GET['id']);

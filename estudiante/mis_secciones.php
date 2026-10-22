@@ -4,7 +4,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 $titulopag = "Mis Secciones Inscritas";
-include('../funciones/functions.php');
+require_once('../funciones/functions.php');
 include("includes/head.php");
 
 // 2. Verificación directa (si no es estudiante, va al login)
@@ -59,7 +59,7 @@ $user_id = (int)$_SESSION['user']['id'];
                               JOIN trayectos t ON s.id_trayecto = t.id_trayecto
                               JOIN periodos_academicos pa ON s.id_periodo = pa.id_periodo
                               WHERE es.id_usuario = ?
-                              AND es.estatus = 'activo'
+                              AND (es.estatus = 'activo' OR es.estatus = 'aprobado')
                               ORDER BY pa.fecha_inicio DESC";
 
                     $stmt = $db->prepare($query);

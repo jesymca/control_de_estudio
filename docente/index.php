@@ -3,7 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 $titulopag = "Panel del Docente";
-include('../funciones/functions.php');
+require_once __DIR__ . '/../funciones/functions.php';
 
 // Verificar autenticación y rol
 if (!isLoggedIn() || !isDocente()) {
@@ -64,6 +64,12 @@ visita();
         .horario-card .card-icon {
             color: #17a2b8;
         }
+        .mensajeria-card {
+            border-bottom: 4px solid #6f42c1;
+        }
+        .mensajeria-card .card-icon {
+            color: #6f42c1;
+        }
         .btn-access {
             border-radius: 50px;
             padding: 0.5rem 1.5rem;
@@ -78,6 +84,7 @@ visita();
         .btn-notas:hover {
             background-color: #218838;
             border-color: #1e7e34;
+            color: white;
         }
         .btn-horario {
             background-color: #17a2b8;
@@ -87,6 +94,17 @@ visita();
         .btn-horario:hover {
             background-color: #138496;
             border-color: #117a8b;
+            color: white;
+        }
+        .btn-mensajeria {
+            background-color: #6f42c1;
+            border-color: #6f42c1;
+            color: white;
+        }
+        .btn-mensajeria:hover {
+            background-color: #5a32a3;
+            border-color: #512b94;
+            color: white;
         }
         .welcome-message {
             background-color: white;
@@ -112,7 +130,7 @@ visita();
         <!-- Tarjetas de acceso -->
         <div class="row justify-content-center mb-5">
             <!-- Tarjeta de Carga de Notas -->
-            <div class="col-md-5 mb-4">
+            <div class="col-lg-4 col-md-6 mb-4">
                 <div class="card feature-card notas-card h-100">
                     <div class="card-body text-center p-4">
                         <div class="card-icon">
@@ -126,7 +144,7 @@ visita();
             </div>
 
             <!-- Tarjeta de Mi Horario -->
-            <div class="col-md-5 mb-4">
+            <div class="col-lg-4 col-md-6 mb-4">
                 <div class="card feature-card horario-card h-100">
                     <div class="card-body text-center p-4">
                         <div class="card-icon">
@@ -135,6 +153,25 @@ visita();
                         <h3 class="card-title h4 font-weight-bold">Mi Horario</h3>
                         <p class="card-text text-muted">Consultar y gestionar horario de clases</p>
                         <a href="mi_horario.php" class="btn btn-access btn-horario mt-3">Acceder</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tarjeta de Mensajería -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card feature-card mensajeria-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="card-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <h3 class="card-title h4 font-weight-bold">
+                            Mensajería
+                            <?php if (!empty($mensajes_no_leidos) && $mensajes_no_leidos > 0): ?>
+                                <span class="badge badge-danger ml-1" style="font-size: 0.6em; vertical-align: middle;"><?= $mensajes_no_leidos ?> nuevo<?= $mensajes_no_leidos > 1 ? 's' : '' ?></span>
+                            <?php endif; ?>
+                        </h3>
+                        <p class="card-text text-muted">Comunicación directa con estudiantes, directores y administración</p>
+                        <a href="mensajeria.php" class="btn btn-access btn-mensajeria mt-3">Acceder</a>
                     </div>
                 </div>
             </div>

@@ -50,7 +50,7 @@ function obtenerMateriasInscritasEstudiante($estudiante_id, $carrera_id) {
               INNER JOIN carrera_materia cm ON m.id_materia = cm.id_materia
               WHERE em.id_usuario = ?
               AND cm.id_carrera = ?
-              AND em.estatus = 'activo'
+              AND (em.estatus = 'activo' OR em.estatus = 'aprobado')
               ORDER BY m.trayecto, m.nombre_materia";
     
     $stmt = $db->prepare($query);

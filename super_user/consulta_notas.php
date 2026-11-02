@@ -128,25 +128,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['cedula'])) {
                         <div class="row">
                             <div class="col-md-6">
                                 <strong>TSU (Trayectos 0-2):</strong><br>
-                                <?= $info_apto['materias_aprobadas_tsu'] ?>/<?= $info_apto['total_materias_tsu'] ?> materias aprobadas<br>
+                                <?= $info_apto['materias_aprobadas_tsu'] ?>/<?= $info_apto['total_materias_tsu'] ?> materias aprobadas de la carrera<br>
                                 <span class="badge badge-<?= $info_apto['porcentaje_tsu'] >= 90 ? 'success' : 'warning' ?>">
                                     <?= $info_apto['porcentaje_tsu'] ?>% completado
                                 </span>
                                 <?php if ($info_apto['apto_tsu']): ?>
                                     <span class="badge badge-success ml-2">APTO TSU</span>
+                                <?php else: ?>
+                                    <span class="badge badge-secondary ml-2">Pendiente</span>
                                 <?php endif; ?>
                             </div>
                             <div class="col-md-6">
-                                <strong>Grado Completo:</strong><br>
-                                <?= $info_apto['materias_aprobadas_completo'] ?>/<?= $info_apto['total_materias_carrera'] ?> materias aprobadas<br>
+                                <strong>Grado Completo (Ingeniería / Licenciatura):</strong><br>
+                                <?= $info_apto['materias_aprobadas_completo'] ?>/<?= $info_apto['total_materias_carrera'] ?> materias aprobadas de la carrera<br>
                                 <span class="badge badge-<?= $info_apto['porcentaje_completo'] >= 100 ? 'success' : 'info' ?>">
                                     <?= $info_apto['porcentaje_completo'] ?>% completado
                                 </span>
                                 <?php if ($info_apto['apto_grado_completo']): ?>
                                     <span class="badge badge-success ml-2">APTO GRADO COMPLETO</span>
+                                <?php else: ?>
+                                    <span class="badge badge-secondary ml-2">Pendiente</span>
                                 <?php endif; ?>
                             </div>
                         </div>
+                        <?php if (!empty($info_apto['solo_trayecto_0'])): ?>
+                        <div class="mt-2 pt-2 border-top small text-dark">
+                            <i class="fas fa-info-circle text-primary mr-1"></i>
+                            <strong>Estudiante en Trayecto Inicial:</strong> Solo tiene completadas las materias del Trayecto 0 (<?= $info_apto['aprobadas_t0'] ?>/<?= $info_apto['total_t0'] ?>). <strong>No es apto para grado</strong> porque le faltan las materias de los Trayectos 1, 2, 3 y 4 del plan de estudios.
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>

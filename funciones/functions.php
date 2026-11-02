@@ -11502,6 +11502,197 @@ function obtenerNotasEstudianteConTrimestres($estudiante_id) {
     return $notas;
 }
 
+/**
+ * Obtener materias inscritas y/o cursadas por el estudiante en la carrera (para consulta de notas)
+ */
+if (!function_exists('obtenerMateriasEstudianteConsultaNotas')) {
+function obtenerMateriasEstudianteConsultaNotas($estudiante_id, $carrera_id) {
+    global $db;
+    $estudiante_id = intval($estudiante_id);
+    $carrera_id = intval($carrera_id);
+    
+    $query = "SELECT DISTINCT 
+                m.id_materia,
+                m.nombre_materia,
+                m.cod_materia,
+                m.trayecto,
+                m.nota_minima_aprobatoria,
+                m.es_proyecto_socio,
+                m.creditos
+              FROM materias m
+              INNER JOIN carrera_materia cm ON m.id_materia = cm.id_materia
+              WHERE cm.id_carrera = $carrera_id
+              AND (
+                  m.id_materia IN (SELECT id_materia FROM estudiante_materias WHERE id_usuario = $estudiante_id)
+                  OR m.id_materia IN (SELECT id_materia FROM notas_definitivas WHERE id_usuario = $estudiante_id)
+                  OR m.id_materia IN (SELECT id_materia FROM notas_trimestres WHERE id_usuario = $estudiante_id)
+              )
+              ORDER BY m.trayecto ASC, m.nombre_materia ASC";
+    
+    return $db->query($query);
+}
+}
+
+/**
+ * Obtener historial completo de notas e intentos previos (incluyendo materias repitientes)
+ */
+if (!function_exists('obtenerHistorialCompletoNotasEstudiante')) {
+function obtenerHistorialCompletoNotasEstudiante($estudiante_id) {
+    global $db;
+    $estudiante_id = intval($estudiante_id);
+    $intentos = []; // [$id_materia => [$id_periodo => intento_data]]
+    
+    // 1. Obtener notas por trimestres agrupadas por (id_materia, id_periodo)
+    $q_trim = "SELECT 
+                nt.id_materia,
+                nt.id_periodo,
+                nt.trimestre_num,
+                nt.nota,
+                nt.estado,
+                nt.fecha_registro,
+                pa.nombre_periodo,
+                pa.fecha_inicio
+              FROM notas_trimestres nt
+              LEFT JOIN periodos_academicos pa ON nt.id_periodo = pa.id_periodo
+              WHERE nt.id_usuario = $estudiante_id
+              ORDER BY nt.id_materia, COALESCE(pa.fecha_inicio, nt.fecha_registro) ASC, nt.trimestre_num ASC";
+    $res_trim = $db->query($q_trim);
+    if ($res_trim) {
+        while ($r = $res_trim->fetch_assoc()) {
+            $mid = intval($r['id_materia']);
+            $pid = intval($r['id_periodo']);
+            $tnum = intval($r['trimestre_num']);
+            
+            if (!isset($intentos[$mid][$pid])) {
+                $intentos[$mid][$pid] = [
+                    'id_periodo' => $pid,
+                    'nombre_periodo' => $r['nombre_periodo'] ?? ('Período ' . $pid),
+                    'fecha_inicio' => $r['fecha_inicio'] ?? '',
+                    'fecha_registro' => $r['fecha_registro'],
+                    'trimestre_1' => null,
+                    'trimestre_2' => null,
+                    'trimestre_3' => null,
+                    'nota_final' => null,
+                    'origen' => 'trimestres'
+                ];
+            }
+            $intentos[$mid][$pid]["trimestre_$tnum"] = floatval($r['nota']);
+            if ($r['fecha_registro'] > $intentos[$mid][$pid]['fecha_registro']) {
+                $intentos[$mid][$pid]['fecha_registro'] = $r['fecha_registro'];
+            }
+        }
+    }
+    
+    // Calcular nota final para los trimestres
+    foreach ($intentos as $mid => &$periodos) {
+        foreach ($periodos as $pid => &$data) {
+            $sum = 0; $cnt = 0;
+            for ($i = 1; $i <= 3; $i++) {
+                if ($data["trimestre_$i"] !== null) {
+                    $sum += $data["trimestre_$i"];
+                    $cnt++;
+                }
+            }
+            if ($cnt > 0) {
+                $data['nota_final'] = round($sum / $cnt, 1);
+            }
+        }
+    }
+    unset($periodos, $data);
+    
+    // 2. Obtener notas definitivas agrupadas por (id_materia, id_periodo)
+    $q_def = "SELECT 
+                nd.*,
+                m.trayecto,
+                pa.nombre_periodo,
+                pa.fecha_inicio
+              FROM notas_definitivas nd
+              INNER JOIN materias m ON nd.id_materia = m.id_materia
+              LEFT JOIN periodos_academicos pa ON nd.id_periodo = pa.id_periodo
+              WHERE nd.id_usuario = $estudiante_id
+              ORDER BY nd.id_materia, COALESCE(pa.fecha_inicio, nd.fecha_registro) ASC";
+    $res_def = $db->query($q_def);
+    if ($res_def) {
+        while ($r = $res_def->fetch_assoc()) {
+            $mid = intval($r['id_materia']);
+            $pid = intval($r['id_periodo']);
+            $tray = intval($r['trayecto']);
+            $col = 'trayecto_' . $tray;
+            
+            $nota_val = null;
+            if (isset($r['nota_final']) && $r['nota_final'] !== null && $r['nota_final'] !== '') {
+                $nota_val = floatval($r['nota_final']);
+            } elseif (isset($r[$col]) && $r[$col] !== null && $r[$col] !== '') {
+                $nota_val = floatval($r[$col]);
+            }
+            
+            if (!isset($intentos[$mid][$pid])) {
+                $intentos[$mid][$pid] = [
+                    'id_periodo' => $pid,
+                    'nombre_periodo' => $r['nombre_periodo'] ?? ('Período ' . $pid),
+                    'fecha_inicio' => $r['fecha_inicio'] ?? '',
+                    'fecha_registro' => $r['fecha_registro'],
+                    'trimestre_1' => null,
+                    'trimestre_2' => null,
+                    'trimestre_3' => null,
+                    'nota_final' => $nota_val,
+                    'origen' => 'definitiva'
+                ];
+            } else {
+                if ($intentos[$mid][$pid]['nota_final'] === null && $nota_val !== null) {
+                    $intentos[$mid][$pid]['nota_final'] = $nota_val;
+                }
+            }
+        }
+    }
+    
+    // 3. Revisar estudiante_materias para registrar períodos donde está cursando actualmente
+    $q_em = "SELECT 
+                em.id_materia,
+                em.id_periodo,
+                em.fecha_inscripcion,
+                pa.nombre_periodo,
+                pa.fecha_inicio
+             FROM estudiante_materias em
+             LEFT JOIN periodos_academicos pa ON em.id_periodo = pa.id_periodo
+             WHERE em.id_usuario = $estudiante_id AND em.estatus = 'activo'";
+    $res_em = $db->query($q_em);
+    if ($res_em) {
+        while ($r = $res_em->fetch_assoc()) {
+            $mid = intval($r['id_materia']);
+            $pid = intval($r['id_periodo']);
+            if (!isset($intentos[$mid][$pid])) {
+                $intentos[$mid][$pid] = [
+                    'id_periodo' => $pid,
+                    'nombre_periodo' => $r['nombre_periodo'] ?? ('Período ' . $pid),
+                    'fecha_inicio' => $r['fecha_inicio'] ?? '',
+                    'fecha_registro' => $r['fecha_inscripcion'],
+                    'trimestre_1' => null,
+                    'trimestre_2' => null,
+                    'trimestre_3' => null,
+                    'nota_final' => null,
+                    'origen' => 'inscripcion'
+                ];
+            }
+        }
+    }
+    
+    // 4. Ordenar cronológicamente los intentos de cada materia
+    $historial_ordenado = [];
+    foreach ($intentos as $mid => $pids) {
+        $lista = array_values($pids);
+        usort($lista, function($a, $b) {
+            $fa = !empty($a['fecha_inicio']) ? $a['fecha_inicio'] : $a['fecha_registro'];
+            $fb = !empty($b['fecha_inicio']) ? $b['fecha_inicio'] : $b['fecha_registro'];
+            return strcmp($fa, $fb);
+        });
+        $historial_ordenado[$mid] = $lista;
+    }
+    
+    return $historial_ordenado;
+}
+}
+
 
 
 
@@ -16385,11 +16576,22 @@ function buscarEstudiantePorCedulaConsulta($cedula) {
     global $db;
     
     try {
+        $cedula = trim($cedula);
+        $cedula_num = preg_replace('/[^0-9]/', '', $cedula);
+        $v1 = $cedula;
+        $v2 = $cedula_num;
+        $v3 = 'V-' . $cedula_num;
+        $v4 = 'V' . $cedula_num;
+        $v5 = 'E-' . $cedula_num;
+        $v6 = 'E' . $cedula_num;
+        
         $query = "SELECT u.id, u.nombre, u.idusuario, u.carrera 
                   FROM users u 
-                  WHERE u.idusuario = ? AND u.estudiante = 1";
+                  WHERE u.idusuario IN (?, ?, ?, ?, ?, ?) AND u.estudiante = 1 
+                  ORDER BY (u.idusuario = ?) DESC 
+                  LIMIT 1";
         $stmt = $db->prepare($query);
-        $stmt->bind_param("s", $cedula);
+        $stmt->bind_param("sssssss", $v1, $v2, $v3, $v4, $v5, $v6, $cedula);
         $stmt->execute();
         $result = $stmt->get_result();
         
@@ -16617,63 +16819,71 @@ function esAptoParaGradoConsulta($estudiante_id, $carrera_id) {
             ];
         }
 
-        // Obtener SOLO las materias que el estudiante tiene INSCRITAS
-        $materias_inscritas = obtenerMateriasInscritasPorEstudiante($estudiante_id, $carrera_id);
-        
-        if (!$materias_inscritas) {
-            return [
-                'apto_tsu' => false,
-                'apto_grado_completo' => false,
-                'materias_aprobadas_tsu' => 0,
-                'total_materias_tsu' => 0,
-                'porcentaje_tsu' => 0,
-                'materias_aprobadas_completo' => 0,
-                'total_materias_carrera' => 0,
-                'porcentaje_completo' => 0
-            ];
+        // Obtener todas las materias del plan de estudios de la carrera
+        $sql_materias = "SELECT m.id_materia, m.nombre_materia, m.trayecto, m.es_proyecto_socio 
+                         FROM materias m 
+                         INNER JOIN carrera_materia cm ON m.id_materia = cm.id_materia 
+                         WHERE cm.id_carrera = ? AND m.activa = 1 
+                         ORDER BY m.trayecto, m.id_materia";
+        $stmt_mat = $db->prepare($sql_materias);
+        if (!$stmt_mat) {
+            throw new Exception("Error en preparación: " . $db->error);
         }
+        $stmt_mat->bind_param("i", $carrera_id);
+        $stmt_mat->execute();
+        $res_materias = $stmt_mat->get_result();
         
-        // Obtener notas del estudiante (solo aprobadas)
-        $notas_estudiante = obtenerNotasEstudianteConTrimestres($estudiante_id);
-        
-        // Contadores
-        $materias_aprobadas_tsu = 0;
-        $total_materias_tsu = 0;
-        $materias_aprobadas_completo = 0;
         $total_materias_carrera = 0;
+        $materias_aprobadas_completo = 0;
+        $total_materias_tsu = 0;
+        $materias_aprobadas_tsu = 0;
+        $aprobadas_por_trayecto = [0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0];
+        $total_por_trayecto = [0 => 0, 1 => 0, 2 => 0, 3 => 0, 4 => 0];
         
-        // Recorrer SOLO las materias inscritas
-        while ($materia = $materias_inscritas->fetch_assoc()) {
+        while ($materia = $res_materias->fetch_assoc()) {
             $trayecto = (int)$materia['trayecto'];
-            $materia_id = $materia['id_materia'];
-            $total_materias_carrera++;
+            $mid = (int)$materia['id_materia'];
+            $es_proy = !empty($materia['es_proyecto_socio']);
             
-            // Verificar si es materia de TSU (trayectos 0, 1, 2)
+            $total_materias_carrera++;
+            if (isset($total_por_trayecto[$trayecto])) {
+                $total_por_trayecto[$trayecto]++;
+            }
             if ($trayecto <= 2) {
                 $total_materias_tsu++;
             }
             
-            // Verificar si el estudiante aprobó esta materia (nota final >= 12)
-            if (isset($notas_estudiante[$materia_id])) {
-                $nota_data = $notas_estudiante[$materia_id];
-                $nota_final = $nota_data['nota_final'] ?? null;
-                
-                if ($nota_final !== null && $nota_final >= 12) {
-                    $materias_aprobadas_completo++;
-                    if ($trayecto <= 2) {
-                        $materias_aprobadas_tsu++;
-                    }
+            $aprobada = esMateriaAprobadaEstudiante($estudiante_id, $mid, $es_proy);
+            if ($aprobada) {
+                $materias_aprobadas_completo++;
+                if (isset($aprobadas_por_trayecto[$trayecto])) {
+                    $aprobadas_por_trayecto[$trayecto]++;
+                }
+                if ($trayecto <= 2) {
+                    $materias_aprobadas_tsu++;
                 }
             }
         }
+        $stmt_mat->close();
         
-        // Calcular porcentajes
+        // Calcular porcentajes contra el plan de estudio real de la carrera
         $porcentaje_tsu = $total_materias_tsu > 0 ? round(($materias_aprobadas_tsu / $total_materias_tsu) * 100, 1) : 0;
         $porcentaje_completo = $total_materias_carrera > 0 ? round(($materias_aprobadas_completo / $total_materias_carrera) * 100, 1) : 0;
         
-        // Determinar si es apto
-        $apto_tsu = ($porcentaje_tsu >= 90);
-        $apto_grado_completo = ($porcentaje_completo >= 100);
+        // REGLA FUNDAMENTAL: Si solo tiene cursadas/aprobadas materias del Trayecto 0,
+        // NUNCA es apto para grado (ni TSU ni Grado Completo) porque le faltan los Trayectos 1, 2, 3 y 4.
+        $solo_trayecto_0 = ($aprobadas_por_trayecto[0] > 0 
+            && $aprobadas_por_trayecto[1] == 0 
+            && $aprobadas_por_trayecto[2] == 0 
+            && $aprobadas_por_trayecto[3] == 0 
+            && $aprobadas_por_trayecto[4] == 0);
+            
+        // Para TSU debe tener aprobadas materias en Trayecto 1 y 2, y al menos 90% de TSU
+        $tiene_t1_y_t2 = ($aprobadas_por_trayecto[1] > 0 && $aprobadas_por_trayecto[2] > 0);
+        $apto_tsu = (!$solo_trayecto_0 && $tiene_t1_y_t2 && $porcentaje_tsu >= 90);
+        
+        // Para Grado Completo debe tener 100% de la carrera y materias aprobadas en los trayectos superiores (3 y 4)
+        $apto_grado_completo = (!$solo_trayecto_0 && $porcentaje_completo >= 100 && $total_materias_carrera > 0 && ($total_por_trayecto[3] == 0 || $aprobadas_por_trayecto[3] > 0));
         
         $resultado = [
             'apto_tsu' => $apto_tsu,
@@ -16683,7 +16893,18 @@ function esAptoParaGradoConsulta($estudiante_id, $carrera_id) {
             'porcentaje_tsu' => $porcentaje_tsu,
             'materias_aprobadas_completo' => $materias_aprobadas_completo,
             'total_materias_carrera' => $total_materias_carrera,
-            'porcentaje_completo' => $porcentaje_completo
+            'porcentaje_completo' => $porcentaje_completo,
+            'solo_trayecto_0' => $solo_trayecto_0,
+            'aprobadas_t0' => $aprobadas_por_trayecto[0],
+            'total_t0' => $total_por_trayecto[0],
+            'aprobadas_t1' => $aprobadas_por_trayecto[1],
+            'total_t1' => $total_por_trayecto[1],
+            'aprobadas_t2' => $aprobadas_por_trayecto[2],
+            'total_t2' => $total_por_trayecto[2],
+            'aprobadas_t3' => $aprobadas_por_trayecto[3],
+            'total_t3' => $total_por_trayecto[3],
+            'aprobadas_t4' => $aprobadas_por_trayecto[4],
+            'total_t4' => $total_por_trayecto[4],
         ];
         
         // REGISTRAR EN AUDITORÍA
@@ -20000,6 +20221,12 @@ function inscribirMateriasEstudiante($id_usuario, $id_seccion, $materias_ids) {
                 continue;
             }
             
+            // REGLA: Si el estudiante ya aprobó la materia, NO se vuelve a inscribir
+            if (esMateriaAprobadaEstudiante($id_usuario, $id_materia, !empty($materia_data['es_proyecto_socio']))) {
+                error_log("Aviso: El estudiante ID $id_usuario ya aprobó la materia ID $id_materia. No se vuelve a inscribir.");
+                continue;
+            }
+            
             $trayecto_mat = intval($materia_data['trayecto']);
             
             // A) Insertar o actualizar en estudiante_materias
@@ -20540,12 +20767,18 @@ function obtenerMateriasParaInscripcion($id_usuario, $trayecto, $id_carrera, $es
         $ids_materias_inscritas[] = $materia_inscrita['id_materia'];
     }
     
-    // 3. Filtrar: solo materias NO inscritas actualmente
+    // 3. Filtrar: solo materias NO inscritas actualmente y NO aprobadas previamente
     $materias_disponibles = [];
     foreach ($todas_materias as $materia) {
-        if (!in_array($materia['id_materia'], $ids_materias_inscritas)) {
-            $materias_disponibles[] = $materia;
+        $mid = intval($materia['id_materia']);
+        $es_proj = !empty($materia['es_proyecto_socio']);
+        if (in_array($mid, $ids_materias_inscritas)) {
+            continue;
         }
+        if (esMateriaAprobadaEstudiante($id_usuario, $mid, $es_proj)) {
+            continue;
+        }
+        $materias_disponibles[] = $materia;
     }
     
     return $materias_disponibles;
@@ -25404,21 +25637,46 @@ function obtenerSolicitudAcademicaPorId($id_solicitud) {
  * (notas_definitivas, notas_trimestres o estudiante_materias).
  * Regla: Nota mínima aprobatoria 12 puntos; proyectos 16 puntos.
  */
-function esMateriaAprobadaEstudiante($id_usuario, $id_materia, $es_proyecto = false) {
+function esMateriaAprobadaEstudiante($id_usuario, $id_materia, $es_proyecto = null) {
     global $db;
     $id_usuario = intval($id_usuario);
     $id_materia = intval($id_materia);
+
+    if ($es_proyecto === null) {
+        $res_m = $db->query("SELECT es_proyecto_socio, nombre_materia FROM materias WHERE id_materia = $id_materia LIMIT 1");
+        if ($res_m && $row_m = $res_m->fetch_assoc()) {
+            $nom = mb_strtolower($row_m['nombre_materia'] ?? '');
+            $es_proyecto = (!empty($row_m['es_proyecto_socio']) || strpos($nom, 'proyecto') !== false || strpos($nom, 'socio integrador') !== false);
+        } else {
+            $es_proyecto = false;
+        }
+    }
+
     $nota_minima = $es_proyecto ? 16.0 : 12.0;
 
-    // 1. notas_definitivas
-    $res_def = $db->query("SELECT nota_final FROM notas_definitivas WHERE id_usuario = $id_usuario AND id_materia = $id_materia AND nota_final IS NOT NULL ORDER BY nota_final DESC LIMIT 1");
+    // 1. notas_definitivas: revisar nota_final y columnas trayecto_0 a trayecto_4
+    $res_def = $db->query("SELECT COALESCE(nota_final, trayecto_0, trayecto_1, trayecto_2, trayecto_3, trayecto_4) as nota 
+                           FROM notas_definitivas 
+                           WHERE id_usuario = $id_usuario AND id_materia = $id_materia 
+                           AND (nota_final IS NOT NULL OR trayecto_0 IS NOT NULL OR trayecto_1 IS NOT NULL OR trayecto_2 IS NOT NULL OR trayecto_3 IS NOT NULL OR trayecto_4 IS NOT NULL) 
+                           ORDER BY nota DESC LIMIT 1");
     if ($res_def && $row_def = $res_def->fetch_assoc()) {
-        if ($row_def['nota_final'] !== null && floatval($row_def['nota_final']) >= $nota_minima) {
+        if ($row_def['nota'] !== null && floatval($row_def['nota']) >= $nota_minima) {
             return true;
         }
     }
 
-    // 2. notas_trimestres
+    // 2. notas_trimestres: verificar promedio de los 3 trimestres o estado aprobada
+    $res_trim = $db->query("SELECT AVG(nota) as promedio, COUNT(DISTINCT trimestre_num) as num_trimestres 
+                            FROM notas_trimestres 
+                            WHERE id_usuario = $id_usuario AND id_materia = $id_materia 
+                            GROUP BY id_periodo 
+                            HAVING num_trimestres >= 3 AND promedio >= $nota_minima 
+                            LIMIT 1");
+    if ($res_trim && $res_trim->num_rows > 0) {
+        return true;
+    }
+
     if (function_exists('obtenerNotaFinalMateria')) {
         $nota_prom = obtenerNotaFinalMateria($id_usuario, $id_materia);
         if ($nota_prom !== null && floatval($nota_prom) >= $nota_minima) {

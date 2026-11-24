@@ -106,12 +106,7 @@ include("includes/head.php");
                     <div class="col-md-3 mb-3">
                         <label for="materia" class="form-label">Materia:</label>
                         <select name="materia" id="materia" class="form-control">
-                            <option value="">Todas las materias</option>
-                            <?php foreach ($materias as $materia): ?>
-                            <option value="<?= $materia['id'] ?>" <?= ($filtro_materia == $materia['id']) ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($materia['nombre']) ?>
-                            </option>
-                            <?php endforeach; ?>
+                            <?= renderizarOpcionesMateriasPorTrayecto($materias, $filtro_materia, 'Todas las materias') ?>
                         </select>
                     </div>
                     

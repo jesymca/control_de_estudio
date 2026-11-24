@@ -101,6 +101,7 @@ if ($stmtP) {
                 'carrera' => $pre['carrera'] ?? '',
                 'turno' => $pre['turno'] ?? '',
                 'sede' => $pre['sede'] ?? '',
+                'inscrito_por' => $pre['inscrito_por'] ?? '',
                 'asignado_opsu' => $pre['asignado_opsu'] ?? 'No',
                 'lapso_opsu' => $pre['lapso_opsu'] ?? '',
                 'titulos' => !empty($pre['titulos']) ? explode('|||', $pre['titulos']) : [],

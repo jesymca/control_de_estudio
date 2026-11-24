@@ -123,14 +123,168 @@ if (isset($_POST['marcar_titulo_entregado'])) {
     marcar_titulo_entregado($_POST['id_graduado']);
 }
 
+// Procesar aprobación formal de solicitud de grado
+if (isset($_POST['aprobar_solicitud_grado'])) {
+    $sol_id = intval($_POST['solicitud_id'] ?? 0);
+    $obs = trim($_POST['observaciones'] ?? '');
+    $admin_id_sesion = obtenerIdUsuario();
+    $res_g = function_exists('aprobarGraduacionEstudiante') ? aprobarGraduacionEstudiante($sol_id, $admin_id_sesion, $obs) : ['success' => false, 'mensaje' => 'Función no disponible'];
+    if ($res_g['success']) {
+        $_SESSION['flash_grado_msg'] = ['tipo' => 'success', 'texto' => $res_g['mensaje']];
+    } else {
+        $_SESSION['flash_grado_msg'] = ['tipo' => 'danger', 'texto' => $res_g['mensaje']];
+    }
+    header("Location: grado.php");
+    exit();
+}
+
+$solicitudes_grado_lista = function_exists('obtenerSolicitudesGrado') ? obtenerSolicitudesGrado() : [];
+$flash_grado = $_SESSION['flash_grado_msg'] ?? null;
+unset($_SESSION['flash_grado_msg']);
+
 include("includes/head.php");
 ?>
 
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <h1 class="h3 mb-4 text-gray-800 font-weight-bold">GESTIÓN DE GRADUACIÓN</h1>
-            
+            <h1 class="h3 mb-3 text-gray-800 font-weight-bold">
+                <i class="fas fa-graduation-cap text-primary mr-2"></i>GESTIÓN DE GRADUACIÓN
+            </h1>
+
+            <?php if (!empty($flash_grado)): ?>
+                <div class="alert alert-<?= $flash_grado['tipo'] ?> alert-dismissible fade show shadow-sm" role="alert">
+                    <i class="fas fa-<?= $flash_grado['tipo'] === 'success' ? 'check-circle' : 'exclamation-circle' ?> mr-2"></i>
+                    <?= htmlspecialchars($flash_grado['texto']) ?>
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                </div>
+            <?php endif; ?>
+
+            <!-- BANDEJA DE SOLICITUDES DE GRADO RECIBIDAS -->
+            <div class="card shadow mb-4 border-left-success" style="border-left: 5px solid #28a745 !important;">
+                <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-envelope-open-text mr-1"></i> SOLICITUDES DE GRADO RECIBIDAS (<?= count($solicitudes_grado_lista) ?>)
+                    </h6>
+                    <span class="badge badge-light border">Postulaciones Formales</span>
+                </div>
+                <div class="card-body p-0">
+                    <?php if (!empty($solicitudes_grado_lista)): ?>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped m-0 align-middle">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Folio</th>
+                                        <th>Cédula</th>
+                                        <th>Estudiante</th>
+                                        <th>Carrera</th>
+                                        <th>Título Solicitado</th>
+                                        <th class="text-center">I.R.A.</th>
+                                        <th>Fecha Solicitud</th>
+                                        <th>Estatus</th>
+                                        <th class="text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach ($solicitudes_grado_lista as $sg): 
+                                        $meta = $sg['meta_data'] ?? [];
+                                        $ira_val = isset($meta['ira']) ? number_format($meta['ira'], 2) : '-';
+                                        $es_aprobada = ($sg['status'] === 'aprobada');
+                                    ?>
+                                    <tr>
+                                        <td><strong>#<?= $sg['id'] ?></strong></td>
+                                        <td><?= htmlspecialchars($sg['cedula_estudiante']) ?></td>
+                                        <td><strong><?= htmlspecialchars(mb_strtoupper($sg['nombre_estudiante'], 'UTF-8')) ?></strong></td>
+                                        <td><?= htmlspecialchars($sg['nombre_carrera']) ?></td>
+                                        <td>
+                                            <span class="badge badge-<?= $sg['accion'] === 'TSU' ? 'warning' : 'primary' ?> px-2 py-1 font-weight-bold">
+                                                <?= htmlspecialchars($sg['accion']) ?>
+                                            </span>
+                                        </td>
+                                        <td class="text-center"><span class="badge badge-dark"><?= $ira_val ?> pts</span></td>
+                                        <td><?= date('d/m/Y H:i', strtotime($sg['fecha_solicitud'])) ?></td>
+                                        <td>
+                                            <?php if ($es_aprobada): ?>
+                                                <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i>Graduado</span>
+                                            <?php else: ?>
+                                                <span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i>Pendiente</span>
+                                            <?php endif; ?>
+                                        </td>
+                                        <td class="text-center text-nowrap">
+                                            <?php if (!$es_aprobada): ?>
+                                                <button type="button" class="btn btn-success btn-sm font-weight-bold btn-modal-aprobar-grado"
+                                                        data-solicitud-id="<?= $sg['id'] ?>"
+                                                        data-estudiante="<?= htmlspecialchars($sg['nombre_estudiante']) ?>"
+                                                        data-cedula="<?= htmlspecialchars($sg['cedula_estudiante']) ?>"
+                                                        data-titulo="<?= htmlspecialchars($sg['accion']) ?>">
+                                                    <i class="fas fa-check mr-1"></i> Aprobar Grado
+                                                </button>
+                                            <?php endif; ?>
+
+                                            <!-- Reporte Historial Graduando POST Oficial -->
+                                            <form method="POST" action="historial_graduando.php" target="_blank" class="d-inline">
+                                                <input type="hidden" name="estudiante_id" value="<?= $sg['estudiante_id'] ?>">
+                                                <input type="hidden" name="cedula" value="<?= htmlspecialchars($sg['cedula_estudiante']) ?>">
+                                                <input type="hidden" name="nombre" value="<?= htmlspecialchars($sg['nombre_estudiante']) ?>">
+                                                <input type="hidden" name="carrera" value="<?= htmlspecialchars($sg['nombre_carrera']) ?>">
+                                                <button type="submit" class="btn btn-outline-dark btn-sm" title="Historial Graduando PDF">
+                                                    <i class="fas fa-file-pdf"></i>
+                                                </button>
+                                            </form>
+
+                                            <a href="consulta_notas.php?cedula=<?= urlencode($sg['cedula_estudiante']) ?>" target="_blank" class="btn btn-outline-primary btn-sm" title="Consultar Récord Completo">
+                                                <i class="fas fa-search"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    <?php else: ?>
+                        <div class="p-4 text-center text-muted">
+                            <i class="fas fa-user-graduate fa-2x text-muted mb-2"></i>
+                            <p class="mb-0 small">No hay solicitudes de grado pendientes en este momento.</p>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+
+            <!-- MODAL APROBAR GRADO -->
+            <div class="modal fade" id="modalAprobarGrado" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <form method="POST" action="grado.php">
+                        <input type="hidden" name="aprobar_solicitud_grado" value="1">
+                        <input type="hidden" name="solicitud_id" id="modal_aprob_solicitud_id" value="">
+
+                        <div class="modal-content border-0 shadow">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title font-weight-bold">
+                                    <i class="fas fa-award mr-2"></i>Aprobar Graduación y Emitir Título
+                                </h5>
+                                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <p class="text-dark">¿Confirmas la graduación oficial del estudiante <strong id="modal_aprob_estudiante">-</strong> para el título de <strong id="modal_aprob_titulo">-</strong>?</p>
+                                <div class="form-group">
+                                    <label for="obs_grado" class="font-weight-bold small text-muted">Observaciones Institucionales:</label>
+                                    <textarea name="observaciones" id="obs_grado" class="form-control" rows="2" placeholder="Observaciones de acta o libro de grado..."></textarea>
+                                </div>
+                                <div class="alert alert-info small mb-0">
+                                    <i class="fas fa-info-circle mr-1"></i> Al confirmar, se registrará el título en el expediente del estudiante, permitiéndole continuar a Ingeniería o solicitar constancias.
+                                </div>
+                            </div>
+                            <div class="modal-footer bg-light">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                                <button type="submit" class="btn btn-success font-weight-bold px-4">
+                                    <i class="fas fa-check mr-1"></i> Confirmar Graduación
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Filtros -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3 bg-primary text-white font-weight-bold">
@@ -431,6 +585,15 @@ $(document).ready(function() {
         $('#estado_select').val('');
         $('#carrera_select').val('');
         realizarBusquedaGraduacionPost(1);
+    });
+
+    // Abrir Modal de Aprobación de Grado
+    $('.btn-modal-aprobar-grado').on('click', function() {
+        var btn = $(this);
+        $('#modal_aprob_solicitud_id').val(btn.data('solicitud-id'));
+        $('#modal_aprob_estudiante').text(btn.data('estudiante') + ' (C.I: ' + btn.data('cedula') + ')');
+        $('#modal_aprob_titulo').text(btn.data('titulo'));
+        $('#modalAprobarGrado').modal('show');
     });
 });
 </script>

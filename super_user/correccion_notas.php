@@ -328,15 +328,7 @@ include("includes/head.php");
                         <div class="form-group">
                             <label for="id_materia">Seleccione la Materia:</label>
                             <select name="id_materia" id="id_materia" class="form-control" required onchange="this.form.submit()">
-                                <option value="">Seleccionar Materia</option>
-                                <?php foreach ($materias as $materia): ?>
-                                <option value="<?php echo $materia['id_materia']; ?>" 
-                                    <?php echo (isset($_POST['id_materia']) && $_POST['id_materia'] == $materia['id_materia']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($materia['nombre_materia']); ?> 
-                                    - Trayecto <?php echo $materia['trayecto']; ?>
-                                    - Semestre <?php echo $materia['semestre']; ?>
-                                </option>
-                                <?php endforeach; ?>
+                                <?= renderizarOpcionesMateriasPorTrayecto($materias, $_POST['id_materia'] ?? null, 'Seleccionar Materia') ?>
                             </select>
                         </div>
                     </form>

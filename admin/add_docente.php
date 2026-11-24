@@ -4,11 +4,93 @@ ini_set('display_errors', '1');
 
 $titulopag = "Añadir nuevo docente";
 require_once('../funciones/functions.php');
+
+// Manejar peticiones AJAX para búsqueda y paginación rápida de docentes
+if (isset($_POST['ajax_docentes']) || isset($_GET['ajax_docentes'])) {
+    header('Content-Type: application/json');
+    $buscar = trim($_REQUEST['buscar'] ?? '');
+    $status = isset($_REQUEST['status']) ? trim($_REQUEST['status']) : '';
+    $pagina = isset($_REQUEST['pagina']) ? (int)$_REQUEST['pagina'] : 1;
+    $registros_por_pagina = isset($_REQUEST['registros_por_pagina']) ? (int)$_REQUEST['registros_por_pagina'] : 10;
+    
+    $filtros = [
+        'buscar' => $buscar,
+        'status' => $status
+    ];
+    
+    $datos = obtener_docentes_paginados($filtros, $pagina, $registros_por_pagina);
+    $docentes = $datos['resultados'];
+    $total_registros = $datos['total_registros'];
+    $total_paginas = $datos['total_paginas'];
+    $pagina_actual = $datos['pagina_actual'];
+    
+    $permiso_editar = tienePermiso('editar_docente') || (isset($_SESSION['user']['editar_docente']) && $_SESSION['user']['editar_docente'] == 1);
+    
+    ob_start();
+    if (!empty($docentes)) {
+        foreach ($docentes as $docente) {
+            ?>
+            <tr>
+                <td class="font-weight-bold"><?= htmlspecialchars($docente['id'] ?? '') ?></td>
+                <td><?= htmlspecialchars($docente['idusuario'] ?? '') ?></td>
+                <td><?= htmlspecialchars($docente['nombre'] ?? '') ?></td>
+                <td><?= htmlspecialchars($docente['email'] ?? '') ?></td>
+                <td><?= htmlspecialchars($docente['tlf'] ?? '') ?></td>
+                <td>
+                    <span class="badge <?= ($docente['status'] == 1) ? 'badge-success' : 'badge-warning' ?>">
+                        <?= ($docente['status'] == 1) ? 'Activo' : 'Inactivo' ?>
+                    </span>
+                </td>
+                <?php if ($permiso_editar): ?>
+                <td class="text-center">
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary btn-editar" 
+                                data-id="<?= htmlspecialchars($docente['id']) ?>" 
+                                data-toggle="modal" 
+                                data-target="#modalEditar"
+                                title="Editar Docente">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-outline-<?= ($docente['status'] == 1) ? 'warning' : 'success' ?> btn-estado" 
+                                data-id="<?= htmlspecialchars($docente['id']) ?>" 
+                                data-status="<?= htmlspecialchars($docente['status']) ?>"
+                                data-toggle="modal" 
+                                data-target="#modalEstado"
+                                title="<?= ($docente['status'] == 1) ? 'Deshabilitar' : 'Habilitar' ?>">
+                            <i class="fas <?= ($docente['status'] == 1) ? 'fa-ban' : 'fa-check' ?>"></i>
+                        </button>
+                    </div>
+                </td>
+                <?php endif; ?>
+            </tr>
+            <?php
+        }
+    } else {
+        $colspan = $permiso_editar ? 7 : 6;
+        echo '<tr><td colspan="' . $colspan . '" class="text-center font-weight-bold text-muted p-4"><i class="fas fa-exclamation-circle text-warning mr-2"></i> NO SE ENCONTRARON DOCENTES CON LOS FILTROS SELECCIONADOS</td></tr>';
+    }
+    $html_tabla = ob_get_clean();
+    
+    $html_info = generar_html_info_registros($total_registros, $pagina_actual, $registros_por_pagina, 'DOCENTES');
+    $html_paginacion = generar_html_paginacion_ajax($total_paginas, $pagina_actual, 'cargarDocentes');
+    
+    echo json_encode([
+        'status' => 'success',
+        'html' => $html_tabla,
+        'html_info' => $html_info,
+        'html_paginacion' => $html_paginacion,
+        'total_registros' => $total_registros,
+        'total_paginas' => $total_paginas,
+        'pagina_actual' => $pagina_actual
+    ]);
+    exit();
+}
+
 include("includes/head.php");
 
 // Verificar permisos
 $permiso_agregar = isset($_SESSION['user']['agregar_docente']) && $_SESSION['user']['agregar_docente'] == 1;
-$permiso_editar = isset($_SESSION['user']['editar_docente']) && $_SESSION['user']['editar_docente'] == 1;
+$permiso_editar = tienePermiso('editar_docente') || (isset($_SESSION['user']['editar_docente']) && $_SESSION['user']['editar_docente'] == 1);
 
 // LLAMAR A LA FUNCIÓN DE VISITA
 visita();
@@ -38,8 +120,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-// Obtener lista de docentes
-$docentes = obtenerDocentes();
+// Obtener lista de docentes con paginación inicial rápida
+$registros_por_pagina = 10;
+$pagina_actual = 1;
+$datos_docentes = obtener_docentes_paginados([], $pagina_actual, $registros_por_pagina);
+$docentes = $datos_docentes['resultados'];
+$total_registros = $datos_docentes['total_registros'];
+$total_paginas = $datos_docentes['total_paginas'];
 
 // Obtener lista de títulos desde la base de datos
 $titulos_db = [];
@@ -483,10 +570,51 @@ if ($stmt = $db->prepare($query)) {
             
             <!-- Tabla de docentes registrados -->
             <div class="card mt-4 shadow-sm">
-                <div class="card-header">
-                    <h5 class="mb-0">Docentes Registrados</h5>
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-chalkboard-teacher mr-2"></i>Docentes Registrados</h5>
                 </div>
-                <div class="card-body p-0">
+                <div class="card-body">
+                    <!-- Filtros de búsqueda en tiempo real -->
+                    <div class="row mb-3 align-items-center">
+                        <div class="col-md-6 col-lg-5 mb-2 mb-md-0">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-light"><i class="fas fa-search text-primary"></i></span>
+                                </div>
+                                <input type="text" id="buscadorDocente" class="form-control" placeholder="Buscar por Nombre, Cédula, Email, Teléfono..." autocomplete="off">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" id="btnLimpiarBusqueda" title="Limpiar búsqueda">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-lg-3 mb-2 mb-md-0">
+                            <select id="filtroEstadoDocente" class="form-control">
+                                <option value="">Todos los Estados</option>
+                                <option value="1">Activos</option>
+                                <option value="0">Inactivos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 col-lg-4 text-md-right">
+                            <label class="mr-2 font-weight-bold text-uppercase text-muted mb-0"><small>Mostrar:</small></label>
+                            <select class="form-control form-control-sm d-inline-block w-auto font-weight-bold" id="registrosPorPaginaDocente">
+                                <option value="10" selected>10</option>
+                                <option value="25">25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                            <small class="text-muted font-weight-bold ml-1">por página</small>
+                        </div>
+                    </div>
+
+                    <!-- Contador / Info de registros -->
+                    <div class="row mb-2">
+                        <div class="col-12" id="infoDocentesContainer">
+                            <?= generar_html_info_registros($total_registros, $pagina_actual, $registros_por_pagina, 'DOCENTES') ?>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table class="table table-striped table-hover mb-0" id="tablaDocentes">
                             <thead class="thead-dark">
@@ -502,42 +630,57 @@ if ($stmt = $db->prepare($query)) {
                                     <?php endif; ?>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <?php foreach ($docentes as $docente): ?>
-                                <tr>
-                                    <td class="font-weight-bold"><?= $docente['id'] ?></td>
-                                    <td><?= $docente['idusuario'] ?></td>
-                                    <td><?= $docente['nombre'] ?></td>
-                                    <td><?= $docente['email'] ?></td>
-                                    <td><?= $docente['tlf'] ?></td>
-                                    <td>
-                                        <span class="badge <?= ($docente['status'] == 1) ? 'badge-success' : 'badge-warning' ?>">
-                                            <?= ($docente['status'] == 1) ? 'Activo' : 'Inactivo' ?>
-                                        </span>
-                                    </td>
-                                    <?php if ($permiso_editar): ?>
-                                    <td class="text-center">
-                                        <div class="btn-group btn-group-sm">
-                                            <button class="btn btn-outline-primary btn-editar" 
-                                                    data-id="<?= $docente['id'] ?>" 
-                                                    data-toggle="modal" 
-                                                    data-target="#modalEditar">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-outline-<?= ($docente['status'] == 1) ? 'warning' : 'success' ?> btn-estado" 
-                                                    data-id="<?= $docente['id'] ?>" 
-                                                    data-status="<?= $docente['status'] ?>"
-                                                    data-toggle="modal" 
-                                                    data-target="#modalEstado">
-                                                <i class="fas <?= ($docente['status'] == 1) ? 'fa-ban' : 'fa-check' ?>"></i>
-                                            </button>
-                                        </div>
-                                    </td>
-                                    <?php endif; ?>
-                                </tr>
-                                <?php endforeach; ?>
+                            <tbody id="tbodyDocentes">
+                                <?php if (!empty($docentes)): ?>
+                                    <?php foreach ($docentes as $docente): ?>
+                                    <tr>
+                                        <td class="font-weight-bold"><?= htmlspecialchars($docente['id'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars($docente['idusuario'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars($docente['nombre'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars($docente['email'] ?? '') ?></td>
+                                        <td><?= htmlspecialchars($docente['tlf'] ?? '') ?></td>
+                                        <td>
+                                            <span class="badge <?= ($docente['status'] == 1) ? 'badge-success' : 'badge-warning' ?>">
+                                                <?= ($docente['status'] == 1) ? 'Activo' : 'Inactivo' ?>
+                                            </span>
+                                        </td>
+                                        <?php if ($permiso_editar): ?>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary btn-editar" 
+                                                        data-id="<?= htmlspecialchars($docente['id']) ?>" 
+                                                        data-toggle="modal" 
+                                                        data-target="#modalEditar"
+                                                        title="Editar Docente">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="btn btn-outline-<?= ($docente['status'] == 1) ? 'warning' : 'success' ?> btn-estado" 
+                                                        data-id="<?= htmlspecialchars($docente['id']) ?>" 
+                                                        data-status="<?= htmlspecialchars($docente['status']) ?>"
+                                                        data-toggle="modal" 
+                                                        data-target="#modalEstado"
+                                                        title="<?= ($docente['status'] == 1) ? 'Deshabilitar' : 'Habilitar' ?>">
+                                                    <i class="fas <?= ($docente['status'] == 1) ? 'fa-ban' : 'fa-check' ?>"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                        <?php endif; ?>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="<?= $permiso_editar ? 7 : 6 ?>" class="text-center font-weight-bold text-muted p-4">
+                                            <i class="fas fa-exclamation-circle text-warning mr-2"></i> NO SE ENCONTRARON DOCENTES REGISTRADOS
+                                        </td>
+                                    </tr>
+                                <?php endif; ?>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Paginación -->
+                    <div id="paginacionDocentesContainer" class="mt-3">
+                        <?= generar_html_paginacion_ajax($total_paginas, $pagina_actual, 'cargarDocentes') ?>
                     </div>
                 </div>
             </div>
@@ -782,14 +925,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Configurar DataTable
-    $('#tablaDocentes').DataTable({
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json'
-        },
-        responsive: true,
-        pageLength: 10,
-        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]]
+    // Variables de paginación y búsqueda para docentes
+    let paginaDocentesActual = 1;
+    let timerBusquedaDocente = null;
+
+    window.cargarDocentes = function(pagina = 1) {
+        paginaDocentesActual = pagina;
+        const buscar = $('#buscadorDocente').val() || '';
+        const status = $('#filtroEstadoDocente').val();
+        const porPagina = $('#registrosPorPaginaDocente').val() || 10;
+
+        $('#tbodyDocentes').css('opacity', '0.5');
+
+        $.ajax({
+            url: 'add_docente.php',
+            type: 'POST',
+            data: {
+                ajax_docentes: 1,
+                buscar: buscar,
+                status: status,
+                pagina: paginaDocentesActual,
+                registros_por_pagina: porPagina
+            },
+            dataType: 'json',
+            success: function(res) {
+                $('#tbodyDocentes').css('opacity', '1');
+                if (res && res.status === 'success') {
+                    $('#tbodyDocentes').html(res.html);
+                    $('#infoDocentesContainer').html(res.html_info);
+                    $('#paginacionDocentesContainer').html(res.html_paginacion);
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#tbodyDocentes').css('opacity', '1');
+                console.error('Error al cargar docentes:', error);
+            }
+        });
+    };
+
+    window.refreshDocentesTable = function() {
+        cargarDocentes(paginaDocentesActual);
+    };
+
+    // Búsqueda en tiempo real con debounce (250ms)
+    $('#buscadorDocente').on('input', function() {
+        clearTimeout(timerBusquedaDocente);
+        timerBusquedaDocente = setTimeout(function() {
+            cargarDocentes(1);
+        }, 250);
+    });
+
+    $('#btnLimpiarBusqueda').on('click', function() {
+        $('#buscadorDocente').val('');
+        $('#filtroEstadoDocente').val('');
+        cargarDocentes(1);
+    });
+
+    $('#filtroEstadoDocente').on('change', function() {
+        cargarDocentes(1);
+    });
+
+    $('#registrosPorPaginaDocente').on('change', function() {
+        cargarDocentes(1);
     });
     
     // Manejar clic en botón Editar
@@ -933,7 +1130,11 @@ document.addEventListener('DOMContentLoaded', function() {
             success: function(response) {
                 if(response.success) {
                     $('#modalEstado').modal('hide');
-                    location.reload();
+                    if (typeof refreshDocentesTable === 'function') {
+                        refreshDocentesTable();
+                    } else {
+                        location.reload();
+                    }
                 } else {
                     alert('Error: ' + (response.message || 'No se pudo cambiar el estado.'));
                 }

@@ -517,25 +517,19 @@ include("includes/head.php");
                                 <div class="form-group">
                                     <label for="nueva_materia"><i class="fas fa-exchange-alt"></i> Nueva Materia:</label>
                                     <select class="form-control" id="nueva_materia" name="id_materia" required>
-                                        <option value="">-- Seleccione una materia --</option>
                                         <?php
                                         // Obtener materias de la carrera del director
-                                        $query_materias = "SELECT m.id_materia, m.nombre_materia, m.cod_materia 
+                                        $query_materias = "SELECT m.id_materia, m.nombre_materia, m.cod_materia, m.trayecto, m.creditos 
                                                           FROM carrera_materia cm
                                                           JOIN materias m ON cm.id_materia = m.id_materia
                                                           WHERE cm.id_carrera = ? AND m.activa = 1
-                                                          ORDER BY cm.semestre, m.nombre_materia";
+                                                          ORDER BY m.trayecto ASC, cm.semestre ASC, m.nombre_materia ASC";
                                         $stmt = $db->prepare($query_materias);
                                         $stmt->bind_param("s", $carrera_director);
                                         $stmt->execute();
                                         $materias_result = $stmt->get_result();
-                                        
-                                        while($materia = $materias_result->fetch_assoc()): 
+                                        echo renderizarOpcionesMateriasPorTrayecto($materias_result, null, '-- Seleccione una materia --');
                                         ?>
-                                            <option value="<?php echo $materia['id_materia']; ?>">
-                                                <?php echo htmlspecialchars($materia['nombre_materia'] . ' (' . $materia['cod_materia'] . ')'); ?>
-                                            </option>
-                                        <?php endwhile; ?>
                                     </select>
                                 </div>
                                 <input type="hidden" id="id_asignacion" name="id_asignacion">
@@ -600,25 +594,19 @@ include("includes/head.php");
                                         <i class="fas fa-book-open"></i> Materia:
                                     </label>
                                     <select class="form-control" id="id_materia" name="id_materia" required>
-                                        <option value="">-- Seleccione una materia --</option>
                                         <?php
                                         // Obtener materias de la carrera del director
-                                        $query_materias = "SELECT m.id_materia, m.nombre_materia, m.cod_materia 
+                                        $query_materias = "SELECT m.id_materia, m.nombre_materia, m.cod_materia, m.trayecto, m.creditos 
                                                           FROM carrera_materia cm
                                                           JOIN materias m ON cm.id_materia = m.id_materia
                                                           WHERE cm.id_carrera = ? AND m.activa = 1
-                                                          ORDER BY cm.semestre, m.nombre_materia";
+                                                          ORDER BY m.trayecto ASC, cm.semestre ASC, m.nombre_materia ASC";
                                         $stmt = $db->prepare($query_materias);
                                         $stmt->bind_param("s", $carrera_director);
                                         $stmt->execute();
                                         $materias_result = $stmt->get_result();
-                                        
-                                        while($materia = $materias_result->fetch_assoc()): 
+                                        echo renderizarOpcionesMateriasPorTrayecto($materias_result, null, '-- Seleccione una materia --');
                                         ?>
-                                            <option value="<?php echo $materia['id_materia']; ?>">
-                                                <?php echo htmlspecialchars($materia['nombre_materia'] . ' (' . $materia['cod_materia'] . ')'); ?>
-                                            </option>
-                                        <?php endwhile; ?>
                                     </select>
                                 </div>
                                 
@@ -651,25 +639,19 @@ include("includes/head.php");
                                         <i class="fas fa-book"></i> Materia:
                                     </label>
                                     <select class="form-control" id="materia_recomendacion" name="materia_recomendacion">
-                                        <option value="">-- Seleccione una materia --</option>
                                         <?php
                                         // Obtener materias de la carrera del director
-                                        $query_materias = "SELECT m.id_materia, m.nombre_materia, m.cod_materia 
+                                        $query_materias = "SELECT m.id_materia, m.nombre_materia, m.cod_materia, m.trayecto, m.creditos 
                                                           FROM carrera_materia cm
                                                           JOIN materias m ON cm.id_materia = m.id_materia
                                                           WHERE cm.id_carrera = ? AND m.activa = 1
-                                                          ORDER BY cm.semestre, m.nombre_materia";
+                                                          ORDER BY m.trayecto ASC, cm.semestre ASC, m.nombre_materia ASC";
                                         $stmt = $db->prepare($query_materias);
                                         $stmt->bind_param("s", $carrera_director);
                                         $stmt->execute();
                                         $materias_result = $stmt->get_result();
-                                        
-                                        while($materia = $materias_result->fetch_assoc()): 
+                                        echo renderizarOpcionesMateriasPorTrayecto($materias_result, null, '-- Seleccione una materia --');
                                         ?>
-                                            <option value="<?php echo $materia['id_materia']; ?>">
-                                                <?php echo htmlspecialchars($materia['nombre_materia'] . ' (' . $materia['cod_materia'] . ')'); ?>
-                                            </option>
-                                        <?php endwhile; ?>
                                     </select>
                                 </div>
                             </div>

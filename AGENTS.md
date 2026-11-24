@@ -54,7 +54,7 @@ Claves del viejo: `pensum` char(3) (ej. `GXC`), `cod_mat` char(5), `lapso` forma
 - `herrejose@gmail.com` / `12345678` (users.id = 2, username `V-12345678`, todos los permisos).
 
 ## 6. Líneas de trabajo (roadmap)
-- **A. Migración de datos viejo → nuevo**: script que reciba `pnfdiurno.sql` y migre al esquema de `proyecto_tsu.sql`. *Estado: solo análisis inicial, no tocar `sistema_viejo`.*
+- **A. Migración de datos viejo → nuevo**: Migración histórica completada con éxito desde `pnfdiurno` a `uptpc`. Se migraron 22,469 estudiantes, 606 docentes, 2,776 materias, 116 periodos académicos, 174 egresados/graduados y 162,552 calificaciones definitivas. Usuario de prueba `herrejose@gmail.com` preservado intacto.
 - **B. Replataforma a Vercel + TypeScript + Turso + Cloudflare R2**: *Estado: Arquitectura inicial montada en `/VERCEL`, variables locales blindadas contra filtraciones en Git, scripts de validación y migración de multimedia listos.*
 
 ## 7. Estado actual / Bitácora
@@ -69,6 +69,8 @@ Claves del viejo: `pensum` char(3) (ej. `GXC`), `cod_mat` char(5), `lapso` forma
 | 2026-11-01 | Implementación de Selector de Perfil y Portales de Rol | Creado `/profile-selector` (reemplazo de `profile_selector.php`), endpoints de cambio de perfil (`/api/auth/select-profile`), y los 5 portales de rol con sus herramientas internas: `/admin`, `/super-user`, `/docente`, `/estudiante`, `/director-de-carrera`. Barra de navegación unificada `RoleNavbar` con botón "Cambiar Perfil". |
 | 2026-11-01 | Operatividad total de las 30 herramientas de Super User / Admin | Creados endpoints API (`/api/pagos`, `/api/notas`, `/api/mensajeria`, `/api/auditoria`, `/api/configuracion`, `/api/academico`) y panel interactivo con los 30 módulos requeridos: pagos (aprobación/rechazo/registro manual), estudiantes, inscripción de materias, secciones, grados, constancias, carreras, asignaturas, prelaciones, docentes, directores, notas pendientes/definitivas, auditoría, visitas, tipos de pago/horario. Compilación `next build` 100% exitosa (25 rutas). |
 | 2026-11-01 | Implementación de CRUD Total para Super Administrador | Creado endpoint universal `/api/crud` y modales interactivos en `/admin` con capacidad completa de Create, Read, Update y Delete sobre: Estudiantes, Docentes, Carreras, Asignaturas, Secciones, Tipos de Pago, Tipos de Horario, Periodos Académicos, Prelaciones y Pagos. Compilación `next build` 100% exitosa (26 rutas). |
+| 2026-11-18 | Respaldo, limpieza y migración integral `pnfdiurno` → `uptpc` | Respaldo completo en `respaldo_uptpc_antes_de_migracion_20261118_091949.sql`. Tablas de prueba limpiadas preservando admin id=1..5 (`herrejose@gmail.com`). Migrados: 22,469 estudiantes, 606 docentes, 2,776 materias con pensums, 116 periodos, 162,552 notas y 174 graduados. Normalizado a utf8mb4. Sistema PHP/MySQL 100% operativo localmente. |
+| 2026-11-18 | Optimización masiva de rendimiento en `admin/estudiantes.php` | El HTML inicial pasó de 90.6 MB a 231 KB (-99.75% payload) y de 15s de congelamiento a 240ms. Se indexó `users(estudiante)`. Estadísticas calculadas en DB en 50ms. Se implementó paginación y búsqueda server-side vía `admin/ajax_estudiantes.php` (70ms por página). Generación de reportes PDF masiva intacta vía POST. |
 
 ### Riesgos/pendientes detectados
 - Credenciales SMTP (contraseña de aplicación Gmail) **hardcodeadas** en `funciones/enviar_email.php` y `funciones/variables.php` → rotarlas y moverlas a variables de entorno.

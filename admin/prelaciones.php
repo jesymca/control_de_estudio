@@ -78,19 +78,13 @@ include('includes/head.php');
                     <div class="form-group col-md-6">
                         <label>Materia (la que requiere):</label>
                         <select name="id_materia" class="form-control" required>
-                            <option value="">-- Seleccione --</option>
-                            <?php foreach ($materias as $m): ?>
-                                <option value="<?php echo intval($m['id_materia']); ?>"><?php echo htmlspecialchars($m['cod_materia']) . ' - ' . htmlspecialchars($m['nombre_materia']); ?></option>
-                            <?php endforeach; ?>
+                            <?= renderizarOpcionesMateriasPorTrayecto($materias, null, '-- Seleccione Materia --') ?>
                         </select>
                     </div>
                     <div class="form-group col-md-6">
                         <label>Prerrequisito (materia previa):</label>
                         <select name="id_prerequisito" class="form-control" required>
-                            <option value="">-- Seleccione --</option>
-                            <?php foreach ($materias as $m): ?>
-                                <option value="<?php echo intval($m['id_materia']); ?>"><?php echo htmlspecialchars($m['cod_materia']) . ' - ' . htmlspecialchars($m['nombre_materia']); ?></option>
-                            <?php endforeach; ?>
+                            <?= renderizarOpcionesMateriasPorTrayecto($materias, null, '-- Seleccione Prerrequisito --') ?>
                         </select>
                     </div>
                 </div>

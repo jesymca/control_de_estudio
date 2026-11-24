@@ -46,6 +46,7 @@ $user_id = (int)$_SESSION['user']['id'];
                     
                     // Consulta optimizada con el campo inicia
                     $query = "SELECT 
+                                s.id_seccion,
                                 s.codigo_seccion,
                                 c.nombre_carrera,
                                 t.nombre_trayecto,
@@ -73,13 +74,13 @@ $user_id = (int)$_SESSION['user']['id'];
                             if ($result->num_rows > 0) {
                                 // Vista para escritorio: tabla
                                 echo '<div class="table-responsive d-none d-md-block">
-                                        <table class="table table-bordered table-hover">
+                                        <table class="table table-bordered table-hover align-middle">
                                             <thead class="thead-dark">
                                                 <tr>
                                                     <th>Sección</th>
                                                     <th>Carrera</th>
                                                     <th>Trayecto</th>
-                                                    <th>Nivel</th>
+                                                    <th>Asignatura(s) y Docente Asignado</th>
                                                     <th>Periodo</th>
                                                     <th>Fecha de Inicio</th>
                                                     <th>Inscrito el</th>
@@ -91,15 +92,40 @@ $user_id = (int)$_SESSION['user']['id'];
                                 $secciones_data = [];
                                 
                                 while ($row = $result->fetch_assoc()) {
+                                    $id_sec_cur = intval($row['id_seccion']);
+                                    $materias_sec = function_exists('obtenerDetalleAsignaturasSeccionEstudiante') 
+                                        ? obtenerDetalleAsignaturasSeccionEstudiante($id_sec_cur, $user_id) 
+                                        : [];
+                                    $row['materias_detalle'] = $materias_sec;
                                     $secciones_data[] = $row;
+
+                                    $materias_html = '';
+                                    if (!empty($materias_sec)) {
+                                        foreach ($materias_sec as $msec) {
+                                            $tipo_badge = '';
+                                            $te = strtoupper(trim($msec['tipo_examen'] ?? 'R'));
+                                            if ($te === 'P') $tipo_badge = '<span class="badge badge-warning text-dark ml-1">PER</span>';
+                                            elseif ($te === 'T') $tipo_badge = '<span class="badge badge-info ml-1">Intensivo</span>';
+                                            elseif ($te === 'S') $tipo_badge = '<span class="badge badge-primary ml-1">Suficiencia</span>';
+                                            elseif ($te === 'E') $tipo_badge = '<span class="badge badge-danger ml-1">Extraordinario</span>';
+
+                                            $materias_html .= '<div class="mb-1 pb-1 border-bottom border-light">
+                                                <strong>[' . htmlspecialchars($msec['cod_materia']) . ']</strong> ' . htmlspecialchars($msec['nombre_materia']) . $tipo_badge . '<br>
+                                                <small class="text-muted"><i class="fas fa-chalkboard-teacher mr-1 text-primary"></i>' . htmlspecialchars($msec['nombre_docente']) . '</small>
+                                            </div>';
+                                        }
+                                    } else {
+                                        $materias_html = '<span class="text-muted small">Carga académica general</span>';
+                                    }
+
                                     echo '<tr>
-                                            <td class="align-middle"><strong>'.htmlspecialchars($row['codigo_seccion']).'</strong></td>
-                                            <td class="align-middle">'.htmlspecialchars($row['nombre_carrera']).'</td>
-                                            <td class="align-middle">'.htmlspecialchars($row['nombre_trayecto']).'</td>
-                                            <td class="align-middle">'.htmlspecialchars($row['numero_trayecto']).'</td>
-                                            <td class="align-middle">'.htmlspecialchars($row['nombre_periodo']).'</td>
-                                            <td class="align-middle">'.date('d/m/Y', strtotime($row['inicia'])).'</td>
-                                            <td class="align-middle">'.date('d/m/Y', strtotime($row['fecha_inscripcion'])).'</td>
+                                            <td class="align-middle"><strong class="text-primary">' . htmlspecialchars($row['codigo_seccion']) . '</strong></td>
+                                            <td class="align-middle">' . htmlspecialchars($row['nombre_carrera']) . '</td>
+                                            <td class="align-middle">' . htmlspecialchars($row['nombre_trayecto']) . ' (' . htmlspecialchars($row['numero_trayecto']) . ')</td>
+                                            <td class="align-middle">' . $materias_html . '</td>
+                                            <td class="align-middle">' . htmlspecialchars($row['nombre_periodo']) . '</td>
+                                            <td class="align-middle">' . date('d/m/Y', strtotime($row['inicia'])) . '</td>
+                                            <td class="align-middle">' . date('d/m/Y', strtotime($row['fecha_inscripcion'])) . '</td>
                                         </tr>';
                                 }
                                 
@@ -108,6 +134,23 @@ $user_id = (int)$_SESSION['user']['id'];
                                 // Vista para móviles: tarjetas
                                 echo '<div class="d-block d-md-none">';
                                 foreach ($secciones_data as $row) {
+                                    $mat_mob_html = '';
+                                    if (!empty($row['materias_detalle'])) {
+                                        foreach ($row['materias_detalle'] as $msec) {
+                                            $tipo_badge = '';
+                                            $te = strtoupper(trim($msec['tipo_examen'] ?? 'R'));
+                                            if ($te === 'P') $tipo_badge = '<span class="badge badge-warning text-dark ml-1">PER</span>';
+                                            elseif ($te === 'T') $tipo_badge = '<span class="badge badge-info ml-1">Intensivo</span>';
+                                            elseif ($te === 'S') $tipo_badge = '<span class="badge badge-primary ml-1">Suficiencia</span>';
+                                            elseif ($te === 'E') $tipo_badge = '<span class="badge badge-danger ml-1">Extraordinario</span>';
+
+                                            $mat_mob_html .= '<div class="p-2 mb-1 bg-light rounded">
+                                                <strong>[' . htmlspecialchars($msec['cod_materia']) . ']</strong> ' . htmlspecialchars($msec['nombre_materia']) . $tipo_badge . '<br>
+                                                <small class="text-muted"><i class="fas fa-chalkboard-teacher mr-1 text-primary"></i>' . htmlspecialchars($msec['nombre_docente']) . '</small>
+                                            </div>';
+                                        }
+                                    }
+
                                     echo '<div class="card mb-3 shadow-sm">
                                             <div class="card-header bg-primary text-white">
                                                 <strong><i class="fas fa-chalkboard"></i> Sección ' . htmlspecialchars($row['codigo_seccion']) . '</strong>
@@ -129,6 +172,7 @@ $user_id = (int)$_SESSION['user']['id'];
                                                         ' . htmlspecialchars($row['nombre_trayecto']) . ' (' . htmlspecialchars($row['numero_trayecto']) . ')'
                                                     . '</div>
                                                 </div>
+                                                ' . (!empty($mat_mob_html) ? '<div class="mb-2"><span class="text-muted small font-weight-bold d-block mb-1">Clase(s) Inscrita(s):</span>' . $mat_mob_html . '</div>' : '') . '
                                                 <div class="row mb-2">
                                                     <div class="col-5 text-muted">
                                                         <i class="fas fa-calendar-alt"></i> Periodo:

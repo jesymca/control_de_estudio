@@ -55,6 +55,8 @@ $admin_url = $base_url . '/admin';
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 <!-- Roles Theme CSS -->
 <link rel="stylesheet" href="<?= $base_url ?>/css/roles_theme.css">
+<!-- Helper Select Materias por Trayecto -->
+<script src="<?= $base_url ?>/js/materias_trayecto.js"></script>
 
 <style>
     /* ESTILOS GENERALES */
@@ -288,6 +290,10 @@ $admin_url = $base_url . '/admin';
                             <i class="fas fa-object-group fa-fw"></i> Gestionar Secciones
                         </a>
                         <?php endif; ?>
+
+                        <a title="Solicitudes de Evaluaciones Especiales" class="dropdown-item" href="<?= $admin_url ?>/solicitudes_evaluaciones.php">
+                            <i class="fas fa-layer-group fa-fw text-warning"></i> Solicitudes Especiales (PER/INT/SUF/EXT)
+                        </a>
 
                         <?php if (tienePermiso('grado')): ?>
                             <a title="Títulos y Relaciones con Materias" class="dropdown-item" href="<?= $admin_url ?>/grado.php">

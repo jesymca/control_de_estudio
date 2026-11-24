@@ -341,17 +341,7 @@ include("includes/head.php");
                         <div class="form-group">
                             <label for="id_materia">Seleccione la Materia:</label>
                             <select name="id_materia" id="id_materia" class="form-control" required onchange="this.form.submit()">
-                                <option value="">Seleccionar Materia</option>
-                                <?php 
-                                $materias->data_seek(0);
-                                while ($materia = $materias->fetch_assoc()): 
-                                ?>
-                                <option value="<?php echo $materia['id_materia']; ?>" 
-                                    <?php echo (isset($_POST['id_materia']) && $_POST['id_materia'] == $materia['id_materia']) ? 'selected' : ''; ?>>
-                                    <?php echo htmlspecialchars($materia['nombre_materia']); ?> 
-                                    - Trayecto <?php echo $materia['trayecto']; ?>
-                                </option>
-                                <?php endwhile; ?>
+                                <?= renderizarOpcionesMateriasPorTrayecto($materias, $_POST['id_materia'] ?? null, 'Seleccionar Materia') ?>
                             </select>
                         </div>
                     </form>

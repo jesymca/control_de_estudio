@@ -15,15 +15,14 @@ if (isset($_GET['action'])) {
 
     if ($_GET['action'] == 'get_materias') {
         $carrera_id = $_GET['carrera_id'] ?? '';
-        $query = "SELECT m.id_materia, m.nombre_materia FROM materias m 
+        $query = "SELECT m.id_materia, m.nombre_materia, m.cod_materia, m.trayecto, m.creditos FROM materias m 
                   INNER JOIN carrera_materia cm ON m.id_materia = cm.id_materia 
-                  WHERE cm.id_carrera = ? ORDER BY m.nombre_materia ASC";
+                  WHERE cm.id_carrera = ? ORDER BY m.trayecto ASC, m.nombre_materia ASC";
         $stmt = $db->prepare($query);
         $stmt->bind_param("i", $carrera_id);
         $stmt->execute();
         $result = $stmt->get_result();
-        echo '<option value="">Seleccione Materia</option>';
-        while ($row = $result->fetch_assoc()) echo '<option value="'.$row['id_materia'].'">'.$row['nombre_materia'].'</option>';
+        echo renderizarOpcionesMateriasPorTrayecto($result, null, 'Seleccione Materia');
         exit;
     }
 

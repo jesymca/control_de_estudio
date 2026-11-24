@@ -121,7 +121,7 @@ $fechaSolicitud = date('Y-m-d');
                         • Su <strong>Cédula</strong>, <strong>Nombre</strong> y <strong>Fecha de Nacimiento</strong> no pueden modificarse.
                     </div>
                     <p class="text-muted small mb-0">
-                        Todos los demás datos (carrera, turno, asignación OPSU, teléfonos, dirección, etc.) han sido cargados y puede actualizarlos libremente antes de formalizar.
+                        Todos los demás datos (carrera, turno, modalidad de ingreso / inscrito por, teléfonos, dirección, etc.) han sido cargados y puede actualizarlos libremente antes de formalizar.
                     </p>
                 </div>
                 <div class="modal-footer">
@@ -320,41 +320,33 @@ $fechaSolicitud = date('Y-m-d');
             </div>
         </div>
 
-        <!-- Asignado OPSU y Lapso Académico -->
+        <!-- Inscrito por -->
         <div class="col-md-6">
             <div class="mb-3">
-                <label class="form-label required"><strong>¿Asignado por OPSU?</strong></label>
-                <div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="asignado_opsu" id="opsu_si<?php echo $prefijo; ?>" value="Sí" <?php echo (isset($_POST['asignado_opsu']) && $_POST['asignado_opsu'] === 'Sí') ? 'checked' : ''; ?> required>
-                        <label class="form-check-label" for="opsu_si<?php echo $prefijo; ?>">Sí</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="asignado_opsu" id="opsu_no<?php echo $prefijo; ?>" value="No" <?php echo (!isset($_POST['asignado_opsu']) || $_POST['asignado_opsu'] !== 'Sí') ? 'checked' : ''; ?>>
-                        <label class="form-check-label" for="opsu_no<?php echo $prefijo; ?>">No</label>
-                    </div>
-                </div>
-                <small class="text-muted">Indique si fue asignado a través del Sistema Nacional de Ingreso (OPSU).</small>
-            </div>
-        </div>
-
-        <div class="col-md-6" id="contenedorLapsoOpsu<?php echo $prefijo; ?>" style="<?php echo (isset($_POST['asignado_opsu']) && $_POST['asignado_opsu'] === 'Sí') ? '' : 'display: none;'; ?>">
-            <div class="mb-3">
-                <label for="lapso_opsu<?php echo $prefijo; ?>" class="form-label required"><strong>Lapso Académico de Asignación OPSU</strong></label>
-                <select name="lapso_opsu" id="lapso_opsu<?php echo $prefijo; ?>" class="form-control">
-                    <option value="">-- Seleccione el lapso académico --</option>
+                <label for="inscrito_por<?php echo $prefijo; ?>" class="form-label required"><strong>Inscrito por</strong> <span class="text-danger">*</span></label>
+                <select name="inscrito_por" id="inscrito_por<?php echo $prefijo; ?>" class="form-control" required>
+                    <option value="">-- Seleccione una opción --</option>
                     <?php 
-                    $periodosOpsu = function_exists('obtenerPeriodosAcademicos') ? obtenerPeriodosAcademicos($db) : [];
-                    $lapsoActualSel = $_POST['lapso_opsu'] ?? '';
-                    foreach ($periodosOpsu as $per): 
-                        $nomPer = $per['nombre_periodo'] ?? ($per['codigo_lapso'] ?? '');
+                    $opcionesInscritoPor = [
+                        'OPSU' => 'OPSU',
+                        'Deporte' => 'Deporte',
+                        'Cultura' => 'Cultura',
+                        'Mision Sucre' => 'Misión Sucre',
+                        'Ayuda Social' => 'Ayuda Social',
+                        'Convenio' => 'Convenio',
+                        'Rendimiento Academico' => 'Rendimiento Académico',
+                        'Autorizado por Secretaria' => 'Autorizado por Secretaría',
+                        'Autorizado por Rector' => 'Autorizado por Rector'
+                    ];
+                    $inscritoPorSel = $_POST['inscrito_por'] ?? '';
+                    foreach ($opcionesInscritoPor as $valor => $etiqueta): 
                     ?>
-                        <option value="<?php echo htmlspecialchars($nomPer); ?>" <?php echo ($lapsoActualSel === $nomPer) ? 'selected' : ''; ?>>
-                            <?php echo htmlspecialchars($nomPer); ?>
+                        <option value="<?php echo htmlspecialchars($valor); ?>" <?php echo ($inscritoPorSel === $valor || $inscritoPorSel === $etiqueta) ? 'selected' : ''; ?>>
+                            <?php echo htmlspecialchars($etiqueta); ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
-                <small class="text-muted">Indique de qué lapso académico proviene su asignación OPSU.</small>
+                <small class="text-muted">Seleccione la modalidad o vía por la cual fue asignado o inscrito.</small>
             </div>
         </div>
     </div>
@@ -1320,30 +1312,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (radioGeneroOtro) radioGeneroOtro.addEventListener('change', toggleEmbarazoField);
     toggleEmbarazoField();
 
-    // =============================================
-    // TOGGLE ASIGNADO OPSU Y LAPSO ACADÉMICO
-    // =============================================
-    const radioOpsuSi = document.getElementById('opsu_si' + prefijo);
-    const radioOpsuNo = document.getElementById('opsu_no' + prefijo);
-    const contenedorLapsoOpsu = document.getElementById('contenedorLapsoOpsu' + prefijo);
-    const campoLapsoOpsu = document.getElementById('lapso_opsu' + prefijo);
-
-    function toggleOpsuField() {
-        if (radioOpsuSi && radioOpsuSi.checked) {
-            if (contenedorLapsoOpsu) contenedorLapsoOpsu.style.display = 'block';
-            if (campoLapsoOpsu) campoLapsoOpsu.setAttribute('required', 'required');
-        } else {
-            if (contenedorLapsoOpsu) contenedorLapsoOpsu.style.display = 'none';
-            if (campoLapsoOpsu) {
-                campoLapsoOpsu.removeAttribute('required');
-                campoLapsoOpsu.value = '';
-            }
-        }
-    }
-
-    if (radioOpsuSi) radioOpsuSi.addEventListener('change', toggleOpsuField);
-    if (radioOpsuNo) radioOpsuNo.addEventListener('change', toggleOpsuField);
-    toggleOpsuField();
+    // Campo Inscrito por
+    const campoInscritoPor = document.getElementById('inscrito_por' + prefijo);
 
     <?php if ($modo_preinscripcion): ?>
     // =============================================
@@ -1484,7 +1454,7 @@ document.addEventListener('DOMContentLoaded', function() {
                       '• Su <strong>Cédula</strong>, <strong>Nombre</strong> y <strong>Fecha de Nacimiento</strong> no pueden ser modificados.' +
                       '</div>' +
                       '<p class="mb-0 text-muted" style="font-size: 13px;">' +
-                      'Todos los demás datos (carrera, turno, asignación OPSU, teléfonos, dirección, títulos, etc.) han sido cargados en el formulario y puede actualizarlos libremente antes de enviar su solicitud.' +
+                      'Todos los demás datos (carrera, turno, modalidad de ingreso / inscrito por, teléfonos, dirección, títulos, etc.) han sido cargados en el formulario y puede actualizarlos libremente antes de enviar su solicitud.' +
                       '</p>' +
                       '</div>',
                 confirmButtonText: '<i class="fas fa-check mr-1"></i> Continuar y Actualizar Datos',
@@ -1660,19 +1630,12 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
 
-                    // Asignado OPSU y Lapso
-                    if (d.asignado_opsu === 'Sí') {
-                        if (radioOpsuSi) {
-                            radioOpsuSi.checked = true;
-                            toggleOpsuField();
-                        }
-                        if (campoLapsoOpsu && d.lapso_opsu) {
-                            campoLapsoOpsu.value = d.lapso_opsu;
-                        }
-                    } else {
-                        if (radioOpsuNo) {
-                            radioOpsuNo.checked = true;
-                            toggleOpsuField();
+                    // Inscrito por
+                    if (campoInscritoPor) {
+                        if (d.inscrito_por) {
+                            campoInscritoPor.value = d.inscrito_por;
+                        } else if (d.asignado_opsu === 'Sí') {
+                            campoInscritoPor.value = 'OPSU';
                         }
                     }
 
@@ -2107,13 +2070,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        const radioOpsuSi = document.getElementById('opsu_si' + prefijo);
-        const campoLapsoOpsu = document.getElementById('lapso_opsu' + prefijo);
-        if (radioOpsuSi && radioOpsuSi.checked && campoLapsoOpsu) {
-            if (!campoLapsoOpsu.value.trim()) {
-                mensajesError.push('Debe seleccionar el lapso académico de asignación OPSU');
-                isValid = false;
-            }
+        if (campoInscritoPor && !campoInscritoPor.value.trim()) {
+            mensajesError.push('Debe seleccionar la modalidad en "Inscrito por"');
+            isValid = false;
         }
         
         if (mensajesError.length > 0) {

@@ -105,8 +105,51 @@ if ((isset($_POST['pdf']) && $_POST['pdf'] == '1') || (isset($_GET['pdf']) && $_
     ini_set('display_errors', '0');
     require_once __DIR__ . '/../fpdf/fpdf.php';
 
-    $pdf = new FPDF('P', 'mm', 'A4');
-    $pdf->SetAutoPageBreak(true, 20);
+    if (!class_exists('PDF_Pensum')) {
+        class PDF_Pensum extends FPDF {
+            public function NbLines($w, $txt) {
+                $cw = &$this->CurrentFont['cw'];
+                if ($w == 0) $w = $this->w - $this->rMargin - $this->x;
+                $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
+                $s = str_replace("\r", '', $txt);
+                $nb = strlen($s);
+                if ($nb > 0 && $s[$nb - 1] == "\n") $nb--;
+                $sep = -1;
+                $i = 0; $j = 0; $l = 0; $nl = 1;
+                while ($i < $nb) {
+                    $c = $s[$i];
+                    if ($c == "\n") {
+                        $i++; $sep = -1; $j = $i; $l = 0; $nl++;
+                        continue;
+                    }
+                    if ($c == ' ') $sep = $i;
+                    $l += $cw[$c] ?? 0;
+                    if ($l > $wmax) {
+                        if ($sep == -1) {
+                            if ($i == $j) $i++;
+                        } else {
+                            $i = $sep + 1;
+                        }
+                        $sep = -1; $j = $i; $l = 0; $nl++;
+                    } else {
+                        $i++;
+                    }
+                }
+                return $nl;
+            }
+
+            function Footer() {
+                $this->SetY(-15);
+                $this->SetFont('Arial', 'I', 7);
+                $this->Cell(140, 4, to_iso('Leyenda: UC = Unidades de Crédito | H.T. = Horas Teóricas | H.P. = Horas Prácticas | H.L. = Horas Lab. | H.S. = Horas Semanales'), 0, 0, 'L');
+                $this->Cell(50, 4, to_iso('Página ') . $this->PageNo() . '/{nb}', 0, 0, 'R');
+            }
+        }
+    }
+
+    $pdf = new PDF_Pensum('P', 'mm', 'A4');
+    $pdf->AliasNbPages();
+    $pdf->SetAutoPageBreak(true, 18);
     $pdf->AddPage();
 
     if (function_exists('agregarMembreteFPDF')) {
@@ -118,68 +161,90 @@ if ((isset($_POST['pdf']) && $_POST['pdf'] == '1') || (isset($_GET['pdf']) && $_
     $pdf->Cell(0, 7, to_iso('PENSUM DE ESTUDIOS: ' . mb_strtoupper($carrera['nombre_carrera'])), 0, 1, 'C');
     
     // Solo el código, sin la frase "Código de malla"
-    if(!empty($codigo_malla)) {
+    if (!empty($codigo_malla)) {
         $pdf->SetFont('Arial', '', 11);
         $pdf->Cell(0, 6, to_iso($codigo_malla), 0, 1, 'C');
     }
-    $pdf->Ln(5);
+    $pdf->Ln(4);
+
+    // Anchos de columna optimizados (Total: 190mm)
+    $w = [18, 92, 10, 14, 14, 14, 14, 14];
+    $headers = ['CÓDIGO', 'ASIGNATURA', 'UC', 'H.T.', 'H.P.', 'H.L.', 'H.S.', 'ESTADO'];
+
+    $imprimirCabeceraGrupo = function($nombre, $esContinuacion = false) use ($pdf, $w, $headers) {
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFillColor(230, 230, 230);
+        $textoGrupo = $esContinuacion ? $nombre . ' (Continuación)' : $nombre;
+        $pdf->Cell(0, 6, to_iso($textoGrupo), 1, 1, 'L', true);
+        
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(240, 240, 240);
+        foreach ($headers as $i => $h_text) {
+            $pdf->Cell($w[$i], 6, to_iso($h_text), 1, 0, 'C', true);
+        }
+        $pdf->Ln();
+    };
 
     foreach ($materias_agrupadas as $grupo_nombre => $materias) {
-        // Verificar espacio restante antes de imprimir el encabezado del grupo
-        if ($pdf->GetY() > 250) $pdf->AddPage();
+        // Verificar espacio antes de iniciar un grupo nuevo
+        if ($pdf->GetY() > 240) {
+            $pdf->AddPage();
+        }
 
-        $pdf->SetFont('Arial', 'B', 10);
-        $pdf->SetFillColor(230, 230, 230);
-        $pdf->Cell(0, 7, to_iso($grupo_nombre), 1, 1, 'L', true);
-
-        // Anchos de columna redistribuidos (Total 190mm)
-        $w = [22, 70, 14, 16, 16, 16, 16, 20]; // Total: 190mm
-        $pdf->SetFont('Arial', 'B', 8);
-        $headers = ['CÓDIGO', 'ASIGNATURA', 'UC', 'H.T.', 'H.P.', 'H.L.', 'H.S.', 'ESTADO'];
-        foreach($headers as $i => $h_text) $pdf->Cell($w[$i], 7, to_iso($h_text), 1, 0, 'C', true);
-        $pdf->Ln();
+        $imprimirCabeceraGrupo($grupo_nombre, false);
 
         $pdf->SetFont('Arial', '', 8);
         $total_uc_trayecto = 0;
+        $h_line = 4.8; // Altura base por línea de texto
+
         foreach ($materias as $m) {
             $total_uc_trayecto += (int)($m['creditos'] ?? 0);
-            // Calcular altura de la fila basándose en el nombre de la materia
-            $nb_lines = $pdf->GetStringWidth(to_iso($m['nombre_materia'])) > $w[1] ? 2 : 1;
-            $h_fila = 6 * $nb_lines;
+            $nombre_materia = to_iso($m['nombre_materia']);
+            $nb_lines = max(1, $pdf->NbLines($w[1], $nombre_materia));
+            $h_fila = $h_line * $nb_lines;
 
             // Salto de página preventivo si la fila no cabe
-            if ($pdf->GetY() + $h_fila > 270) $pdf->AddPage();
+            if ($pdf->GetY() + $h_fila > 262) {
+                $pdf->AddPage();
+                $imprimirCabeceraGrupo($grupo_nombre, true);
+                $pdf->SetFont('Arial', '', 8);
+            }
 
             $x = $pdf->GetX();
             $y = $pdf->GetY();
 
+            // Código
             $pdf->Cell($w[0], $h_fila, to_iso($m['cod_materia']), 1, 0, 'C');
             
-            // Celda multi-línea para el nombre
-            $pdf->MultiCell($w[1], ($h_fila/$nb_lines), to_iso($m['nombre_materia']), 1, 'L');
+            // Asignatura (MultiCell con altura base por línea exacta)
+            $pdf->MultiCell($w[1], $h_line, $nombre_materia, 1, 'L');
+            $y_post_multicell = $pdf->GetY();
             
+            // Celdas contiguas de la misma fila
             $pdf->SetXY($x + $w[0] + $w[1], $y);
             $pdf->Cell($w[2], $h_fila, $m['creditos'], 1, 0, 'C');
             $pdf->Cell($w[3], $h_fila, $m['horas_teoricas'], 1, 0, 'C');
             $pdf->Cell($w[4], $h_fila, $m['horas_practicas'], 1, 0, 'C');
             $pdf->Cell($w[5], $h_fila, $m['horas_laboratorio'], 1, 0, 'C');
             $pdf->Cell($w[6], $h_fila, $m['horas_semanales'], 1, 0, 'C');
-            $pdf->Cell($w[7], $h_fila, ($m['activa'] ? 'Activa' : 'Inactiva'), 1, 1, 'C');
+            $pdf->Cell($w[7], $h_fila, ($m['activa'] ? 'Activa' : 'Inactiva'), 1, 0, 'C');
+
+            // Posicionar cursor estrictamente abajo de la fila (evita superposición)
+            $pdf->SetXY($x, max($y + $h_fila, $y_post_multicell));
         }
 
         // Fila Total UC por Trayecto
-        if ($pdf->GetY() + 6 > 270) $pdf->AddPage();
+        if ($pdf->GetY() + 6 > 262) {
+            $pdf->AddPage();
+            $imprimirCabeceraGrupo($grupo_nombre, true);
+        }
         $pdf->SetFont('Arial', 'B', 8);
-        $pdf->SetFillColor(240, 240, 240);
+        $pdf->SetFillColor(245, 245, 245);
         $pdf->Cell($w[0] + $w[1], 6, to_iso('Total Unidades de Crédito (UC):'), 1, 0, 'R', true);
         $pdf->Cell($w[2], 6, $total_uc_trayecto, 1, 0, 'C', true);
         $pdf->Cell($w[3] + $w[4] + $w[5] + $w[6] + $w[7], 6, '', 1, 1, 'C', true);
         $pdf->Ln(4);
     }
-    
-    // Leyenda de abreviaturas al pie del documento
-    $pdf->SetFont('Arial', 'I', 7);
-    $pdf->Cell(0, 4, to_iso('Leyenda: UC = Unidades de Crédito | H.T. = Horas Teóricas | H.P. = Horas Prácticas | H.L. = Horas en Laboratorio | H.S. = Horas Semanales'), 0, 1, 'L');
     
     $pdf->Output('I', 'Pensum_Academico.pdf');
     exit();

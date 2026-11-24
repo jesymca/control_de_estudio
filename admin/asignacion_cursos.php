@@ -20,11 +20,11 @@ if(isset($_GET['ajax']) && $_GET['ajax'] == 'materias_carrera' && isset($_GET['i
     header('Content-Type: application/json');
     $id_carrera = $db->real_escape_string($_GET['id_carrera']);
     
-    $query = "SELECT m.id_materia, m.nombre_materia, m.cod_materia 
+    $query = "SELECT m.id_materia, m.nombre_materia, m.cod_materia, m.trayecto, m.creditos 
               FROM carrera_materia cm
               JOIN materias m ON cm.id_materia = m.id_materia
               WHERE cm.id_carrera = '$id_carrera' AND m.activa = 1
-              ORDER BY cm.semestre, m.nombre_materia";
+              ORDER BY m.trayecto ASC, cm.semestre ASC, m.nombre_materia ASC";
     
     $result = $db->query($query);
     $materias = array();
@@ -628,13 +628,7 @@ function cargarMaterias() {
                 var materias = JSON.parse(this.responseText);
                 
                 if(materias.length > 0) {
-                    selectMaterias.innerHTML = '<option value="">-- Seleccione una materia --</option>';
-                    materias.forEach(function(materia) {
-                        var option = document.createElement('option');
-                        option.value = materia.id_materia;
-                        option.textContent = materia.nombre_materia + ' (' + materia.cod_materia + ')';
-                        selectMaterias.appendChild(option);
-                    });
+                    selectMaterias.innerHTML = renderizarOpcionesMateriasPorTrayectoJS(materias, null, '-- Seleccione una materia --');
                     selectMaterias.disabled = false;
                 } else {
                     selectMaterias.innerHTML = '<option value="">Esta carrera no tiene materias asignadas</option>';
@@ -671,15 +665,10 @@ function cargarMateriasModal() {
             try {
                 var materias = JSON.parse(this.responseText);
                 
-                selectMaterias.innerHTML = '<option value="">-- Seleccione una materia --</option>';
-                
                 if(materias.length > 0) {
-                    materias.forEach(function(materia) {
-                        var option = document.createElement('option');
-                        option.value = materia.id_materia;
-                        option.textContent = materia.nombre_materia + ' (' + materia.cod_materia + ')';
-                        selectMaterias.appendChild(option);
-                    });
+                    selectMaterias.innerHTML = renderizarOpcionesMateriasPorTrayectoJS(materias, null, '-- Seleccione una materia --');
+                } else {
+                    selectMaterias.innerHTML = '<option value="">-- Sin materias disponibles --</option>';
                 }
             } catch(e) {
                 console.error("Error al procesar respuesta:", e);
@@ -711,13 +700,7 @@ function cargarMateriasRecomendacion() {
                 var materias = JSON.parse(this.responseText);
                 
                 if(materias.length > 0) {
-                    selectMaterias.innerHTML = '<option value="">-- Seleccione una materia --</option>';
-                    materias.forEach(function(materia) {
-                        var option = document.createElement('option');
-                        option.value = materia.id_materia;
-                        option.textContent = materia.nombre_materia + ' (' + materia.cod_materia + ')';
-                        selectMaterias.appendChild(option);
-                    });
+                    selectMaterias.innerHTML = renderizarOpcionesMateriasPorTrayectoJS(materias, null, '-- Seleccione una materia --');
                     selectMaterias.disabled = false;
                 } else {
                     selectMaterias.innerHTML = '<option value="">Esta carrera no tiene materias asignadas</option>';

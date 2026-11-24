@@ -27,6 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_POST['numero_cedula'] = preg_replace('/[^0-9]/', '', $_POST['numero_cedula'] ?? '');
     $_POST['idusuario'] = trim($_POST['tipo_cedula'] . $_POST['numero_cedula']);
     $_POST['turno'] = $_POST['turno'] ?? '';
+    $_POST['inscrito_por'] = trim($_POST['inscrito_por'] ?? '');
     $_POST['status'] = 'Pendiente';
     $_POST['fecha_ingreso'] = $_POST['fecha_ingreso'] ?? date('Y-m-d');
     $_POST['id_periodo'] = $periodoActivo ? (int)$periodoActivo['id_periodo'] : null;

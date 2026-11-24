@@ -70,6 +70,8 @@ if (isset($_SESSION['user']['id']) && function_exists('verificarElegibilidadPros
 
 <?php echo $bootstrap_head; ?>
 <link rel="stylesheet" href="/control_de_estudio/css/roles_theme.css">
+<!-- Helper Select Materias por Trayecto -->
+<script src="/control_de_estudio/js/materias_trayecto.js"></script>
 
 <style>
     /* ESTILOS GENERALES MEJORADOS */
@@ -245,10 +247,18 @@ if (isset($_SESSION['user']['id']) && function_exists('verificarElegibilidadPros
             
 
             <!-- NUEVA OPCIÓN: SOLICITUDES Y CONSTANCIAS - CON MISMO ESTILO -->
-            <li class="nav-item">
-              <a title="Constancias y Solicitudes" class="nav-link" href="mis_constancias.php">
+            <li class="nav-item dropdown">
+              <a title="Constancias y Solicitudes" class="nav-link dropdown-toggle" href="#" id="navbarDropdownSol" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 <i class="fas fa-file-alt fa-fw"></i> Solicitudes
               </a>
+              <div class="dropdown-menu" aria-labelledby="navbarDropdownSol">
+                <a class="dropdown-item" href="mis_constancias.php">
+                  <i class="fas fa-certificate fa-fw"></i> Constancias y Trámites
+                </a>
+                <a class="dropdown-item font-weight-bold text-primary" href="solicitar_evaluaciones.php">
+                  <i class="fas fa-star fa-fw"></i> Evaluaciones Especiales (PER, Intensivo...)
+                </a>
+              </div>
             </li>
 
             <!-- OPCIÓN: DECLARAR PAGOS -->

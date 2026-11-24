@@ -124,14 +124,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Filtro de estado vía POST o sesión
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['filtro_status'])) {
-    $_SESSION['filtro_pagos_status'] = trim($_POST['filtro_status']);
+// Manejo de filtros por fecha, estado, concepto y método
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['limpiar_filtros_pagos'])) {
+        unset($_SESSION['filtro_pagos']);
+        unset($_SESSION['filtro_pagos_status']);
+    } elseif (isset($_POST['filtrar_pagos'])) {
+        $_SESSION['filtro_pagos'] = [
+            'fecha_desde'   => trim($_POST['fecha_desde'] ?? ''),
+            'fecha_hasta'   => trim($_POST['fecha_hasta'] ?? ''),
+            'filtro_status' => trim($_POST['filtro_status'] ?? ''),
+            'filtro_tipo'   => trim($_POST['filtro_tipo'] ?? ''),
+            'filtro_metodo' => trim($_POST['filtro_metodo'] ?? '')
+        ];
+    } elseif (isset($_POST['filtro_status_rapido'])) {
+        if (!isset($_SESSION['filtro_pagos'])) $_SESSION['filtro_pagos'] = [];
+        $_SESSION['filtro_pagos']['filtro_status'] = trim($_POST['filtro_status_rapido']);
+    }
 } elseif (isset($_GET['status'])) {
-    $_SESSION['filtro_pagos_status'] = trim($_GET['status']);
+    if (!isset($_SESSION['filtro_pagos'])) $_SESSION['filtro_pagos'] = [];
+    $_SESSION['filtro_pagos']['filtro_status'] = trim($_GET['status']);
 }
-$filtro_status        = $_SESSION['filtro_pagos_status'] ?? '';
-$todos_los_pagos      = obtenerTodosLosPagos(500, $filtro_status);
+
+// Fechas por defecto: todo el año actual hasta hoy para abarcar las operaciones
+$filtro_fecha_desde = $_SESSION['filtro_pagos']['fecha_desde'] ?? date('Y-01-01');
+$filtro_fecha_hasta = $_SESSION['filtro_pagos']['fecha_hasta'] ?? date('Y-m-d');
+$filtro_status      = $_SESSION['filtro_pagos']['filtro_status'] ?? '';
+$filtro_tipo        = $_SESSION['filtro_pagos']['filtro_tipo'] ?? '';
+$filtro_metodo      = $_SESSION['filtro_pagos']['filtro_metodo'] ?? '';
+
+// Obtener pagos según rango y filtros
+$todos_los_pagos = obtenerPagosPorRangoFechas(
+    $filtro_fecha_desde, 
+    $filtro_fecha_hasta, 
+    $filtro_status, 
+    $filtro_tipo, 
+    $filtro_metodo, 
+    'DESC'
+);
+
+$stats_periodo = obtenerEstadisticasPagosRango(
+    $filtro_fecha_desde, 
+    $filtro_fecha_hasta, 
+    $filtro_status, 
+    $filtro_tipo, 
+    $filtro_metodo
+);
+
 $tipos_pago           = obtenerTiposPago(true);
 $metodos_pago_activos = obtenerMetodosPago(true);
 $bancos_pm            = obtenerBancos(true, 'pago_movil');
@@ -335,40 +374,155 @@ include("includes/head.php");
             </div>
         </div>
         
-        <!-- Lista de Pagos con Filtros -->
+        <!-- Lista de Pagos con Filtros y Agrupación Fecha por Fecha -->
         <div class="col-12 col-lg-7">
             <div class="card shadow-sm border-0 mb-4">
-                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-list mr-1"></i> Control de Pagos y Verificación</h5>
+                <div class="card-header bg-primary text-white d-flex flex-wrap justify-content-between align-items-center py-2">
+                    <h5 class="mb-0 font-weight-bold" style="font-size: 1.1rem;">
+                        <i class="fas fa-file-invoice-dollar mr-2"></i>Reporte y Control de Pagos (Fecha por Fecha)
+                    </h5>
                     <span class="badge badge-light p-2 font-weight-bold text-dark">
                         Total Aprobado Hoy: Bs <?= number_format($total_pagos_hoy, 2, ',', '.') ?>
                     </span>
                 </div>
                 
-                <!-- Filtros rápidos por Estado (Puro POST) -->
-                <div class="card-body p-2 bg-light border-bottom">
-                    <form method="POST" action="" class="w-100 mb-0">
+                <!-- Barra de Filtros Avanzada (Rango de Fechas, Estado, Concepto, Método) -->
+                <div class="card-body p-3 bg-light border-bottom">
+                    <form method="POST" action="" id="formFiltroPagos" class="mb-0">
                         <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                        <div class="btn-group btn-group-sm w-100" role="group">
-                            <button type="submit" name="filtro_status" value="" class="btn <?= empty($filtro_status) ? 'btn-primary font-weight-bold' : 'btn-outline-secondary' ?>">
-                                <i class="fas fa-list mr-1"></i> Todos los Pagos
-                            </button>
-                            <button type="submit" name="filtro_status" value="pendiente" class="btn <?= $filtro_status === 'pendiente' ? 'btn-warning text-dark font-weight-bold' : 'btn-outline-warning text-dark' ?>">
-                                <i class="fas fa-clock mr-1"></i> Pendientes
-                            </button>
-                            <button type="submit" name="filtro_status" value="aprobado" class="btn <?= $filtro_status === 'aprobado' ? 'btn-success font-weight-bold' : 'btn-outline-success' ?>">
-                                <i class="fas fa-check-circle mr-1"></i> Aprobados
-                            </button>
-                            <button type="submit" name="filtro_status" value="rechazado" class="btn <?= $filtro_status === 'rechazado' ? 'btn-danger font-weight-bold' : 'btn-outline-danger' ?>">
-                                <i class="fas fa-times-circle mr-1"></i> Rechazados
-                            </button>
+                        
+                        <!-- Rango de Fechas y Botones Rápidos -->
+                        <div class="row align-items-end mb-2">
+                            <div class="col-6 col-sm-3 mb-2">
+                                <label class="font-weight-bold small text-muted mb-1"><i class="fas fa-calendar-alt mr-1"></i> Desde:</label>
+                                <input type="date" name="fecha_desde" id="filtro_fecha_desde" class="form-control form-control-sm font-weight-bold" value="<?= htmlspecialchars($filtro_fecha_desde) ?>" required>
+                            </div>
+                            <div class="col-6 col-sm-3 mb-2">
+                                <label class="font-weight-bold small text-muted mb-1"><i class="fas fa-calendar-alt mr-1"></i> Hasta:</label>
+                                <input type="date" name="fecha_hasta" id="filtro_fecha_hasta" class="form-control form-control-sm font-weight-bold" value="<?= htmlspecialchars($filtro_fecha_hasta) ?>" required>
+                            </div>
+                            <div class="col-12 col-sm-6 mb-2">
+                                <label class="font-weight-bold small text-muted mb-1"><i class="fas fa-bolt mr-1"></i> Rango Rápido:</label>
+                                <div class="btn-group btn-group-sm w-100" role="group">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPresetFecha('hoy')">Hoy</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPresetFecha('semana')">Semana</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPresetFecha('mes')">Mes</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPresetFecha('anio')">Año</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setPresetFecha('todo')">Todo</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Filtros Adicionales: Estado, Concepto, Método -->
+                        <div class="row align-items-end mb-3">
+                            <div class="col-12 col-sm-4 mb-2">
+                                <label class="font-weight-bold small text-muted mb-1">Estado de Pago:</label>
+                                <select name="filtro_status" class="form-control form-control-sm">
+                                    <option value="" <?= empty($filtro_status) ? 'selected' : '' ?>>Todos los Estados</option>
+                                    <option value="aprobado" <?= $filtro_status === 'aprobado' ? 'selected' : '' ?>>Aprobados (Verificados)</option>
+                                    <option value="pendiente" <?= $filtro_status === 'pendiente' ? 'selected' : '' ?>>Pendientes de Verificación</option>
+                                    <option value="rechazado" <?= $filtro_status === 'rechazado' ? 'selected' : '' ?>>Rechazados</option>
+                                </select>
+                            </div>
+                            <div class="col-6 col-sm-4 mb-2">
+                                <label class="font-weight-bold small text-muted mb-1">Concepto / Arancel:</label>
+                                <select name="filtro_tipo" class="form-control form-control-sm">
+                                    <option value="">Todos los Conceptos</option>
+                                    <?php foreach ($tipos_pago as $tp): ?>
+                                        <option value="<?= $tp['id'] ?>" <?= ($filtro_tipo == $tp['id']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($tp['nombre']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-6 col-sm-4 mb-2">
+                                <label class="font-weight-bold small text-muted mb-1">Forma de Pago:</label>
+                                <select name="filtro_metodo" class="form-control form-control-sm">
+                                    <option value="">Todas las Formas</option>
+                                    <?php foreach ($metodos_pago_activos as $m): ?>
+                                        <option value="<?= $m['codigo'] ?>" <?= ($filtro_metodo === $m['codigo']) ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($m['nombre']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de Acción y Generación de Reportes -->
+                        <div class="d-flex flex-wrap justify-content-between align-items-center">
+                            <div class="btn-group btn-group-sm mb-2">
+                                <button type="submit" name="filtrar_pagos" class="btn btn-primary font-weight-bold px-3">
+                                    <i class="fas fa-filter mr-1"></i> Filtrar Pagos
+                                </button>
+                                <button type="submit" name="limpiar_filtros_pagos" class="btn btn-outline-secondary">
+                                    <i class="fas fa-undo mr-1"></i> Limpiar
+                                </button>
+                            </div>
+                            <div class="btn-group btn-group-sm mb-2">
+                                <button type="submit" formaction="reporte_pagos_pdf.php" formmethod="POST" formtarget="_blank" class="btn btn-danger font-weight-bold shadow-sm">
+                                    <i class="fas fa-file-pdf mr-1"></i> Reporte PDF Fecha por Fecha
+                                </button>
+                                <button type="submit" formaction="reporte_pagos_excel.php" formmethod="POST" class="btn btn-success font-weight-bold shadow-sm">
+                                    <i class="fas fa-file-excel mr-1"></i> Reporte Excel (.xlsx) Fecha por Fecha
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>
                 
+                <!-- Resumen de Métricas del Período Filtrado -->
+                <div class="p-3 bg-white border-bottom">
+                    <div class="row text-center">
+                        <div class="col-6 col-md-3 mb-2 mb-md-0 border-right">
+                            <span class="text-muted small d-block font-weight-bold">PERÍODO:</span>
+                            <span class="badge badge-light border text-dark font-weight-bold px-2 py-1">
+                                <?= date('d/m/Y', strtotime($filtro_fecha_desde)) ?> - <?= date('d/m/Y', strtotime($filtro_fecha_hasta)) ?>
+                            </span>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2 mb-md-0 border-right">
+                            <span class="text-muted small d-block font-weight-bold">APROBADO (RECAUDADO):</span>
+                            <span class="text-success font-weight-bold" style="font-size: 1.05rem;">
+                                Bs <?= number_format($stats_periodo['aprobados_monto'], 2, ',', '.') ?>
+                            </span>
+                            <small class="text-muted d-block">(<?= $stats_periodo['aprobados_count'] ?> pagos)</small>
+                        </div>
+                        <div class="col-6 col-md-3 mb-2 mb-md-0 border-right">
+                            <span class="text-muted small d-block font-weight-bold">PENDIENTE:</span>
+                            <span class="text-warning font-weight-bold" style="font-size: 1.05rem;">
+                                Bs <?= number_format($stats_periodo['pendientes_monto'], 2, ',', '.') ?>
+                            </span>
+                            <small class="text-muted d-block">(<?= $stats_periodo['pendientes_count'] ?> pagos)</small>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <span class="text-muted small d-block font-weight-bold">TOTAL OPERACIONES:</span>
+                            <span class="text-primary font-weight-bold" style="font-size: 1.05rem;">
+                                <?= $stats_periodo['total_transacciones'] ?>
+                            </span>
+                            <small class="text-muted d-block">Rechazados: <?= $stats_periodo['rechazados_count'] ?></small>
+                        </div>
+                    </div>
+                </div>
+                
+                <?php
+                // Agrupación de pagos fecha por fecha
+                $dias_semana = [
+                    'Sunday' => 'Domingo', 'Monday' => 'Lunes', 'Tuesday' => 'Martes', 
+                    'Wednesday' => 'Miércoles', 'Thursday' => 'Jueves', 'Friday' => 'Viernes', 'Saturday' => 'Sábado'
+                ];
+                $pagos_por_fecha = [];
+                if (!empty($todos_los_pagos)) {
+                    foreach ($todos_los_pagos as $p) {
+                        $f_efectiva = !empty($p['fecha_transaccion']) && $p['fecha_transaccion'] !== '0000-00-00'
+                            ? $p['fecha_transaccion'] 
+                            : date('Y-m-d', strtotime($p['fecha_pago']));
+                        $pagos_por_fecha[$f_efectiva][] = $p;
+                    }
+                }
+                ?>
+                
                 <div class="card-body p-2 p-sm-3">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped table-hover table-sm">
+                        <table class="table table-bordered table-hover table-sm">
                             <thead class="thead-dark text-center">
                                 <tr>
                                     <th>Fecha / Hora</th>
@@ -380,98 +534,165 @@ include("includes/head.php");
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php if (!empty($todos_los_pagos)): ?>
-                                    <?php foreach ($todos_los_pagos as $pago): ?>
-                                        <tr>
-                                            <td class="small text-center align-middle">
-                                                <div><?= date('d/m/Y', strtotime($pago['fecha_transaccion'] ?: $pago['fecha_pago'])) ?></div>
-                                                <small class="text-muted"><?= date('h:i A', strtotime($pago['fecha_pago'])) ?></small>
-                                            </td>
-                                            <td class="align-middle">
-                                                <div class="font-weight-bold"><?= htmlspecialchars($pago['nombre_estudiante']) ?></div>
-                                                <small class="text-muted">C.I: <?= htmlspecialchars($pago['cedula']) ?></small>
-                                            </td>
-                                            <td class="align-middle">
-                                                <strong><?= htmlspecialchars($pago['nombre_tipo_pago']) ?></strong>
-                                                <div class="small text-muted">
-                                                    <?= htmlspecialchars($pago['metodo_pago'] ?: 'Pago') ?>
-                                                    <?php if (!empty($pago['referencia'])): ?>
-                                                        | Ref: <strong><?= htmlspecialchars($pago['referencia']) ?></strong>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <?php if (!empty($pago['nombre_banco_destino'])): ?>
-                                                    <small class="text-info d-block"><i class="fas fa-landmark mr-1"></i><?= htmlspecialchars($pago['nombre_banco_destino']) ?></small>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-right font-weight-bold text-success align-middle">
-                                                Bs <?= number_format($pago['monto'], 2, ',', '.') ?>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <?php if ($pago['status_pago'] === 'aprobado'): ?>
-                                                    <span class="badge badge-success p-2"><i class="fas fa-check-circle mr-1"></i>Aprobado</span>
-                                                <?php elseif ($pago['status_pago'] === 'rechazado'): ?>
-                                                    <span class="badge badge-danger p-2" title="<?= htmlspecialchars($pago['motivo_rechazo'] ?? '') ?>">
-                                                        <i class="fas fa-times-circle mr-1"></i>Rechazado
+                                <?php if (!empty($pagos_por_fecha)): ?>
+                                    <?php foreach ($pagos_por_fecha as $fecha_grupo => $pagos_del_dia): 
+                                        $timestamp = strtotime($fecha_grupo);
+                                        $dia_ingles = date('l', $timestamp);
+                                        $nombre_dia = $dias_semana[$dia_ingles] ?? $dia_ingles;
+                                        $subtotal_dia_aprobado = 0;
+                                        $subtotal_dia_pendiente = 0;
+                                        $count_dia_aprobado = 0;
+                                        $count_dia_pendiente = 0;
+                                        foreach ($pagos_del_dia as $pd) {
+                                            if ($pd['status_pago'] === 'aprobado') {
+                                                $subtotal_dia_aprobado += (float)$pd['monto'];
+                                                $count_dia_aprobado++;
+                                            } elseif ($pd['status_pago'] === 'pendiente') {
+                                                $subtotal_dia_pendiente += (float)$pd['monto'];
+                                                $count_dia_pendiente++;
+                                            }
+                                        }
+                                    ?>
+                                        <!-- Encabezado de la Fecha -->
+                                        <tr class="table-primary font-weight-bold">
+                                            <td colspan="6" class="py-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <span>
+                                                        <i class="fas fa-calendar-day mr-2 text-primary"></i>
+                                                        FECHA: <?= strtoupper($nombre_dia) ?>, <?= date('d/m/Y', $timestamp) ?>
                                                     </span>
-                                                <?php else: ?>
-                                                    <span class="badge badge-warning p-2 text-dark"><i class="fas fa-clock mr-1"></i>Pendiente</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td class="text-center align-middle">
-                                                <div class="btn-group btn-group-sm">
-                                                    <!-- Ver Detalles Completos -->
-                                                    <button type="button" class="btn btn-outline-primary btn-ver-detalles-pago" 
-                                                            data-pago='<?= htmlspecialchars(json_encode($pago), ENT_QUOTES, 'UTF-8') ?>'
-                                                            title="Ver Detalles Completos del Pago">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    
-                                                    <!-- Ver Comprobante directo si existe -->
-                                                    <?php if (!empty($pago['comprobante'])): ?>
-                                                        <button type="button" class="btn btn-outline-info btn-ver-capture" 
-                                                                data-url="../<?= htmlspecialchars($pago['comprobante']) ?>" 
-                                                                data-titulo="Capture: <?= htmlspecialchars($pago['nombre_estudiante']) ?> (Ref: <?= htmlspecialchars($pago['referencia']) ?>)"
-                                                                title="Ver Capture">
-                                                            <i class="fas fa-image"></i>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                    
-                                                    <!-- Acciones rápidas para pagos pendientes -->
-                                                    <?php if ($pago['status_pago'] === 'pendiente'): ?>
-                                                        <form method="POST" action="" class="d-inline">
-                                                            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-                                                            <input type="hidden" name="pago_id" value="<?= $pago['id'] ?>">
-                                                            <button type="submit" name="aprobar_pago" class="btn btn-outline-success" title="Aprobar Pago">
-                                                                <i class="fas fa-check"></i>
-                                                            </button>
-                                                        </form>
-                                                        
-                                                        <button type="button" class="btn btn-outline-warning btn-abrir-rechazo-pago" 
-                                                                data-id="<?= $pago['id'] ?>"
-                                                                data-estudiante="<?= htmlspecialchars($pago['nombre_estudiante']) ?>"
-                                                                title="Rechazar Pago">
-                                                            <i class="fas fa-ban"></i>
-                                                        </button>
-                                                    <?php endif; ?>
-                                                    
-                                                    <!-- Eliminar con Modal -->
-                                                    <button type="button" class="btn btn-outline-danger btn-abrir-eliminar-pago" 
-                                                            data-id="<?= $pago['id'] ?>" 
-                                                            data-estudiante="<?= htmlspecialchars($pago['nombre_estudiante']) ?>" 
-                                                            data-monto="Bs <?= number_format($pago['monto'], 2, ',', '.') ?>" 
-                                                            title="Eliminar">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
+                                                    <span class="badge badge-light text-dark font-weight-bold px-2 py-1">
+                                                        <?= count($pagos_del_dia) ?> <?= count($pagos_del_dia) === 1 ? 'operación' : 'operaciones' ?>
+                                                    </span>
                                                 </div>
+                                            </td>
+                                        </tr>
+
+                                        <!-- Filas de pagos correspondientes a esta fecha -->
+                                        <?php foreach ($pagos_del_dia as $pago): ?>
+                                            <tr>
+                                                <td class="small text-center align-middle">
+                                                    <div><?= date('d/m/Y', strtotime($pago['fecha_transaccion'] ?: $pago['fecha_pago'])) ?></div>
+                                                    <small class="text-muted"><?= date('h:i A', strtotime($pago['fecha_pago'])) ?></small>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <div class="font-weight-bold"><?= htmlspecialchars($pago['nombre_estudiante']) ?></div>
+                                                    <small class="text-muted">C.I: <?= htmlspecialchars($pago['cedula']) ?></small>
+                                                </td>
+                                                <td class="align-middle">
+                                                    <strong><?= htmlspecialchars($pago['nombre_tipo_pago']) ?></strong>
+                                                    <div class="small text-muted">
+                                                        <?= htmlspecialchars($pago['metodo_pago'] ?: 'Pago') ?>
+                                                        <?php if (!empty($pago['referencia'])): ?>
+                                                            | Ref: <strong><?= htmlspecialchars($pago['referencia']) ?></strong>
+                                                        <?php endif; ?>
+                                                    </div>
+                                                    <?php if (!empty($pago['nombre_banco_destino'])): ?>
+                                                        <small class="text-info d-block"><i class="fas fa-landmark mr-1"></i><?= htmlspecialchars($pago['nombre_banco_destino']) ?></small>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="text-right font-weight-bold text-success align-middle">
+                                                    Bs <?= number_format($pago['monto'], 2, ',', '.') ?>
+                                                </td>
+                                                <td class="text-center align-middle">
+                                                    <?php if ($pago['status_pago'] === 'aprobado'): ?>
+                                                        <span class="badge badge-success p-2"><i class="fas fa-check-circle mr-1"></i>Aprobado</span>
+                                                    <?php elseif ($pago['status_pago'] === 'rechazado'): ?>
+                                                        <span class="badge badge-danger p-2" title="<?= htmlspecialchars($pago['motivo_rechazo'] ?? '') ?>">
+                                                            <i class="fas fa-times-circle mr-1"></i>Rechazado
+                                                        </span>
+                                                    <?php else: ?>
+                                                        <span class="badge badge-warning p-2 text-dark"><i class="fas fa-clock mr-1"></i>Pendiente</span>
+                                                    <?php endif; ?>
+                                                </td>
+                                                <td class="text-center align-middle">
+                                                    <div class="btn-group btn-group-sm">
+                                                        <!-- Ver Detalles Completos -->
+                                                        <button type="button" class="btn btn-outline-primary btn-ver-detalles-pago" 
+                                                                data-pago='<?= htmlspecialchars(json_encode($pago), ENT_QUOTES, 'UTF-8') ?>'
+                                                                title="Ver Detalles Completos del Pago">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        
+                                                        <!-- Ver Comprobante directo si existe -->
+                                                        <?php if (!empty($pago['comprobante'])): ?>
+                                                            <button type="button" class="btn btn-outline-info btn-ver-capture" 
+                                                                    data-url="../<?= htmlspecialchars($pago['comprobante']) ?>" 
+                                                                    data-titulo="Capture: <?= htmlspecialchars($pago['nombre_estudiante']) ?> (Ref: <?= htmlspecialchars($pago['referencia']) ?>)"
+                                                                    title="Ver Capture">
+                                                                <i class="fas fa-image"></i>
+                                                            </button>
+                                                        <?php endif; ?>
+                                                        
+                                                        <!-- Acciones rápidas para pagos pendientes -->
+                                                        <?php if ($pago['status_pago'] === 'pendiente'): ?>
+                                                            <form method="POST" action="" class="d-inline">
+                                                                <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+                                                                <input type="hidden" name="pago_id" value="<?= $pago['id'] ?>">
+                                                                <button type="submit" name="aprobar_pago" class="btn btn-outline-success" title="Aprobar Pago">
+                                                                    <i class="fas fa-check"></i>
+                                                                </button>
+                                                            </form>
+                                                            
+                                                            <button type="button" class="btn btn-outline-warning btn-abrir-rechazo-pago" 
+                                                                    data-id="<?= $pago['id'] ?>"
+                                                                    data-estudiante="<?= htmlspecialchars($pago['nombre_estudiante']) ?>"
+                                                                    title="Rechazar Pago">
+                                                                <i class="fas fa-ban"></i>
+                                                            </button>
+                                                        <?php endif; ?>
+                                                        
+                                                        <!-- Eliminar con Modal -->
+                                                        <button type="button" class="btn btn-outline-danger btn-abrir-eliminar-pago" 
+                                                                data-id="<?= $pago['id'] ?>" 
+                                                                data-estudiante="<?= htmlspecialchars($pago['nombre_estudiante']) ?>" 
+                                                                data-monto="Bs <?= number_format($pago['monto'], 2, ',', '.') ?>" 
+                                                                title="Eliminar">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        <?php endforeach; ?>
+
+                                        <!-- Subtotal de la fecha -->
+                                        <tr class="bg-light font-weight-bold">
+                                            <td colspan="3" class="text-right text-muted small py-2">
+                                                Subtotal del Día (<?= date('d/m/Y', $timestamp) ?>):
+                                            </td>
+                                            <td class="text-right text-dark py-2">
+                                                Bs <?= number_format($subtotal_dia_aprobado, 2, ',', '.') ?>
+                                            </td>
+                                            <td colspan="2" class="small py-2 text-muted">
+                                                <span class="text-success"><i class="fas fa-check-circle mr-1"></i>Bs <?= number_format($subtotal_dia_aprobado, 2, ',', '.') ?> (<?= $count_dia_aprobado ?> apr.)</span>
+                                                <?php if ($count_dia_pendiente > 0): ?>
+                                                    | <span class="text-warning"><i class="fas fa-clock mr-1"></i>Bs <?= number_format($subtotal_dia_pendiente, 2, ',', '.') ?> (<?= $count_dia_pendiente ?> pend.)</span>
+                                                <?php endif; ?>
                                             </td>
                                         </tr>
                                     <?php endforeach; ?>
                                 <?php else: ?>
                                     <tr>
-                                        <td colspan="6" class="text-center py-4 text-muted">No se encontraron pagos con los filtros seleccionados.</td>
+                                        <td colspan="6" class="text-center py-4 text-muted">
+                                            <i class="fas fa-inbox fa-2x mb-2 d-block text-secondary"></i>
+                                            No se encontraron pagos con los filtros seleccionados.
+                                        </td>
                                     </tr>
                                 <?php endif; ?>
                             </tbody>
+                            <tfoot class="thead-dark font-weight-bold text-center">
+                                <tr>
+                                    <td colspan="3" class="text-right text-white py-2">
+                                        TOTAL GENERAL RECAUDADO (APROBADO):
+                                    </td>
+                                    <td class="text-right text-warning py-2" style="font-size: 1.05rem;">
+                                        Bs <?= number_format($stats_periodo['aprobados_monto'], 2, ',', '.') ?>
+                                    </td>
+                                    <td colspan="2" class="text-white small text-center py-2">
+                                        <?= $stats_periodo['aprobados_count'] ?> aprobados / <?= $stats_periodo['total_transacciones'] ?> operaciones
+                                    </td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -657,6 +878,43 @@ include("includes/head.php");
 </div>
 
 <script>
+// Función para selección rápida de rangos de fechas
+function setPresetFecha(tipo) {
+    const ahora = new Date();
+    const pad = (n) => n.toString().padStart(2, '0');
+    const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    
+    let desde = '';
+    let hasta = toISO(ahora);
+    
+    if (tipo === 'hoy') {
+        desde = toISO(ahora);
+        hasta = toISO(ahora);
+    } else if (tipo === 'semana') {
+        const d = new Date(ahora);
+        const day = d.getDay(); // 0 domingo
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // lunes
+        d.setDate(diff);
+        desde = toISO(d);
+        hasta = toISO(ahora);
+    } else if (tipo === 'mes') {
+        const firstDay = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+        desde = toISO(firstDay);
+        hasta = toISO(ahora);
+    } else if (tipo === 'anio') {
+        desde = `${ahora.getFullYear()}-01-01`;
+        hasta = toISO(ahora);
+    } else if (tipo === 'todo') {
+        desde = '2020-01-01';
+        hasta = toISO(ahora);
+    }
+    
+    const inputDesde = document.getElementById('filtro_fecha_desde');
+    const inputHasta = document.getElementById('filtro_fecha_hasta');
+    if (inputDesde) inputDesde.value = desde;
+    if (inputHasta) inputHasta.value = hasta;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const inputBuscador = document.getElementById('buscador_estudiante_pago');
     const sugerenciasContainer = document.getElementById('sugerencias_estudiantes_pago');

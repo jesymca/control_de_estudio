@@ -273,13 +273,7 @@ include("includes/head.php");
                                     </div>
                                     <div class="col-md-5 mb-2">
                                         <select name="id_materia" class="form-control" required>
-                                            <option value="">Seleccionar materia</option>
-                                            <?php
-                                            $materias = obtenerTodasMaterias();
-                                            while ($m = $materias->fetch_assoc()) {
-                                                echo "<option value='{$m['id_materia']}'>{$m['cod_materia']} - {$m['nombre_materia']}</option>";
-                                            }
-                                            ?>
+                                            <?= renderizarOpcionesMateriasPorTrayecto(obtenerTodasMaterias(), null, 'Seleccionar materia') ?>
                                         </select>
                                     </div>
                                     <div class="col-md-2 mb-2">

@@ -112,7 +112,7 @@ function obtenerNotasEstudianteTrimestres($estudiante_id) {
                 u.nombre as nombre_admin
               FROM notas_trimestres nt
               LEFT JOIN periodos_academicos pa ON nt.id_periodo = pa.id_periodo
-              LEFT JOIN users u ON nt.id_admin_aprobador = u.id
+              LEFT JOIN users u ON (nt.id_admin_aprobador = u.id AND (u.admin = 1 OR u.super_user = 1 OR u.user_type = 'admin'))
               WHERE nt.id_usuario = ?
               AND nt.estado = 'aprobada'
               ORDER BY nt.id_materia, nt.trimestre_num";
@@ -255,40 +255,260 @@ if ($estudiante && $carrera && $materias_carrera && $materias_carrera->num_rows 
 $eval_adicion_retiro = ($estudiante && isset($estudiante['id']) && function_exists('verificarElegibilidadAdicionRetiro')) 
     ? verificarElegibilidadAdicionRetiro($estudiante['id']) 
     : ['es_apto' => false, 'carrera_valida' => false, 'lapso_valido' => false, 'motivo' => ''];
+
+// Manejar solicitud de grado académico
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['solicitar_grado_academico'])) {
+    $tipo_grado_sol = trim($_POST['tipo_grado'] ?? 'TSU');
+    $motivo_sol = trim($_POST['motivo_solicitud'] ?? 'Culminación satisfactoria de carga académica');
+    $res_sol = function_exists('solicitarGradoAcademico') 
+        ? solicitarGradoAcademico($estudiante['id'], $tipo_grado_sol, $motivo_sol)
+        : ['success' => false, 'mensaje' => 'Función no disponible'];
+    if (!empty($res_sol['success'])) {
+        $_SESSION['flash_estudiante_grado'] = ['tipo' => 'success', 'texto' => $res_sol['mensaje']];
+    } else {
+        $_SESSION['flash_estudiante_grado'] = ['tipo' => 'danger', 'texto' => $res_sol['mensaje']];
+    }
+    header("Location: mi_historial.php");
+    exit();
+}
+
+$flash_grado_estudiante = $_SESSION['flash_estudiante_grado'] ?? null;
+unset($_SESSION['flash_estudiante_grado']);
+
+// Evaluar aptitud para grado
+$eval_grado = ($estudiante && $carrera && function_exists('esAptoParaGradoConsulta')) 
+    ? esAptoParaGradoConsulta($estudiante['id'], $carrera['id_carrera']) 
+    : ['apto_tsu' => false, 'apto_grado_completo' => false, 'es_apto' => false, 'ira' => 0];
+
+// Consultar solicitud de grado existente
+$solicitud_grado_activa = null;
+if ($estudiante && isset($db)) {
+    $stmtSg = $db->prepare("SELECT id, accion, status, fecha_solicitud, materias_data FROM solicitudes_academicas WHERE estudiante_id = ? AND tipo_solicitud = 'grado' ORDER BY id DESC LIMIT 1");
+    if ($stmtSg) {
+        $stmtSg->bind_param("i", $estudiante['id']);
+        $stmtSg->execute();
+        $resSg = $stmtSg->get_result();
+        if ($resSg && $resSg->num_rows > 0) {
+            $solicitud_grado_activa = $resSg->fetch_assoc();
+        }
+        $stmtSg->close();
+    }
+}
+
+// Consultar si ya tiene títulos registrados
+$titulos_obtenidos_estudiante = [];
+if ($estudiante && isset($db)) {
+    $stmtTit = $db->prepare("SELECT titulo_obtenido, instituto FROM titulos_obtenidos WHERE id_usuario = ?");
+    if ($stmtTit) {
+        $stmtTit->bind_param("i", $estudiante['id']);
+        $stmtTit->execute();
+        $resTit = $stmtTit->get_result();
+        while ($rowTit = $resTit->fetch_assoc()) {
+            $titulos_obtenidos_estudiante[] = $rowTit;
+        }
+        $stmtTit->close();
+    }
+}
 ?>
 
 <div class="container-fluid px-2 px-sm-3 px-md-4">
     <h2 class="my-4 h2-sm">Mi Historial de Notas</h2>
+
+    <?php if (!empty($flash_grado_estudiante)): ?>
+        <div class="alert alert-<?= $flash_grado_estudiante['tipo'] ?> alert-dismissible fade show shadow-sm mb-4" role="alert">
+            <i class="fas fa-<?= $flash_grado_estudiante['tipo'] === 'success' ? 'check-circle' : 'exclamation-circle' ?> mr-2"></i>
+            <?= htmlspecialchars($flash_grado_estudiante['texto']) ?>
+            <button type="button" class="close" data-dismiss="alert">&times;</button>
+        </div>
+    <?php endif; ?>
+
+    <!-- TÍTULOS OBTENIDOS / PROSECUCIÓN -->
+    <?php if (!empty($titulos_obtenidos_estudiante)): ?>
+        <div class="card mb-4 border-left-success shadow-sm" style="border-left: 5px solid #28a745 !important;">
+            <div class="card-body py-3">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h6 class="font-weight-bold text-success mb-1">
+                            <i class="fas fa-award mr-1"></i> TÍTULO UNIVERSITARIO REGISTRADO
+                        </h6>
+                        <p class="mb-0 text-dark">
+                            <?php foreach ($titulos_obtenidos_estudiante as $to): ?>
+                                <strong><?= htmlspecialchars($to['titulo_obtenido']) ?></strong> (<?= htmlspecialchars($to['instituto']) ?>)<br>
+                            <?php endforeach; ?>
+                            <span class="text-muted small">Puedes continuar tu formación profesional hacia la Ingeniería / Licenciatura.</span>
+                        </p>
+                    </div>
+                    <div class="col-md-4 text-md-right mt-2 mt-md-0">
+                        <a href="prosecucion.php" class="btn btn-success font-weight-bold shadow-sm">
+                            <i class="fas fa-graduation-cap mr-1"></i> Iniciar Prosecución Académica
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php endif; ?>
+
+    <!-- SOLICITUD DE GRADO EN TRÁMITE -->
+    <?php if (!empty($solicitud_grado_activa)): 
+        $es_aprob = ($solicitud_grado_activa['status'] === 'aprobada');
+    ?>
+        <div class="card mb-4 <?= $es_aprob ? 'border-left-success' : 'border-left-warning' ?> shadow-sm" style="border-left: 5px solid <?= $es_aprob ? '#28a745' : '#ffc107' ?> !important;">
+            <div class="card-body py-3">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div>
+                        <h6 class="font-weight-bold <?= $es_aprob ? 'text-success' : 'text-warning' ?> mb-1">
+                            <i class="fas fa-user-graduate mr-1"></i> SOLICITUD DE GRADO #<?= $solicitud_grado_activa['id'] ?> (<?= htmlspecialchars($solicitud_grado_activa['accion']) ?>)
+                        </h6>
+                        <p class="mb-0 text-dark">
+                            Estatus: 
+                            <?php if ($es_aprob): ?>
+                                <span class="badge badge-success px-2 py-1"><i class="fas fa-check mr-1"></i>APROBADA Y GRADUADO</span>
+                            <?php else: ?>
+                                <span class="badge badge-warning px-2 py-1"><i class="fas fa-clock mr-1"></i>EN REVISIÓN POR CONTROL DE ESTUDIOS</span>
+                            <?php endif; ?>
+                            <span class="text-muted ml-2 small">Fecha: <?= date('d/m/Y H:i', strtotime($solicitud_grado_activa['fecha_solicitud'])) ?></span>
+                        </p>
+                    </div>
+                    <div class="mt-2 mt-md-0">
+                        <form method="POST" action="../admin/historial_graduando.php" target="_blank" class="d-inline">
+                            <input type="hidden" name="estudiante_id" value="<?= htmlspecialchars($estudiante['id']) ?>">
+                            <input type="hidden" name="cedula" value="<?= htmlspecialchars($estudiante['idusuario']) ?>">
+                            <input type="hidden" name="nombre" value="<?= htmlspecialchars($estudiante['nombre']) ?>">
+                            <input type="hidden" name="carrera" value="<?= htmlspecialchars($carrera['nombre_carrera'] ?? '') ?>">
+                            <button type="submit" class="btn btn-outline-dark btn-sm font-weight-bold">
+                                <i class="fas fa-file-pdf mr-1"></i> Mi Historial de Graduando
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <?php elseif (!empty($eval_grado['apto_tsu']) || !empty($eval_grado['apto_grado_completo'])): 
+        $tipo_posible = !empty($eval_grado['apto_grado_completo']) ? 'INGENIERIA' : 'TSU';
+    ?>
+        <!-- BANNER DE POSTULACIÓN A GRADO -->
+        <div class="card mb-4 border-left-success shadow" style="border-left: 5px solid #28a745 !important;">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center py-2">
+                <h6 class="mb-0 font-weight-bold text-uppercase">
+                    <i class="fas fa-award mr-1"></i> ¡Felicidades! Eres Apto para Acto de Grado
+                </h6>
+                <span class="badge badge-light text-success font-weight-bold">
+                    IRA: <?= number_format($eval_grado['ira'] ?? 0, 2) ?> pts
+                </span>
+            </div>
+            <div class="card-body py-3">
+                <div class="row align-items-center">
+                    <div class="col-md-8 mb-3 mb-md-0">
+                        <p class="mb-1 text-dark">
+                            Has culminado satisfactoriamente los requisitos académicos para optar al título de 
+                            <strong class="text-success"><?= $tipo_posible === 'TSU' ? 'Técnico Superior Universitario (T.S.U.)' : 'Ingeniería / Licenciatura' ?></strong> 
+                            en <strong><?= htmlspecialchars($carrera['nombre_carrera'] ?? '') ?></strong>.
+                        </p>
+                        <small class="text-muted">
+                            <i class="fas fa-check-double text-success mr-1"></i> Carga académica completa y aprobada. Puedes formalizar tu solicitud ante Control de Estudios ahora mismo.
+                        </small>
+                    </div>
+                    <div class="col-md-4 text-md-right">
+                        <button type="button" class="btn btn-success font-weight-bold px-3 shadow" data-toggle="modal" data-target="#modalSolicitarGrado">
+                            <i class="fas fa-graduation-cap mr-1"></i> Postularme a Grado
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL CONFIRMACIÓN SOLICITAR GRADO -->
+        <div class="modal fade" id="modalSolicitarGrado" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <form method="POST" action="mi_historial.php">
+                    <input type="hidden" name="solicitar_grado_academico" value="1">
+                    <input type="hidden" name="tipo_grado" value="<?= $tipo_posible ?>">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header bg-success text-white">
+                            <h5 class="modal-title font-weight-bold">
+                                <i class="fas fa-graduation-cap mr-2"></i>Postulación al Acto de Grado
+                            </h5>
+                            <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <p class="text-dark">
+                                Estás formalizando tu postulación académica para optar al título de:
+                                <br><strong class="h5 text-success d-block mt-2"><?= $tipo_posible === 'TSU' ? 'TÉCNICO SUPERIOR UNIVERSITARIO' : 'INGENIERO / LICENCIADO' ?></strong>
+                            </p>
+                            <p class="small text-muted mb-2">
+                                Carrera: <strong><?= htmlspecialchars($carrera['nombre_carrera'] ?? '') ?></strong><br>
+                                Tu I.R.A. actual: <strong><?= number_format($eval_grado['ira'] ?? 0, 2) ?> puntos</strong>
+                            </p>
+                            <div class="form-group mt-3">
+                                <label for="motivo_grado" class="font-weight-bold small text-muted">Observación o Mensaje (Opcional):</label>
+                                <textarea name="motivo_solicitud" id="motivo_grado" class="form-control" rows="2" placeholder="Ej: Cumplimiento de toda la carga académica del programa..."></textarea>
+                            </div>
+                            <div class="alert alert-light border small text-muted mb-0">
+                                <i class="fas fa-info-circle text-info mr-1"></i> Tu expediente y récord académico serán auditados por la Dirección de Control de Estudios para la posterior emisión del título y libro de actas.
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-success font-weight-bold px-4">
+                                <i class="fas fa-paper-plane mr-1"></i> Enviar Postulación
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    <?php endif; ?>
     
     <?php if ($estudiante && $carrera): ?>
     <div class="card mb-4 shadow-sm">
         <div class="card-header bg-info text-white d-flex flex-column flex-sm-row justify-content-between align-items-center">
             <h5 class="mb-2 mb-sm-0">Información del Estudiante</h5>
             
-            <?php if ($puede_ver_tsu || $puede_ver_ingenieria || $puede_ver_completo): ?>
-            <div class="btn-group btn-group-sm flex-wrap justify-content-center" role="group">
+            <div class="d-inline-flex flex-wrap align-items-center justify-content-center">
                 <?php if ($puede_ver_tsu): ?>
-                <a href="../admin/historial_desglozado_tsu.php?estudiante_id=<?= $estudiante['id'] ?>&cedula=<?= urlencode($estudiante['idusuario']) ?>&nombre=<?= urlencode($estudiante['nombre']) ?>&carrera=<?= urlencode($carrera['nombre_carrera']) ?>" 
-                   class="btn btn-warning mb-1 mb-sm-0" target="_blank">
-                    <i class="fas fa-file-pdf"></i> <span class="d-none d-sm-inline">Historial TSU</span><span class="d-inline d-sm-none">TSU</span>
-                </a>
+                <form method="POST" action="../admin/historial_desglozado_tsu.php" target="_blank" class="d-inline mr-1 mb-1">
+                    <input type="hidden" name="estudiante_id" value="<?= htmlspecialchars($estudiante['id']) ?>">
+                    <input type="hidden" name="cedula" value="<?= htmlspecialchars($estudiante['idusuario']) ?>">
+                    <input type="hidden" name="nombre" value="<?= htmlspecialchars($estudiante['nombre']) ?>">
+                    <input type="hidden" name="carrera" value="<?= htmlspecialchars($carrera['nombre_carrera']) ?>">
+                    <button type="submit" class="btn btn-warning btn-sm font-weight-bold">
+                        <i class="fas fa-file-pdf mr-1"></i> <span class="d-none d-sm-inline">Historial TSU</span><span class="d-inline d-sm-none">TSU</span>
+                    </button>
+                </form>
                 <?php endif; ?>
                 
                 <?php if ($puede_ver_ingenieria): ?>
-                <a href="../admin/historial_desglozado_ingenieria.php?estudiante_id=<?= $estudiante['id'] ?>&cedula=<?= urlencode($estudiante['idusuario']) ?>&nombre=<?= urlencode($estudiante['nombre']) ?>&carrera=<?= urlencode($carrera['nombre_carrera']) ?>" 
-                   class="btn btn-info mb-1 mb-sm-0" target="_blank">
-                    <i class="fas fa-file-pdf"></i> <span class="d-none d-sm-inline">Historial Ingeniería</span><span class="d-inline d-sm-none">Ing.</span>
-                </a>
+                <form method="POST" action="../admin/historial_desglozado_ingenieria.php" target="_blank" class="d-inline mr-1 mb-1">
+                    <input type="hidden" name="estudiante_id" value="<?= htmlspecialchars($estudiante['id']) ?>">
+                    <input type="hidden" name="cedula" value="<?= htmlspecialchars($estudiante['idusuario']) ?>">
+                    <input type="hidden" name="nombre" value="<?= htmlspecialchars($estudiante['nombre']) ?>">
+                    <input type="hidden" name="carrera" value="<?= htmlspecialchars($carrera['nombre_carrera']) ?>">
+                    <button type="submit" class="btn btn-info btn-sm font-weight-bold">
+                        <i class="fas fa-file-pdf mr-1"></i> <span class="d-none d-sm-inline">Historial Ingeniería</span><span class="d-inline d-sm-none">Ing.</span>
+                    </button>
+                </form>
                 <?php endif; ?>
+
+                <form method="POST" action="../admin/historial_graduando.php" target="_blank" class="d-inline mr-1 mb-1">
+                    <input type="hidden" name="estudiante_id" value="<?= htmlspecialchars($estudiante['id']) ?>">
+                    <input type="hidden" name="cedula" value="<?= htmlspecialchars($estudiante['idusuario']) ?>">
+                    <input type="hidden" name="nombre" value="<?= htmlspecialchars($estudiante['nombre']) ?>">
+                    <input type="hidden" name="carrera" value="<?= htmlspecialchars($carrera['nombre_carrera']) ?>">
+                    <button type="submit" class="btn btn-success btn-sm font-weight-bold">
+                        <i class="fas fa-user-graduate mr-1"></i> <span class="d-none d-sm-inline">Historial Graduando</span><span class="d-inline d-sm-none">Graduando</span>
+                    </button>
+                </form>
                 
-                <?php if ($puede_ver_completo): ?>
-                <a href="../admin/generar_reporte_consulta.php?estudiante_id=<?= $estudiante['id'] ?>&cedula=<?= urlencode($estudiante['idusuario']) ?>&nombre=<?= urlencode($estudiante['nombre']) ?>&carrera=<?= urlencode($carrera['nombre_carrera']) ?>" 
-                   class="btn btn-danger mb-1 mb-sm-0" target="_blank">
-                    <i class="fas fa-file-pdf"></i> <span class="d-none d-sm-inline">Historial Completo</span><span class="d-inline d-sm-none">Completo</span>
-                </a>
-                <?php endif; ?>
+                <form method="POST" action="../admin/historial_desglosado.php" target="_blank" class="d-inline mb-1">
+                    <input type="hidden" name="estudiante_id" value="<?= htmlspecialchars($estudiante['id']) ?>">
+                    <input type="hidden" name="cedula" value="<?= htmlspecialchars($estudiante['idusuario']) ?>">
+                    <input type="hidden" name="nombre" value="<?= htmlspecialchars($estudiante['nombre']) ?>">
+                    <input type="hidden" name="carrera" value="<?= htmlspecialchars($carrera['nombre_carrera']) ?>">
+                    <button type="submit" class="btn btn-dark btn-sm font-weight-bold">
+                        <i class="fas fa-list-alt mr-1"></i> <span class="d-none d-sm-inline">Historial Desglosado</span><span class="d-inline d-sm-none">Desglosado</span>
+                    </button>
+                </form>
             </div>
-            <?php endif; ?>
         </div>
         <div class="card-body p-2 p-sm-3">
             <div class="row">

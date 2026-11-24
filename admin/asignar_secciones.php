@@ -404,13 +404,7 @@ function cargarMateriasPorCarrera() {
                 var materias = JSON.parse(this.responseText);
                 
                 if(materias.length > 0) {
-                    selectMaterias.innerHTML = '';
-                    materias.forEach(function(materia) {
-                        var option = document.createElement('option');
-                        option.value = materia.id_materia;
-                        option.textContent = (materia.nombre_materia + ' (' + materia.cod_materia + ')').toUpperCase();
-                        selectMaterias.appendChild(option);
-                    });
+                    selectMaterias.innerHTML = renderizarOpcionesMateriasPorTrayectoJS(materias, null, '-- SELECCIONE UNA MATERIA --');
                     selectMaterias.disabled = false;
                 } else {
                     selectMaterias.innerHTML = '<option value="">ESTE DOCENTE NO TIENE MATERIAS PARA ESTA CARRERA</option>';
@@ -463,16 +457,7 @@ function cargarMateriasEditarModal(idMateriaSeleccionar) {
             try {
                 var materias = JSON.parse(this.responseText);
                 if(materias.length > 0) {
-                    selectMaterias.innerHTML = '';
-                    materias.forEach(function(materia) {
-                        var option = document.createElement('option');
-                        option.value = materia.id_materia;
-                        option.textContent = (materia.nombre_materia + ' (' + materia.cod_materia + ')').toUpperCase();
-                        if(idMateriaSeleccionar && materia.id_materia == idMateriaSeleccionar) {
-                            option.selected = true;
-                        }
-                        selectMaterias.appendChild(option);
-                    });
+                    selectMaterias.innerHTML = renderizarOpcionesMateriasPorTrayectoJS(materias, idMateriaSeleccionar, '-- SELECCIONE UNA MATERIA --');
                     selectMaterias.disabled = false;
                 } else {
                     selectMaterias.innerHTML = '<option value="">ESTE DOCENTE NO TIENE MATERIAS PARA ESTA SECCIÓN</option>';

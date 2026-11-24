@@ -202,6 +202,7 @@ include('includes/head.php');
                         <div class="col-md-6"><strong>Turno:</strong> <?php echo htmlspecialchars($preinscripcion['turno'] ?? 'No especificado'); ?></div>
                         <div class="col-md-6"><strong>Fecha de solicitud:</strong> <?php echo htmlspecialchars($preinscripcion['fecha_ingreso']); ?></div>
                         <div class="col-md-6"><strong>Sede:</strong> <?php echo htmlspecialchars($preinscripcion['sede'] ?? 'No especificada'); ?></div>
+                        <div class="col-md-6"><strong>Inscrito por:</strong> <?php echo htmlspecialchars(!empty($preinscripcion['inscrito_por']) ? $preinscripcion['inscrito_por'] : ((!empty($preinscripcion['asignado_opsu']) && $preinscripcion['asignado_opsu'] === 'Sí') ? 'OPSU' : 'No especificado')); ?></div>
                     </div>
                 </div>
             </div>

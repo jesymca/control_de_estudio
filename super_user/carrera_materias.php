@@ -134,12 +134,7 @@ $materias_asignadas = obtenerMateriasAsignadas($carrera_seleccionada);
                         <div class="form-group">
                             <label>Materia:</label>
                             <select name="id_materia" class="form-control" required>
-                                <?php foreach ($materias_disponibles as $materia): ?>
-                                    <option value="<?= intval($materia['id_materia']) ?>" 
-                                        <?= ($preselected_materia && $preselected_materia == $materia['id_materia']) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($materia['cod_materia']) ?> - <?= htmlspecialchars($materia['nombre_materia']) ?>
-                                    </option>
-                                <?php endforeach; ?>
+                                <?= renderizarOpcionesMateriasPorTrayecto($materias_disponibles, $preselected_materia ?: null, '-- Seleccionar Materia --') ?>
                             </select>
                         </div>
 
